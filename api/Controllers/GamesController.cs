@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using api.DTOs.Games;
 using api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers;
@@ -23,23 +25,37 @@ public class GamesController(IGameService gameService) : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateGameRequest request, CancellationToken ct)
+    [Authorize]
+    public async Task<IActionResult> Create(CancellationToken ct)
     {
-        var game = await gameService.CreateAsync(request, ct);
-        return CreatedAtAction(nameof(GetById), new { id = game.Id }, game);
+        var playerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await gameService.CreateAsync(playerId, ct);
+        return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value);
     }
 
     [HttpPost("{id:guid}/join")]
-    public async Task<IActionResult> Join(Guid id, [FromBody] JoinGameRequest request, CancellationToken ct)
+    [Authorize]
+    public async Task<IActionResult> Join(Guid id, CancellationToken ct)
     {
-        var game = await gameService.JoinAsync(id, request, ct);
-        return game is null ? NotFound() : Ok(game);
+        var playerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await gameService.JoinAsync(id, playerId, ct);
+
+        if (!result.IsSuccess)
+            return result.IsNotFound ? NotFound(result.Error) : BadRequest(result.Error);
+
+        return Ok(result.Value);
     }
 
     [HttpPost("{id:guid}/moves")]
+    [Authorize]
     public async Task<IActionResult> MakeMove(Guid id, [FromBody] MakeMoveRequest request, CancellationToken ct)
     {
-        var game = await gameService.MakeMoveAsync(id, request, ct);
-        return game is null ? NotFound() : Ok(game);
+        var playerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await gameService.MakeMoveAsync(id, request, playerId, ct);
+
+        if (!result.IsSuccess)
+            return result.IsNotFound ? NotFound(result.Error) : BadRequest(result.Error);
+
+        return Ok(result.Value);
     }
 }

@@ -31,3 +31,4 @@ app.MapHub<GameHub>("/hubs/game");
 
 app.Run();
 
+public partial class Program { }

@@ -20,4 +20,17 @@ public class HealthControllerTests(CustomWebApplicationFactory factory)
         var json = JsonDocument.Parse(body);
         Assert.Equal("ok", json.RootElement.GetProperty("status").GetString());
     }
+
+    [Fact]
+    public async Task GetHealthDb_Returns200WithDatabaseOk()
+    {
+        var response = await _client.GetAsync("/api/health/db");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadAsStringAsync();
+        var json = JsonDocument.Parse(body);
+        Assert.Equal("ok", json.RootElement.GetProperty("status").GetString());
+        Assert.Equal("postgres", json.RootElement.GetProperty("database").GetString());
+    }
 }

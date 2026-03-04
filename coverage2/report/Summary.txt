@@ -1,0 +1,58 @@
+Summary
+  Generated on: 3/4/2026 - 8:55:19 AM
+  Coverage date: 3/4/2026 - 8:55:12 AM
+  Parser: Cobertura
+  Assemblies: 1
+  Classes: 36
+  Files: 35
+  Line coverage: 57.7%
+  Covered lines: 639
+  Uncovered lines: 468
+  Coverable lines: 1107
+  Total lines: 1694
+  Branch coverage: 91.2% (239 of 262)
+  Covered branches: 239
+  Total branches: 262
+  Method coverage: 91.1% (145 of 159)
+  Full method coverage: 89.9% (143 of 159)
+  Covered methods: 145
+  Fully covered methods: 143
+  Total methods: 159
+
+api                                            57.7%
+  api.Config.AppSettings                       97.3%
+  api.Config.DBSettings                         100%
+  api.Config.JwtSettings                        100%
+  api.Controllers.AuthController                100%
+  api.Controllers.GamesController               100%
+  api.Controllers.HealthController              100%
+  api.Controllers.PlayersController             100%
+  api.Data.DamasDbContext                       100%
+  api.DTOs.Auth.ConfirmEmailRequest             100%
+  api.DTOs.Auth.LoginRequest                    100%
+  api.DTOs.Auth.LoginResponse                   100%
+  api.DTOs.Auth.RegisterRequest                 100%
+  api.DTOs.Auth.RegisterResponse                100%
+  api.DTOs.Games.GameResponse                   100%
+  api.DTOs.Games.MakeMoveRequest                100%
+  api.DTOs.Players.CreatePlayerRequest            0%
+  api.DTOs.Players.PlayerResponse               100%
+  api.Engine.BoardEngine                        100%
+  api.Engine.BoardStateData                     100%
+  api.Engine.CaptureMove                        100%
+  api.Engine.MoveResult                         100%
+  api.Hubs.GameHub                                0%
+  api.Migrations.DamasDbContextModelSnapshot      0%
+  api.Migrations.InitialCreate                    0%
+  api.Models.Game                              83.3%
+  api.Models.Move                                80%
+  api.Models.Player                             100%
+  api.Models.ServiceResult<T>                   100%
+  api.Services.AuthService                      100%
+  api.Services.BcryptPasswordHasher             100%
+  api.Services.GameCacheService                 100%
+  api.Services.GameService                      100%
+  api.Services.JwtTokenService                  100%
+  api.Services.PlayerService                    100%
+  api.Services.SendGridEmailService               0%
+  Program                                        80%

@@ -1,4 +1,6 @@
-export const BASE_URL = 'http://10.0.2.2:8080';
+import { API_URL } from '@env';
+
+export const BASE_URL = API_URL;
 
 export class ApiError extends Error {
   constructor(

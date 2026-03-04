@@ -6,6 +6,7 @@ public record GameResponse(
     Guid Id,
     Guid? PlayerBlackId,
     Guid? PlayerWhiteId,
+    Guid? WinnerId,
     GameStatus Status,
     string BoardState,
     PieceColor CurrentTurn,

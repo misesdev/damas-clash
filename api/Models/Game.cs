@@ -7,6 +7,7 @@ public class Game
     public Guid Id { get; set; }
     public Guid? PlayerBlackId { get; set; }
     public Guid? PlayerWhiteId { get; set; }
+    public Guid? WinnerId { get; set; }
     public GameStatus Status { get; set; }
     public string BoardState { get; set; } = string.Empty;
     public PieceColor CurrentTurn { get; set; }
