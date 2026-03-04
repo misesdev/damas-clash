@@ -1,45 +1,48 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, {useState} from 'react';
+import {StatusBar} from 'react-native';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {ConfirmEmailScreen} from './src/screens/ConfirmEmailScreen';
+import {LoginScreen} from './src/screens/LoginScreen';
+import {RegisterScreen} from './src/screens/RegisterScreen';
+import type {LoginResponse} from './src/types/auth';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+type Screen = 'login' | 'register' | 'confirmEmail';
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+export default function App() {
+  const [screen, setScreen] = useState<Screen>('login');
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [loggedInUser, setLoggedInUser] = useState<LoginResponse | null>(null);
+
+  if (loggedInUser) {
+    // TODO: substituir pela tela principal do jogo
+    return null;
+  }
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+      {screen === 'login' && (
+        <LoginScreen
+          onLoginSuccess={setLoggedInUser}
+          onNavigateToRegister={() => setScreen('register')}
+        />
+      )}
+      {screen === 'register' && (
+        <RegisterScreen
+          onRegistered={email => {
+            setPendingEmail(email);
+            setScreen('confirmEmail');
+          }}
+          onNavigateToLogin={() => setScreen('login')}
+        />
+      )}
+      {screen === 'confirmEmail' && (
+        <ConfirmEmailScreen
+          email={pendingEmail}
+          onConfirmed={() => setScreen('login')}
+          onNavigateToLogin={() => setScreen('login')}
+        />
+      )}
     </SafeAreaProvider>
   );
 }
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
-
-export default App;

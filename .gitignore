@@ -49,9 +49,14 @@ api/bin/
 api/obj/
 api/.vs/
 api/*.user
+api.tests/bin/
+api.tests/obj/
 
 # ----- Test / Coverage -----
 coverage/
 *.coverage
 *.coveragexml
 TestResults/
+
+AGENTS.md
+
