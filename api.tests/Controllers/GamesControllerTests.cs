@@ -409,17 +409,20 @@ public class GamesControllerTests(CustomWebApplicationFactory factory)
 
     private async Task<(Guid Id, string Token)> CreatePlayer(string suffix)
     {
-        var req = new RegisterRequest($"gm_{suffix}", $"gm_{suffix}@test.com", "Password1");
+        var req = new RegisterRequest($"gm_{suffix}", $"gm_{suffix}@test.com");
         var regResp = await _client.PostAsJsonAsync("/api/auth/register", req);
         regResp.EnsureSuccessStatusCode();
         var body = (await regResp.Content.ReadFromJsonAsync<RegisterResponse>(JsonOpts))!;
 
-        var code = _email.GetCode(req.Email)!;
-        await _client.PostAsJsonAsync("/api/auth/confirm-email", new ConfirmEmailRequest(req.Email, code));
+        var confirmCode = _email.GetCode(req.Email)!;
+        await _client.PostAsJsonAsync("/api/auth/confirm-email", new ConfirmEmailRequest(req.Email, confirmCode));
 
-        var loginResp = await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(req.Email, req.Password));
-        loginResp.EnsureSuccessStatusCode();
-        var loginBody = (await loginResp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts))!;
+        await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(req.Email));
+        var loginCode = _email.GetLoginCode(req.Email)!;
+        var verifyResp = await _client.PostAsJsonAsync("/api/auth/verify-login",
+            new VerifyLoginRequest(req.Email, loginCode));
+        verifyResp.EnsureSuccessStatusCode();
+        var loginBody = (await verifyResp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts))!;
 
         return (body.Id, loginBody.Token);
     }

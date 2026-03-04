@@ -18,7 +18,6 @@ public class DamasDbContext(DbContextOptions<DamasDbContext> options) : DbContex
             e.HasIndex(p => p.Email).IsUnique();
             e.Property(p => p.Username).IsRequired().HasMaxLength(50);
             e.Property(p => p.Email).IsRequired().HasMaxLength(256);
-            e.Property(p => p.PasswordHash).IsRequired();
             e.Property(p => p.IsEmailConfirmed).HasDefaultValue(false);
         });
 

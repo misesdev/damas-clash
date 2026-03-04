@@ -1,5 +1,7 @@
 using api.Config;
+using api.Data;
 using api.Hubs;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +16,13 @@ builder.UseAppSettings();
 builder.UseDBSettings();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
+    if (db.Database.IsRelational())
+        db.Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
 {

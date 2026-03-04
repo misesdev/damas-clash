@@ -8,7 +8,6 @@ namespace api.Services;
 
 public class AuthService(
     DamasDbContext db,
-    IPasswordHasher passwordHasher,
     IEmailService emailService,
     ITokenService tokenService) : IAuthService
 {
@@ -20,17 +19,13 @@ public class AuthService(
         if (await db.Players.AnyAsync(p => p.Username == req.Username, ct))
             return ServiceResult<RegisterResponse>.Fail("username_taken");
 
-        if (!IsPasswordStrong(req.Password))
-            return ServiceResult<RegisterResponse>.Fail("password_weak");
-
-        var code = RandomNumberGenerator.GetInt32(100_000, 1_000_000).ToString("D6");
+        var code = GenerateCode();
 
         var player = new Player
         {
             Id = Guid.NewGuid(),
             Username = req.Username,
             Email = req.Email,
-            PasswordHash = passwordHasher.Hash(req.Password),
             IsEmailConfirmed = false,
             EmailConfirmationCode = code,
             EmailConfirmationCodeExpiry = DateTimeOffset.UtcNow.AddMinutes(15),
@@ -64,25 +59,62 @@ public class AuthService(
         return ServiceResult<string>.Ok("confirmed");
     }
 
-    public async Task<ServiceResult<LoginResponse>> LoginAsync(LoginRequest req, CancellationToken ct = default)
+    public async Task<ServiceResult<SendLoginCodeResponse>> LoginAsync(LoginRequest req, CancellationToken ct = default)
+    {
+        var identifier = req.Identifier.Trim();
+        var player = await db.Players.FirstOrDefaultAsync(
+            p => p.Email == identifier || p.Username == identifier, ct);
+
+        if (player is null)
+            return ServiceResult<SendLoginCodeResponse>.Fail("user_not_found");
+
+        var code = GenerateCode();
+        player.LoginCode = code;
+        player.LoginCodeExpiry = DateTimeOffset.UtcNow.AddMinutes(15);
+
+        await db.SaveChangesAsync(ct);
+        await emailService.SendLoginCodeAsync(player.Email, code, ct);
+
+        return ServiceResult<SendLoginCodeResponse>.Ok(new SendLoginCodeResponse(player.Email));
+    }
+
+    public async Task<ServiceResult<LoginResponse>> VerifyLoginAsync(VerifyLoginRequest req, CancellationToken ct = default)
     {
         var player = await db.Players.FirstOrDefaultAsync(p => p.Email == req.Email, ct);
 
-        if (player is null || !passwordHasher.Verify(req.Password, player.PasswordHash))
-            return ServiceResult<LoginResponse>.Fail("invalid_credentials");
+        if (player is null ||
+            player.LoginCode != req.Code ||
+            player.LoginCodeExpiry < DateTimeOffset.UtcNow)
+            return ServiceResult<LoginResponse>.Fail("invalid_or_expired_code");
 
-        if (!player.IsEmailConfirmed)
-            return ServiceResult<LoginResponse>.Fail("email_not_confirmed");
+        player.LoginCode = null;
+        player.LoginCodeExpiry = null;
+        player.IsEmailConfirmed = true;
+
+        await db.SaveChangesAsync(ct);
 
         var token = tokenService.Generate(player);
-
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(token, player.Id, player.Username, player.Email));
     }
 
-    private static bool IsPasswordStrong(string password) =>
-        password.Length >= 8 &&
-        password.Any(char.IsUpper) &&
-        password.Any(char.IsLower) &&
-        password.Any(char.IsDigit);
+    public async Task<ServiceResult<string>> ResendConfirmationAsync(ResendConfirmationRequest req, CancellationToken ct = default)
+    {
+        var player = await db.Players.FirstOrDefaultAsync(p => p.Email == req.Email, ct);
+
+        if (player is null || player.IsEmailConfirmed)
+            return ServiceResult<string>.Fail("invalid_request");
+
+        var code = GenerateCode();
+        player.EmailConfirmationCode = code;
+        player.EmailConfirmationCodeExpiry = DateTimeOffset.UtcNow.AddMinutes(15);
+
+        await db.SaveChangesAsync(ct);
+        await emailService.SendConfirmationEmailAsync(player.Email, code, ct);
+
+        return ServiceResult<string>.Ok("sent");
+    }
+
+    private static string GenerateCode() =>
+        RandomNumberGenerator.GetInt32(100_000, 1_000_000).ToString("D6");
 }

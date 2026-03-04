@@ -16,7 +16,6 @@ public static class AppSettings
 
         builder.Services.AddScoped<IPlayerService, PlayerService>();
         builder.Services.AddScoped<IGameService, GameService>();
-        builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         builder.Services.AddScoped<IEmailService, SendGridEmailService>();
         builder.Services.AddScoped<ITokenService, JwtTokenService>();
         builder.Services.AddScoped<IAuthService, AuthService>();

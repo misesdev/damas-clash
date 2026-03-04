@@ -36,19 +36,37 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok();
     }
 
+    // Step 1: sends a login code to the player's email
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
         var result = await authService.LoginAsync(request, ct);
 
         if (!result.IsSuccess)
-        {
-            return result.Error switch
-            {
-                "email_not_confirmed" => StatusCode(403, new { error = result.Error }),
-                _ => Unauthorized(new { error = result.Error })
-            };
-        }
+            return NotFound(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
+    [HttpPost("resend-confirmation")]
+    public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationRequest request, CancellationToken ct)
+    {
+        var result = await authService.ResendConfirmationAsync(request, ct);
+
+        if (!result.IsSuccess)
+            return BadRequest(new { error = result.Error });
+
+        return Ok();
+    }
+
+    // Step 2: verifies the login code and returns a JWT
+    [HttpPost("verify-login")]
+    public async Task<IActionResult> VerifyLogin([FromBody] VerifyLoginRequest request, CancellationToken ct)
+    {
+        var result = await authService.VerifyLoginAsync(request, ct);
+
+        if (!result.IsSuccess)
+            return BadRequest(new { error = result.Error });
 
         return Ok(result.Value);
     }

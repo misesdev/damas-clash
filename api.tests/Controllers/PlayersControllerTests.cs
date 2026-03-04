@@ -29,7 +29,7 @@ public class PlayersControllerTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task Register_Returns201WithPlayer()
     {
-        var req = new RegisterRequest("reg_test201", "reg_test201@test.com", "Password1");
+        var req = new RegisterRequest("reg_test201", "reg_test201@test.com");
 
         var response = await _client.PostAsJsonAsync("/api/auth/register", req);
 
@@ -63,7 +63,7 @@ public class PlayersControllerTests(CustomWebApplicationFactory factory)
 
     private async Task<Guid> RegisterAndConfirm(string suffix)
     {
-        var req = new RegisterRequest($"usr_{suffix}", $"{suffix}@test.com", "Password1");
+        var req = new RegisterRequest($"usr_{suffix}", $"{suffix}@test.com");
         var regResp = await _client.PostAsJsonAsync("/api/auth/register", req);
         regResp.EnsureSuccessStatusCode();
         var body = (await regResp.Content.ReadFromJsonAsync<RegisterResponse>(JsonOpts))!;

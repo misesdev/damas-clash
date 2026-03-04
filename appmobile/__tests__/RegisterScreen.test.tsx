@@ -19,7 +19,6 @@ const defaultProps = {
 const VALID = {
   username: 'testuser',
   email: 'test@test.com',
-  password: 'Password1',
 };
 
 function fillForm(
@@ -28,7 +27,6 @@ function fillForm(
 ) {
   fireEvent.changeText(getByTestId('username-input'), data.username);
   fireEvent.changeText(getByTestId('email-input'), data.email);
-  fireEvent.changeText(getByTestId('password-input'), data.password);
 }
 
 beforeEach(() => {
@@ -40,7 +38,6 @@ describe('RegisterScreen', () => {
     const {getByTestId} = render(<RegisterScreen {...defaultProps} />);
     expect(getByTestId('username-input')).toBeTruthy();
     expect(getByTestId('email-input')).toBeTruthy();
-    expect(getByTestId('password-input')).toBeTruthy();
     expect(getByTestId('register-button')).toBeTruthy();
   });
 
@@ -77,26 +74,6 @@ describe('RegisterScreen', () => {
     fireEvent.press(getByTestId('register-button'));
     await waitFor(() => {
       expect(getByText('E-mail inválido.')).toBeTruthy();
-    });
-  });
-
-  it('shows password error when too short', async () => {
-    const {getByTestId, getByText} = render(<RegisterScreen {...defaultProps} />);
-    fillForm(getByTestId, {...VALID, password: 'short'});
-    fireEvent.press(getByTestId('register-button'));
-    await waitFor(() => {
-      expect(getByText('Mínimo 8 caracteres.')).toBeTruthy();
-    });
-  });
-
-  it('shows password error when no uppercase/lowercase/digit', async () => {
-    const {getByTestId, getByText} = render(<RegisterScreen {...defaultProps} />);
-    fillForm(getByTestId, {...VALID, password: 'alllowercase'});
-    fireEvent.press(getByTestId('register-button'));
-    await waitFor(() => {
-      expect(
-        getByText('Precisa ter maiúsculas, minúsculas e número.'),
-      ).toBeTruthy();
     });
   });
 

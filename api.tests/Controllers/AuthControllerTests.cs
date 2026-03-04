@@ -17,9 +17,10 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
 
     private static RegisterRequest ValidRegister(string suffix = "") => new(
         Username: $"user{suffix}",
-        Email: $"user{suffix}@test.com",
-        Password: "Password1"
+        Email: $"user{suffix}@test.com"
     );
+
+    // ── Register ──────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Register_ValidRequest_Returns201()
@@ -40,7 +41,7 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
         await _client.PostAsJsonAsync("/api/auth/register", ValidRegister("_dupemail"));
 
         var response = await _client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest("other_dupemail", "user_dupemail@test.com", "Password1"));
+            new RegisterRequest("other_dupemail", "user_dupemail@test.com"));
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
@@ -51,20 +52,12 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
         await _client.PostAsJsonAsync("/api/auth/register", ValidRegister("_dupuser"));
 
         var response = await _client.PostAsJsonAsync("/api/auth/register",
-            new RegisterRequest("user_dupuser", "other_dupuser@test.com", "Password1"));
+            new RegisterRequest("user_dupuser", "other_dupuser@test.com"));
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
-    [Fact]
-    public async Task Register_WeakPassword_Returns400()
-    {
-        var request = new RegisterRequest("weakpwuser", "weakpw@test.com", "weakpassword");
-
-        var response = await _client.PostAsJsonAsync("/api/auth/register", request);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
+    // ── Confirm Email ─────────────────────────────────────────────────────────
 
     [Fact]
     public async Task ConfirmEmail_ValidCode_Returns200()
@@ -99,7 +92,6 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
         var req = ValidRegister("_conf3");
         await _client.PostAsJsonAsync("/api/auth/register", req);
 
-        // Manually expire the code in the DB
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<api.Data.DamasDbContext>();
         var player = db.Players.First(p => p.Email == req.Email);
@@ -113,30 +105,105 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    // ── Resend Confirmation ───────────────────────────────────────────────────
+
     [Fact]
-    public async Task Login_BeforeConfirmation_Returns403()
+    public async Task ResendConfirmation_UnconfirmedPlayer_Returns200AndSendsCode()
     {
-        var req = ValidRegister("_login403");
+        var req = ValidRegister("_resend");
         await _client.PostAsJsonAsync("/api/auth/register", req);
 
-        var response = await _client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest(req.Email, req.Password));
+        var response = await _client.PostAsJsonAsync("/api/auth/resend-confirmation",
+            new { email = req.Email });
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(_email.GetCode(req.Email));
     }
 
     [Fact]
-    public async Task Login_ValidCredentials_Returns200WithToken()
+    public async Task ResendConfirmation_AlreadyConfirmed_Returns400()
     {
-        var req = ValidRegister("_login200");
+        var req = ValidRegister("_resendConfirmed");
+        await _client.PostAsJsonAsync("/api/auth/register", req);
+        await _client.PostAsJsonAsync("/api/auth/confirm-email",
+            new ConfirmEmailRequest(req.Email, _email.GetCode(req.Email)!));
+
+        var response = await _client.PostAsJsonAsync("/api/auth/resend-confirmation",
+            new { email = req.Email });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    // ── Login (send code) ─────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Login_BeforeEmailConfirmation_Returns200()
+    {
+        var req = ValidRegister("_loginUnconfirmed");
         await _client.PostAsJsonAsync("/api/auth/register", req);
 
-        var code = _email.GetCode(req.Email)!;
+        var response = await _client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest(req.Email));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_UnknownIdentifier_Returns404()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest("nobody@test.com"));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_ByEmail_SendsCodeAndReturnsEmail()
+    {
+        var req = ValidRegister("_loginEmail");
+        await _client.PostAsJsonAsync("/api/auth/register", req);
         await _client.PostAsJsonAsync("/api/auth/confirm-email",
-            new ConfirmEmailRequest(req.Email, code));
+            new ConfirmEmailRequest(req.Email, _email.GetCode(req.Email)!));
 
         var response = await _client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest(req.Email, req.Password));
+            new LoginRequest(req.Email));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<SendLoginCodeResponse>(JsonOpts);
+        Assert.Equal(req.Email, body!.Email);
+        Assert.NotNull(_email.GetLoginCode(req.Email));
+    }
+
+    [Fact]
+    public async Task Login_ByUsername_SendsCodeAndReturnsEmail()
+    {
+        var req = ValidRegister("_loginUser");
+        await _client.PostAsJsonAsync("/api/auth/register", req);
+        await _client.PostAsJsonAsync("/api/auth/confirm-email",
+            new ConfirmEmailRequest(req.Email, _email.GetCode(req.Email)!));
+
+        var response = await _client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest(req.Username));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<SendLoginCodeResponse>(JsonOpts);
+        Assert.Equal(req.Email, body!.Email);
+    }
+
+    // ── Verify Login ──────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task VerifyLogin_ValidCode_Returns200WithToken()
+    {
+        var req = ValidRegister("_verify200");
+        await _client.PostAsJsonAsync("/api/auth/register", req);
+        await _client.PostAsJsonAsync("/api/auth/confirm-email",
+            new ConfirmEmailRequest(req.Email, _email.GetCode(req.Email)!));
+        await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(req.Email));
+
+        var loginCode = _email.GetLoginCode(req.Email)!;
+        var response = await _client.PostAsJsonAsync("/api/auth/verify-login",
+            new VerifyLoginRequest(req.Email, loginCode));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts);
@@ -146,27 +213,39 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
     }
 
     [Fact]
-    public async Task Login_WrongPassword_Returns401()
+    public async Task VerifyLogin_WrongCode_Returns400()
     {
-        var req = ValidRegister("_login401");
+        var req = ValidRegister("_verify400");
         await _client.PostAsJsonAsync("/api/auth/register", req);
-
-        var code = _email.GetCode(req.Email)!;
         await _client.PostAsJsonAsync("/api/auth/confirm-email",
-            new ConfirmEmailRequest(req.Email, code));
+            new ConfirmEmailRequest(req.Email, _email.GetCode(req.Email)!));
+        await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(req.Email));
 
-        var response = await _client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest(req.Email, "WrongPass1"));
+        var response = await _client.PostAsJsonAsync("/api/auth/verify-login",
+            new VerifyLoginRequest(req.Email, "000000"));
 
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public async Task Login_UnknownEmail_Returns401()
+    public async Task VerifyLogin_ExpiredCode_Returns400()
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/login",
-            new LoginRequest("nobody@test.com", "Password1"));
+        var req = ValidRegister("_verifyExp");
+        await _client.PostAsJsonAsync("/api/auth/register", req);
+        await _client.PostAsJsonAsync("/api/auth/confirm-email",
+            new ConfirmEmailRequest(req.Email, _email.GetCode(req.Email)!));
+        await _client.PostAsJsonAsync("/api/auth/login", new LoginRequest(req.Email));
 
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<api.Data.DamasDbContext>();
+        var player = db.Players.First(p => p.Email == req.Email);
+        player.LoginCodeExpiry = DateTimeOffset.UtcNow.AddMinutes(-1);
+        await db.SaveChangesAsync();
+
+        var loginCode = _email.GetLoginCode(req.Email)!;
+        var response = await _client.PostAsJsonAsync("/api/auth/verify-login",
+            new VerifyLoginRequest(req.Email, loginCode));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 }

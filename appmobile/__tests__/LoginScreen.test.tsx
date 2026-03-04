@@ -10,7 +10,7 @@ import * as authApi from '../src/api/auth';
 const mockLogin = authApi.login as jest.MockedFunction<typeof authApi.login>;
 
 const defaultProps = {
-  onLoginSuccess: jest.fn(),
+  onCodeSent: jest.fn(),
   onNavigateToRegister: jest.fn(),
 };
 
@@ -19,10 +19,9 @@ beforeEach(() => {
 });
 
 describe('LoginScreen', () => {
-  it('renders email and password inputs', () => {
+  it('renders identifier input', () => {
     const {getByTestId} = render(<LoginScreen {...defaultProps} />);
-    expect(getByTestId('email-input')).toBeTruthy();
-    expect(getByTestId('password-input')).toBeTruthy();
+    expect(getByTestId('identifier-input')).toBeTruthy();
   });
 
   it('renders login button', () => {
@@ -44,39 +43,28 @@ describe('LoginScreen', () => {
     expect(onNavigateToRegister).toHaveBeenCalledTimes(1);
   });
 
-  it('calls login API with form data and triggers onLoginSuccess', async () => {
-    const loginData = {
-      token: 'jwt',
-      playerId: 'id-1',
-      username: 'user',
-      email: 'user@test.com',
-    };
-    mockLogin.mockResolvedValueOnce(loginData);
-    const onLoginSuccess = jest.fn();
+  it('calls login API with identifier and triggers onCodeSent', async () => {
+    mockLogin.mockResolvedValueOnce({email: 'user@test.com'});
+    const onCodeSent = jest.fn();
 
     const {getByTestId} = render(
-      <LoginScreen {...defaultProps} onLoginSuccess={onLoginSuccess} />,
+      <LoginScreen {...defaultProps} onCodeSent={onCodeSent} />,
     );
 
-    fireEvent.changeText(getByTestId('email-input'), 'user@test.com');
-    fireEvent.changeText(getByTestId('password-input'), 'Password1');
+    fireEvent.changeText(getByTestId('identifier-input'), 'user@test.com');
     fireEvent.press(getByTestId('login-button'));
 
     await waitFor(() => {
-      expect(mockLogin).toHaveBeenCalledWith({
-        email: 'user@test.com',
-        password: 'Password1',
-      });
-      expect(onLoginSuccess).toHaveBeenCalledWith(loginData);
+      expect(mockLogin).toHaveBeenCalledWith({identifier: 'user@test.com'});
+      expect(onCodeSent).toHaveBeenCalledWith('user@test.com');
     });
   });
 
-  it('shows error message on invalid credentials (401)', async () => {
-    mockLogin.mockRejectedValueOnce(new ApiError(401, 'invalid_credentials'));
+  it('shows error message on user not found (404)', async () => {
+    mockLogin.mockRejectedValueOnce(new ApiError(404, 'user_not_found'));
 
     const {getByTestId} = render(<LoginScreen {...defaultProps} />);
-    fireEvent.changeText(getByTestId('email-input'), 'user@test.com');
-    fireEvent.changeText(getByTestId('password-input'), 'WrongPass1');
+    fireEvent.changeText(getByTestId('identifier-input'), 'nobody');
     fireEvent.press(getByTestId('login-button'));
 
     await waitFor(() => {
@@ -88,8 +76,7 @@ describe('LoginScreen', () => {
     mockLogin.mockRejectedValueOnce(new ApiError(403, 'email_not_confirmed'));
 
     const {getByTestId, getByText} = render(<LoginScreen {...defaultProps} />);
-    fireEvent.changeText(getByTestId('email-input'), 'user@test.com');
-    fireEvent.changeText(getByTestId('password-input'), 'Password1');
+    fireEvent.changeText(getByTestId('identifier-input'), 'user@test.com');
     fireEvent.press(getByTestId('login-button'));
 
     await waitFor(() => {
@@ -101,8 +88,7 @@ describe('LoginScreen', () => {
     mockLogin.mockRejectedValueOnce(new Error('Network Error'));
 
     const {getByTestId, getByText} = render(<LoginScreen {...defaultProps} />);
-    fireEvent.changeText(getByTestId('email-input'), 'user@test.com');
-    fireEvent.changeText(getByTestId('password-input'), 'Password1');
+    fireEvent.changeText(getByTestId('identifier-input'), 'user@test.com');
     fireEvent.press(getByTestId('login-button'));
 
     await waitFor(() => {
