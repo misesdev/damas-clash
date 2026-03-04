@@ -1,4 +1,3 @@
-using api.DTOs.Games;
 using Microsoft.AspNetCore.SignalR;
 
 namespace api.Hubs;
