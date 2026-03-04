@@ -1,0 +1,8 @@
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: damas-api
+    ports:
+      - "8080:8080"
