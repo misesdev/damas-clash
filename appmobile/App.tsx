@@ -5,6 +5,7 @@ import {ActivityIndicator, Alert, StatusBar, StyleSheet, View} from 'react-nativ
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {login, resendConfirmation, verifyLogin} from './src/api/auth';
 import {BASE_URL} from './src/api/client';
+import {createGame} from './src/api/games';
 import {BottomTabBar} from './src/components/BottomTabBar';
 import type {TabName} from './src/components/BottomTabBar';
 import {CheckersBoardScreen} from './src/screens/CheckersBoardScreen';
@@ -33,6 +34,7 @@ export default function App() {
   const [selectedGame, setSelectedGame] = useState<GameResponse | null>(null);
   const [pendingGameId, setPendingGameId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creatingGame, setCreatingGame] = useState(false);
 
   // Keep a ref to authScreen to avoid stale closures in SignalR handlers
   const authScreenRef = useRef<AuthScreen>('tabs');
@@ -118,6 +120,21 @@ export default function App() {
     setPendingGameId(null);
   };
 
+  const handleNewGame = async () => {
+    if (!session || creatingGame) {return;}
+    setCreatingGame(true);
+    try {
+      const game = await createGame(session.token);
+      setSelectedGame(game);
+      setPendingGameId(game.id);
+      setAuthScreen('waitingRoom');
+    } catch {
+      // silently ignore — HomeScreen will show its own error if needed
+    } finally {
+      setCreatingGame(false);
+    }
+  };
+
   const updateSession = (updates: Partial<LoginResponse>) => {
     if (!session) {return;}
     const updated = {...session, ...updates};
@@ -141,10 +158,17 @@ export default function App() {
           <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
           <WaitingRoomScreen
             game={selectedGame}
-            onCancel={() => {
+            onBack={() => {
               setAuthScreen('tabs');
               setTab('home');
-              // Keep pendingGameId so notification fires if opponent joins later
+              // Keep pendingGameId — notification fires if opponent joins later
+            }}
+            onCancelGame={async () => {
+              await cancelGame(session.token, selectedGame.id);
+              setPendingGameId(null);
+              setSelectedGame(null);
+              setAuthScreen('tabs');
+              setTab('home');
             }}
           />
         </SafeAreaProvider>
@@ -214,14 +238,10 @@ export default function App() {
             {tab === 'home' ? (
               <HomeScreen
                 user={session}
+                pendingGame={pendingGameId ? selectedGame : null}
                 onGameSelect={game => {
                   setSelectedGame(game);
                   setAuthScreen('checkersBoard');
-                }}
-                onNewGame={game => {
-                  setSelectedGame(game);
-                  setPendingGameId(game.id);
-                  setAuthScreen('waitingRoom');
                 }}
                 onGameCancelled={gameId => {
                   if (pendingGameId === gameId) {setPendingGameId(null);}
@@ -237,7 +257,12 @@ export default function App() {
               />
             )}
           </View>
-          <BottomTabBar active={tab} onPress={setTab} />
+          <BottomTabBar
+            active={tab}
+            onPress={setTab}
+            onNewGame={handleNewGame}
+            creating={creatingGame}
+          />
         </View>
       </SafeAreaProvider>
     );

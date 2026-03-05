@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {cancelGame, createGame, joinGame, listGames} from '../api/games';
+import {cancelGame, joinGame, listGames} from '../api/games';
 import {GameCard} from '../components/GameCard';
 import {colors} from '../theme/colors';
 import type {LoginResponse} from '../types/auth';
@@ -18,8 +18,8 @@ import type {GameResponse, GameStatus} from '../types/game';
 
 interface Props {
   user: LoginResponse;
+  pendingGame?: GameResponse | null;
   onGameSelect: (game: GameResponse) => void;
-  onNewGame: (game: GameResponse) => void;
   onGameCancelled?: (gameId: string) => void;
 }
 
@@ -37,11 +37,10 @@ const EMPTY_MESSAGES: Record<FilterTab, string> = {
   Completed: 'Nenhuma partida finalizada.',
 };
 
-export function HomeScreen({user, onGameSelect, onNewGame, onGameCancelled}: Props) {
+export function HomeScreen({user, pendingGame, onGameSelect, onGameCancelled}: Props) {
   const [games, setGames] = useState<GameResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -65,18 +64,6 @@ export function HomeScreen({user, onGameSelect, onNewGame, onGameCancelled}: Pro
     setRefreshing(true);
     await fetchGames();
     setRefreshing(false);
-  };
-
-  const handleNewGame = async () => {
-    setCreating(true);
-    setError('');
-    try {
-      const game = await createGame(user.token);
-      onNewGame(game);
-    } catch {
-      setError('Não foi possível criar a partida.');
-      setCreating(false);
-    }
   };
 
   const handleGamePress = async (game: GameResponse) => {
@@ -124,27 +111,21 @@ export function HomeScreen({user, onGameSelect, onNewGame, onGameCancelled}: Pro
     );
   };
 
-  const filtered = games.filter(g => g.status === activeTab);
+  const filteredFromServer = games.filter(g => g.status === activeTab);
+  const filtered =
+    pendingGame &&
+    pendingGame.status === activeTab &&
+    !filteredFromServer.some(g => g.id === pendingGame.id)
+      ? [pendingGame, ...filteredFromServer]
+      : filteredFromServer;
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Olá,</Text>
-          <Text style={styles.username}>{user.username}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.newGameBtn}
-          onPress={handleNewGame}
-          disabled={creating}
-          testID="new-game-button">
-          {creating ? (
-            <ActivityIndicator color={colors.primaryText} size="small" />
-          ) : (
-            <Text style={styles.newGameText}>+ Nova partida</Text>
-          )}
-        </TouchableOpacity>
+        <Text style={styles.greeting}>Olá, {' '}
+            <Text style={styles.username}>{user.username}</Text>
+        </Text>
       </View>
 
       {/* Filter tabs */}
@@ -202,24 +183,12 @@ export function HomeScreen({user, onGameSelect, onNewGame, onGameCancelled}: Pro
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.bg},
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 50,
     paddingBottom: 16,
   },
   greeting: {color: colors.textSecondary, fontSize: 13},
   username: {color: colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.3},
-  newGameBtn: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    minWidth: 48,
-    alignItems: 'center',
-  },
-  newGameText: {color: colors.primaryText, fontWeight: '600', fontSize: 14},
 
   tabs: {
     flexDirection: 'row',

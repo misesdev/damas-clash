@@ -1,5 +1,6 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
+  ActivityIndicator,
   Animated,
   SafeAreaView,
   StyleSheet,
@@ -7,15 +8,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {ScreenHeader} from '../components/ScreenHeader';
 import {colors} from '../theme/colors';
 import type {GameResponse} from '../types/game';
 
 interface Props {
   game: GameResponse;
-  onCancel: () => void;
+  onBack: () => void;
+  onCancelGame: () => Promise<void>;
 }
 
-export function WaitingRoomScreen({game, onCancel}: Props) {
+export function WaitingRoomScreen({game, onBack, onCancelGame}: Props) {
+  const [cancelling, setCancelling] = useState(false);
   const pulse = useRef(new Animated.Value(1)).current;
   const opacity = useRef(new Animated.Value(0.4)).current;
 
@@ -52,8 +56,18 @@ export function WaitingRoomScreen({game, onCancel}: Props) {
 
   const shortCode = game.id.slice(0, 8).toUpperCase();
 
+  const handleCancelGame = async () => {
+    setCancelling(true);
+    try {
+      await onCancelGame();
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      <ScreenHeader title="Aguardando oponente" onBack={onBack} />
       <View style={styles.content}>
         {/* Pulsing ring */}
         <View style={styles.ringWrapper}>
@@ -77,7 +91,6 @@ export function WaitingRoomScreen({game, onCancel}: Props) {
           </View>
         </View>
 
-        <Text style={styles.title}>Aguardando oponente</Text>
         <Text style={styles.subtitle}>
           Sua partida está pronta. Aguardando outro jogador entrar...
         </Text>
@@ -94,10 +107,15 @@ export function WaitingRoomScreen({game, onCancel}: Props) {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={styles.cancelBtn}
-          onPress={onCancel}
+          style={[styles.cancelBtn, cancelling && styles.cancelBtnDisabled]}
+          onPress={handleCancelGame}
+          disabled={cancelling}
           testID="waiting-room-cancel">
-          <Text style={styles.cancelText}>Cancelar</Text>
+          {cancelling ? (
+            <ActivityIndicator color={colors.error} size="small" />
+          ) : (
+            <Text style={styles.cancelText}>Cancelar partida</Text>
+          )}
         </TouchableOpacity>
         <Text style={styles.footerHint}>
           Você será notificado quando alguém entrar na partida
@@ -206,12 +224,15 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.error,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 40,
+    minWidth: 180,
+    alignItems: 'center',
   },
-  cancelText: {color: colors.textSecondary, fontSize: 15, fontWeight: '500'},
+  cancelBtnDisabled: {opacity: 0.5},
+  cancelText: {color: colors.error, fontSize: 15, fontWeight: '600'},
   footerHint: {
     color: colors.textMuted,
     fontSize: 12,
