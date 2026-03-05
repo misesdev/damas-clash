@@ -10,7 +10,11 @@ interface Props {
 export function ScreenHeader({title, onBack}: Props) {
   return (
     <View style={styles.header}>
-      <TouchableOpacity onPress={onBack} style={styles.backBtn} hitSlop={styles.hitSlop}>
+      <TouchableOpacity
+        onPress={onBack}
+        style={styles.backBtn}
+        hitSlop={styles.hitSlop}
+        testID="screen-header-back">
         <View style={styles.arrow}>
           <View style={styles.arrowTop} />
           <View style={styles.arrowBottom} />
@@ -30,7 +34,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
@@ -51,14 +55,14 @@ const styles = StyleSheet.create({
     height: ARROW_THICKNESS,
     backgroundColor: colors.text,
     borderRadius: ARROW_THICKNESS,
-    transform: [{rotate: '-45deg'}, {translateY: ARROW_SIZE / 2 - 1}],
+    transform: [{rotate: '45deg'}, {translateY: ARROW_SIZE / 2 - 1}],
   },
   arrowBottom: {
     width: ARROW_SIZE,
     height: ARROW_THICKNESS,
     backgroundColor: colors.text,
     borderRadius: ARROW_THICKNESS,
-    transform: [{rotate: '45deg'}, {translateY: -(ARROW_SIZE / 2 - 1)}],
+    transform: [{rotate: '-45deg'}, {translateY: -(ARROW_SIZE / 2 - 1)}],
   },
   title: {
     flex: 1,

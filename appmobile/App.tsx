@@ -5,7 +5,7 @@ import {ActivityIndicator, Alert, StatusBar, StyleSheet, View} from 'react-nativ
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {login, resendConfirmation, verifyLogin} from './src/api/auth';
 import {BASE_URL} from './src/api/client';
-import {createGame} from './src/api/games';
+import {cancelGame, createGame} from './src/api/games';
 import {BottomTabBar} from './src/components/BottomTabBar';
 import type {TabName} from './src/components/BottomTabBar';
 import {CheckersBoardScreen} from './src/screens/CheckersBoardScreen';
@@ -165,10 +165,10 @@ export default function App() {
             }}
             onCancelGame={async () => {
               await cancelGame(session.token, selectedGame.id);
-              setPendingGameId(null);
               setSelectedGame(null);
               setAuthScreen('tabs');
               setTab('home');
+              // Keep pendingGameId — if opponent joins before cancel propagates, show alert
             }}
           />
         </SafeAreaProvider>
