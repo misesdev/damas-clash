@@ -19,6 +19,7 @@ public static class AppSettings
         builder.Services.AddScoped<IEmailService, SendGridEmailService>();
         builder.Services.AddScoped<ITokenService, JwtTokenService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
         // In Development, load .env from the solution root (one level above api/)
         if (builder.Environment.IsDevelopment())
@@ -47,6 +48,18 @@ public static class AppSettings
         var sendGridKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
         if (!string.IsNullOrEmpty(sendGridKey))
             builder.Configuration["SendGrid:ApiKey"] = sendGridKey;
+
+        var cloudinaryCloudName = Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME");
+        if (!string.IsNullOrEmpty(cloudinaryCloudName))
+            builder.Configuration["Cloudinary:CloudName"] = cloudinaryCloudName;
+
+        var cloudinaryApiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY");
+        if (!string.IsNullOrEmpty(cloudinaryApiKey))
+            builder.Configuration["Cloudinary:ApiKey"] = cloudinaryApiKey;
+
+        var cloudinaryApiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET");
+        if (!string.IsNullOrEmpty(cloudinaryApiSecret))
+            builder.Configuration["Cloudinary:ApiSecret"] = cloudinaryApiSecret;
 
         builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

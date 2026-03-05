@@ -95,7 +95,7 @@ public class AuthService(
 
         var token = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
-            new LoginResponse(token, player.Id, player.Username, player.Email));
+            new LoginResponse(token, player.Id, player.Username, player.Email, player.AvatarUrl));
     }
 
     public async Task<ServiceResult<string>> ResendConfirmationAsync(ResendConfirmationRequest req, CancellationToken ct = default)
@@ -113,6 +113,46 @@ public class AuthService(
         await emailService.SendConfirmationEmailAsync(player.Email, code, ct);
 
         return ServiceResult<string>.Ok("sent");
+    }
+
+    public async Task<ServiceResult<string>> RequestEmailChangeAsync(Guid playerId, string newEmail, CancellationToken ct = default)
+    {
+        if (await db.Players.AnyAsync(p => p.Email == newEmail, ct))
+            return ServiceResult<string>.Fail("email_taken");
+
+        var player = await db.Players.FindAsync([playerId], ct);
+        if (player is null)
+            return ServiceResult<string>.NotFound("player_not_found");
+
+        var code = GenerateCode();
+        player.PendingEmail = newEmail;
+        player.EmailChangeCode = code;
+        player.EmailChangeCodeExpiry = DateTimeOffset.UtcNow.AddMinutes(15);
+
+        await db.SaveChangesAsync(ct);
+        await emailService.SendEmailChangeCodeAsync(newEmail, code, ct);
+
+        return ServiceResult<string>.Ok("sent");
+    }
+
+    public async Task<ServiceResult<string>> ConfirmEmailChangeAsync(Guid playerId, string newEmail, string code, CancellationToken ct = default)
+    {
+        var player = await db.Players.FindAsync([playerId], ct);
+
+        if (player is null ||
+            player.PendingEmail != newEmail ||
+            player.EmailChangeCode != code ||
+            player.EmailChangeCodeExpiry < DateTimeOffset.UtcNow)
+            return ServiceResult<string>.Fail("invalid_or_expired_code");
+
+        player.Email = newEmail;
+        player.PendingEmail = null;
+        player.EmailChangeCode = null;
+        player.EmailChangeCodeExpiry = null;
+
+        await db.SaveChangesAsync(ct);
+
+        return ServiceResult<string>.Ok("changed");
     }
 
     private static string GenerateCode() =>

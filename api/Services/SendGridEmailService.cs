@@ -17,6 +17,12 @@ public class SendGridEmailService(IConfiguration config) : IEmailService
             $"<p>Seu código de acesso é: <strong>{code}</strong></p>",
             ct);
 
+    public Task SendEmailChangeCodeAsync(string to, string code, CancellationToken ct = default) =>
+        Send(to, "Confirme sua alteração de e-mail",
+            $"Seu código de confirmação de alteração de e-mail é: {code}",
+            $"<p>Seu código de confirmação de alteração de e-mail é: <strong>{code}</strong></p>",
+            ct);
+
     private async Task Send(string to, string subject, string text, string html, CancellationToken ct)
     {
         var apiKey = config["SendGrid:ApiKey"] ?? throw new InvalidOperationException("SendGrid:ApiKey not configured.");

@@ -1,5 +1,6 @@
 using api.DTOs.Auth;
 using api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers;
@@ -69,5 +70,48 @@ public class AuthController(IAuthService authService) : ControllerBase
             return BadRequest(new { error = result.Error });
 
         return Ok(result.Value);
+    }
+
+    [Authorize]
+    [HttpPost("request-email-change")]
+    public async Task<IActionResult> RequestEmailChange([FromBody] RequestEmailChangeRequest request, CancellationToken ct)
+    {
+        var playerId = GetCallerId();
+        if (playerId is null) return Forbid();
+
+        var result = await authService.RequestEmailChangeAsync(playerId.Value, request.NewEmail.Trim(), ct);
+
+        if (!result.IsSuccess)
+        {
+            if (result.IsNotFound) return NotFound();
+            return result.Error switch
+            {
+                "email_taken" => Conflict(new { error = result.Error }),
+                _ => BadRequest(new { error = result.Error })
+            };
+        }
+
+        return Ok();
+    }
+
+    [Authorize]
+    [HttpPost("confirm-email-change")]
+    public async Task<IActionResult> ConfirmEmailChange([FromBody] ConfirmEmailChangeRequest request, CancellationToken ct)
+    {
+        var playerId = GetCallerId();
+        if (playerId is null) return Forbid();
+
+        var result = await authService.ConfirmEmailChangeAsync(playerId.Value, request.NewEmail.Trim(), request.Code, ct);
+
+        if (!result.IsSuccess)
+            return BadRequest(new { error = result.Error });
+
+        return Ok();
+    }
+
+    private Guid? GetCallerId()
+    {
+        var value = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        return Guid.TryParse(value, out var id) ? id : null;
     }
 }

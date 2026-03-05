@@ -30,12 +30,18 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         await db.SaveChangesAsync(ct);
         await cache.SetBoardStateAsync(game.Id, initialState, ct);
 
+        // Load player navigation property for username
+        await db.Entry(game).Reference(g => g.PlayerBlack).LoadAsync(ct);
+
         return ServiceResult<GameResponse>.Ok(ToResponse(game));
     }
 
     public async Task<ServiceResult<GameResponse>> JoinAsync(Guid gameId, Guid playerId, CancellationToken ct = default)
     {
-        var game = await db.Games.FindAsync([gameId], ct);
+        var game = await db.Games
+            .Include(g => g.PlayerBlack)
+            .Include(g => g.PlayerWhite)
+            .FirstOrDefaultAsync(g => g.Id == gameId, ct);
 
         if (game is null)
             return ServiceResult<GameResponse>.NotFound("Game not found");
@@ -52,16 +58,23 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
 
         await db.SaveChangesAsync(ct);
 
-        await hub.Clients.Group(gameId.ToString())
-            .SendAsync("GameStarted", ToResponse(game), ct);
+        // Reload white player navigation property after assignment
+        await db.Entry(game).Reference(g => g.PlayerWhite).LoadAsync(ct);
 
-        return ServiceResult<GameResponse>.Ok(ToResponse(game));
+        var response = ToResponse(game);
+        await hub.Clients.Group(gameId.ToString())
+            .SendAsync("GameStarted", response, ct);
+
+        return ServiceResult<GameResponse>.Ok(response);
     }
 
     public async Task<ServiceResult<GameResponse>> MakeMoveAsync(
         Guid gameId, MakeMoveRequest request, Guid playerId, CancellationToken ct = default)
     {
-        var game = await db.Games.FindAsync([gameId], ct);
+        var game = await db.Games
+            .Include(g => g.PlayerBlack)
+            .Include(g => g.PlayerWhite)
+            .FirstOrDefaultAsync(g => g.Id == gameId, ct);
 
         if (game is null)
             return ServiceResult<GameResponse>.NotFound("Game not found");
@@ -129,23 +142,27 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
 
     public async Task<GameResponse?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var game = await db.Games.FindAsync([id], ct);
+        var game = await db.Games
+            .Include(g => g.PlayerBlack)
+            .Include(g => g.PlayerWhite)
+            .FirstOrDefaultAsync(g => g.Id == id, ct);
         return game is null ? null : ToResponse(game);
     }
 
     public async Task<IEnumerable<GameResponse>> GetActiveAsync(CancellationToken ct = default)
     {
-        return await db.Games
+        var games = await db.Games
             .Where(g => g.Status == GameStatus.WaitingForPlayers || g.Status == GameStatus.InProgress)
-            .Select(g => new GameResponse(
-                g.Id, g.PlayerBlackId, g.PlayerWhiteId, g.WinnerId,
-                g.Status, g.BoardState, g.CurrentTurn,
-                g.CreatedAt, g.UpdatedAt))
+            .Include(g => g.PlayerBlack)
+            .Include(g => g.PlayerWhite)
             .ToListAsync(ct);
+        return games.Select(ToResponse);
     }
 
     private static GameResponse ToResponse(Game g) =>
-        new(g.Id, g.PlayerBlackId, g.PlayerWhiteId, g.WinnerId,
-            g.Status, g.BoardState, g.CurrentTurn,
+        new(g.Id,
+            g.PlayerBlackId, g.PlayerBlack?.Username,
+            g.PlayerWhiteId, g.PlayerWhite?.Username,
+            g.WinnerId, g.Status, g.BoardState, g.CurrentTurn,
             g.CreatedAt, g.UpdatedAt);
 }

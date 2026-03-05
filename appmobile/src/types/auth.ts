@@ -28,6 +28,7 @@ export interface LoginResponse {
   playerId: string;
   username: string;
   email: string;
+  avatarUrl?: string | null;
 }
 
 export interface ConfirmEmailRequest {
