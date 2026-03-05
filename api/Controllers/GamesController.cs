@@ -46,6 +46,26 @@ public class GamesController(IGameService gameService) : ControllerBase
         return Ok(result.Value);
     }
 
+    [HttpDelete("{id:guid}")]
+    [Authorize]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken ct)
+    {
+        var playerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await gameService.CancelAsync(id, playerId, ct);
+
+        if (!result.IsSuccess)
+        {
+            if (result.IsNotFound) return NotFound(new { error = result.Error });
+            return result.Error switch
+            {
+                "not_creator" => Forbid(),
+                _ => BadRequest(new { error = result.Error })
+            };
+        }
+
+        return NoContent();
+    }
+
     [HttpPost("{id:guid}/moves")]
     [Authorize]
     public async Task<IActionResult> MakeMove(Guid id, [FromBody] MakeMoveRequest request, CancellationToken ct)

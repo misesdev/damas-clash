@@ -5,8 +5,10 @@ export interface GameResponse {
   id: string;
   playerBlackId: string | null;
   playerBlackUsername: string | null;
+  playerBlackAvatarUrl: string | null;
   playerWhiteId: string | null;
   playerWhiteUsername: string | null;
+  playerWhiteAvatarUrl: string | null;
   winnerId: string | null;
   status: GameStatus;
   boardState: string;

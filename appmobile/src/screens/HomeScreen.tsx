@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   RefreshControl,
   SafeAreaView,
@@ -9,30 +10,47 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {createGame, joinGame, listGames} from '../api/games';
+import {cancelGame, createGame, joinGame, listGames} from '../api/games';
 import {GameCard} from '../components/GameCard';
 import {colors} from '../theme/colors';
 import type {LoginResponse} from '../types/auth';
-import type {GameResponse} from '../types/game';
+import type {GameResponse, GameStatus} from '../types/game';
 
 interface Props {
   user: LoginResponse;
   onGameSelect: (game: GameResponse) => void;
   onNewGame: (game: GameResponse) => void;
+  onGameCancelled?: (gameId: string) => void;
 }
 
-export function HomeScreen({user, onGameSelect, onNewGame}: Props) {
+type FilterTab = GameStatus;
+
+const TABS: {key: FilterTab; label: string}[] = [
+  {key: 'WaitingForPlayers', label: 'Aguardando'},
+  {key: 'InProgress', label: 'Em andamento'},
+  {key: 'Completed', label: 'Finalizadas'},
+];
+
+const EMPTY_MESSAGES: Record<FilterTab, string> = {
+  WaitingForPlayers: 'Nenhuma partida aguardando jogadores.',
+  InProgress: 'Nenhuma partida em andamento.',
+  Completed: 'Nenhuma partida finalizada.',
+};
+
+export function HomeScreen({user, onGameSelect, onNewGame, onGameCancelled}: Props) {
   const [games, setGames] = useState<GameResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [creating, setCreating] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState<FilterTab>('WaitingForPlayers');
 
   const fetchGames = useCallback(async () => {
     try {
       const data = await listGames(user.token);
-      setGames(data.filter(g => g.status !== 'Completed'));
+      setGames(data);
       setError('');
     } catch {
       setError('Não foi possível carregar as partidas.');
@@ -80,8 +98,37 @@ export function HomeScreen({user, onGameSelect, onNewGame}: Props) {
     }
   };
 
+  const handleCancelGame = (game: GameResponse) => {
+    Alert.alert(
+      'Cancelar partida',
+      'Tem certeza que deseja cancelar esta partida?',
+      [
+        {text: 'Não', style: 'cancel'},
+        {
+          text: 'Cancelar partida',
+          style: 'destructive',
+          onPress: async () => {
+            setCancellingId(game.id);
+            try {
+              await cancelGame(user.token, game.id);
+              setGames(prev => prev.filter(g => g.id !== game.id));
+              onGameCancelled?.(game.id);
+            } catch {
+              setError('Não foi possível cancelar a partida.');
+            } finally {
+              setCancellingId(null);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const filtered = games.filter(g => g.status === activeTab);
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Olá,</Text>
@@ -100,6 +147,21 @@ export function HomeScreen({user, onGameSelect, onNewGame}: Props) {
         </TouchableOpacity>
       </View>
 
+      {/* Filter tabs */}
+      <View style={styles.tabs}>
+        {TABS.map(tab => (
+          <TouchableOpacity
+            key={tab.key}
+            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+            onPress={() => setActiveTab(tab.key)}
+            testID={`tab-filter-${tab.key}`}>
+            <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {loading ? (
@@ -108,7 +170,7 @@ export function HomeScreen({user, onGameSelect, onNewGame}: Props) {
         </View>
       ) : (
         <FlatList
-          data={games}
+          data={filtered}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           refreshControl={
@@ -118,22 +180,17 @@ export function HomeScreen({user, onGameSelect, onNewGame}: Props) {
               tintColor={colors.text}
             />
           }
-          ListHeaderComponent={
-            <Text style={styles.sectionTitle}>
-              {games.length > 0 ? 'Partidas ativas' : 'Nenhuma partida ativa'}
-            </Text>
-          }
           ListEmptyComponent={
-            <Text style={styles.empty}>
-              Crie uma nova partida ou aguarde outros jogadores entrarem.
-            </Text>
+            <Text style={styles.empty}>{EMPTY_MESSAGES[activeTab]}</Text>
           }
           renderItem={({item}) => (
             <GameCard
               game={item}
               currentPlayerId={user.playerId}
               loading={joiningId === item.id}
+              cancelling={cancellingId === item.id}
               onPress={() => handleGamePress(item)}
+              onCancel={() => handleCancelGame(item)}
             />
           )}
         />
@@ -163,18 +220,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   newGameText: {color: colors.primaryText, fontWeight: '600', fontSize: 14},
+
+  tabs: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  tab: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  tabActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  tabText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  tabTextActive: {
+    color: colors.primaryText,
+    fontWeight: '600',
+  },
+
   loadingArea: {flex: 1, alignItems: 'center', justifyContent: 'center'},
   list: {paddingHorizontal: 20, paddingBottom: 20},
-  sectionTitle: {
-    color: colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
   empty: {
     color: colors.textMuted,
     fontSize: 14,

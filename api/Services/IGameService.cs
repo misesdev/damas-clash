@@ -10,4 +10,5 @@ public interface IGameService
     Task<ServiceResult<GameResponse>> MakeMoveAsync(Guid gameId, MakeMoveRequest request, Guid playerId, CancellationToken ct = default);
     Task<GameResponse?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<IEnumerable<GameResponse>> GetActiveAsync(CancellationToken ct = default);
+    Task<ServiceResult<bool>> CancelAsync(Guid gameId, Guid playerId, CancellationToken ct = default);
 }

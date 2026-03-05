@@ -223,6 +223,9 @@ export default function App() {
                   setPendingGameId(game.id);
                   setAuthScreen('waitingRoom');
                 }}
+                onGameCancelled={gameId => {
+                  if (pendingGameId === gameId) {setPendingGameId(null);}
+                }}
               />
             ) : (
               <ProfileScreen

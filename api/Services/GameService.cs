@@ -152,17 +152,36 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
     public async Task<IEnumerable<GameResponse>> GetActiveAsync(CancellationToken ct = default)
     {
         var games = await db.Games
-            .Where(g => g.Status == GameStatus.WaitingForPlayers || g.Status == GameStatus.InProgress)
             .Include(g => g.PlayerBlack)
             .Include(g => g.PlayerWhite)
+            .OrderByDescending(g => g.UpdatedAt)
             .ToListAsync(ct);
         return games.Select(ToResponse);
     }
 
+    public async Task<ServiceResult<bool>> CancelAsync(Guid gameId, Guid playerId, CancellationToken ct = default)
+    {
+        var game = await db.Games.FindAsync([gameId], ct);
+
+        if (game is null)
+            return ServiceResult<bool>.NotFound("game_not_found");
+
+        if (game.PlayerBlackId != playerId)
+            return ServiceResult<bool>.Fail("not_creator");
+
+        if (game.Status != GameStatus.WaitingForPlayers)
+            return ServiceResult<bool>.Fail("game_already_started");
+
+        db.Games.Remove(game);
+        await db.SaveChangesAsync(ct);
+
+        return ServiceResult<bool>.Ok(true);
+    }
+
     private static GameResponse ToResponse(Game g) =>
         new(g.Id,
-            g.PlayerBlackId, g.PlayerBlack?.Username,
-            g.PlayerWhiteId, g.PlayerWhite?.Username,
+            g.PlayerBlackId, g.PlayerBlack?.Username, g.PlayerBlack?.AvatarUrl,
+            g.PlayerWhiteId, g.PlayerWhite?.Username, g.PlayerWhite?.AvatarUrl,
             g.WinnerId, g.Status, g.BoardState, g.CurrentTurn,
             g.CreatedAt, g.UpdatedAt);
 }

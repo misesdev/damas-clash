@@ -14,3 +14,9 @@ export const joinGame = (token: string, gameId: string) =>
     method: 'POST',
     headers: auth(token),
   });
+
+export const cancelGame = (token: string, gameId: string) =>
+  request<void>(`/api/games/${gameId}`, {
+    method: 'DELETE',
+    headers: auth(token),
+  });
