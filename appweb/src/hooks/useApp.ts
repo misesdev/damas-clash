@@ -15,14 +15,14 @@ import { clearActiveGameId, clearSession, loadActiveGameId, loadSession, saveAct
 import type { LoginResponse } from '../types/auth';
 import type { GameResponse } from '../types/game';
 
-type Screen = 'login' | 'register' | 'confirmEmail' | 'verifyLogin';
+type Screen = 'landing' | 'login' | 'register' | 'confirmEmail' | 'verifyLogin';
 type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail';
 type TabName = 'home' | 'profile';
 
 const REFRESH_BUFFER_MS = 2 * 60 * 1000;
 
 export function useApp() {
-  const [screen, setScreen] = useState<Screen>('login');
+  const [screen, setScreen] = useState<Screen>('landing');
   const [authScreen, setAuthScreen] = useState<AuthScreen>('tabs');
   const [tab, setTab] = useState<TabName>('home');
   const [pendingEmail, setPendingEmail] = useState('');
@@ -182,6 +182,17 @@ export function useApp() {
 
   const handleNewGame = async () => {
     if (!session || creatingGame) return;
+
+    const existingGame = liveGames?.find(
+      g => g.playerBlackId === session.playerId && g.status === 'WaitingForPlayers',
+    );
+    if (existingGame) {
+      setSelectedGame(existingGame);
+      setPendingGameId(existingGame.id);
+      setAuthScreen('waitingRoom');
+      return;
+    }
+
     setCreatingGame(true);
     try {
       const game = await createGame(session.token);

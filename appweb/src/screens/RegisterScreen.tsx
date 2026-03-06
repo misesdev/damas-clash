@@ -14,24 +14,59 @@ export function RegisterScreen({ onRegistered, onNavigateToLogin }: RegisterScre
     useRegister(onRegistered);
 
   return (
-    <div className="flex min-h-full flex-col px-6 py-12">
-      <div className="w-full max-w-sm mx-auto">
+    <div
+      style={{
+        minHeight: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 20px',
+        background: 'var(--bg)',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 400,
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 20,
+          padding: '40px 36px',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
+        }}
+      >
+        {/* Back */}
         <button
           onClick={onNavigateToLogin}
-          className="mb-8 text-sm transition-opacity hover:opacity-80"
-          style={{ color: 'var(--text-muted)' }}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: 13,
+            color: 'var(--text-muted)',
+            padding: 0,
+            marginBottom: 28,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
         >
-          ← Voltar
+          <span style={{ fontSize: 16 }}>←</span> Voltar
         </button>
 
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white">Criar conta</h2>
-          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-            Preencha seus dados para começar
+        {/* Heading */}
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
+            Criar conta
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+            Preencha seus dados para começar.
           </p>
         </div>
 
-        <div className="flex flex-col gap-4">
+        {/* Form */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <Input
             label="Nome de usuário"
             value={username}
@@ -51,23 +86,38 @@ export function RegisterScreen({ onRegistered, onNavigateToLogin }: RegisterScre
           />
 
           {errors.general && (
-            <p className="rounded-xl px-4 py-3 text-sm text-red-400"
-              style={{ background: 'rgba(231,76,60,0.1)', border: '1px solid rgba(231,76,60,0.3)' }}>
+            <div
+              style={{
+                padding: '11px 14px',
+                borderRadius: 12,
+                background: 'rgba(255,69,58,0.08)',
+                border: '1px solid rgba(255,69,58,0.3)',
+                color: 'var(--danger)',
+                fontSize: 13,
+              }}
+            >
               {errors.general}
-            </p>
+            </div>
           )}
 
           <Button label="Criar conta" onClick={handleRegister} loading={loading} />
         </div>
 
-        <div className="mt-8 flex flex-col items-center gap-4">
-          <div className="h-px w-full" style={{ background: 'var(--border)' }} />
+        {/* Divider + switch */}
+        <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+          <div style={{ width: '100%', height: 1, background: 'var(--border)' }} />
           <button
             onClick={onNavigateToLogin}
-            className="text-sm transition-opacity hover:opacity-80"
-            style={{ color: 'var(--text-muted)' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 14,
+              color: 'var(--text-muted)',
+            }}
           >
-            Já tem conta? <span className="font-semibold text-white">Entrar</span>
+            Já tem conta?{' '}
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>Entrar</span>
           </button>
         </div>
       </div>

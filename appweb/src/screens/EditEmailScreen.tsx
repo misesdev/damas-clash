@@ -28,56 +28,61 @@ export function EditEmailScreen({ user, onSaved, onBack }: Props) {
   } = useEditEmail(user, onSaved, onBack);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
-      {/* Top bar */}
-      <header
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100%',
+        width: "100%",
+        padding: '40px 20px',
+        background: 'var(--bg)',
+        overflowY: 'auto',
+      }}
+    >
+      <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '12px 20px',
-          borderBottom: '1px solid var(--border)',
+          width: '100%',
+          maxWidth: 400,
           background: 'var(--surface)',
-          flexShrink: 0,
+          border: '1px solid var(--border)',
+          borderRadius: 20,
+          padding: '36px 36px',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
         }}
       >
+        {/* Back */}
         <button
           onClick={handleBack}
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: 10,
-            background: 'var(--surface2)',
-            border: '1px solid var(--border)',
-            color: 'var(--text-muted)',
-            fontSize: 16,
+            background: 'none',
+            border: 'none',
             cursor: 'pointer',
+            fontSize: 13,
+            color: 'var(--text-muted)',
+            padding: 0,
+            marginBottom: 28,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: 6,
           }}
         >
-          ←
+          <span style={{ fontSize: 16 }}>←</span> Voltar
         </button>
-        <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-          {phase === 'input' ? 'Alterar e-mail' : 'Verificar e-mail'}
-        </h2>
-      </header>
 
-      {/* Centered form */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-          padding: '40px 20px',
-          overflowY: 'auto',
-        }}
-      >
-        <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {phase === 'input' ? (
-            <>
+        {phase === 'input' ? (
+          <>
+            <div style={{ marginBottom: 32 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
+                Alterar e-mail
+              </h1>
+              <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+                Informe o novo endereço de e-mail.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <Input
                 label="Novo e-mail"
                 value={newEmail}
@@ -96,28 +101,36 @@ export function EditEmailScreen({ user, onSaved, onBack }: Props) {
                 loading={loading}
                 disabled={!emailValid}
               />
-            </>
-          ) : (
-            <>
-              <div
-                style={{
-                  padding: '16px 20px',
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 14,
-                  fontSize: 13,
-                  color: 'var(--text-muted)',
-                  lineHeight: 1.5,
-                }}
-              >
-                Código enviado para{' '}
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ marginBottom: 32 }}>
+              <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
+                Verifique seu e-mail
+              </h1>
+              <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
+                Enviamos um código de 6 dígitos para{' '}
                 <span style={{ fontWeight: 600, color: 'var(--text)' }}>{newEmail}</span>
-              </div>
+              </p>
+            </div>
 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <OtpInput value={code} onChange={setCode} error={!!error} />
 
               {error && (
-                <p style={{ fontSize: 13, color: 'var(--danger)', marginTop: -8 }}>{error}</p>
+                <div
+                  style={{
+                    padding: '11px 14px',
+                    borderRadius: 12,
+                    background: 'rgba(255,69,58,0.08)',
+                    border: '1px solid rgba(255,69,58,0.3)',
+                    color: 'var(--danger)',
+                    fontSize: 13,
+                  }}
+                >
+                  {error}
+                </div>
               )}
 
               <Button
@@ -126,9 +139,9 @@ export function EditEmailScreen({ user, onSaved, onBack }: Props) {
                 loading={loading}
                 disabled={code.length !== 6}
               />
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

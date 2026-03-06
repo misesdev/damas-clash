@@ -18,16 +18,48 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister }: LoginScreenPro
   };
 
   return (
-    <div className="flex min-h-full flex-col items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm">
+    <div
+      style={{
+        minHeight: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 20px',
+        background: 'var(--bg)',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 400,
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 20,
+          padding: '40px 36px',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
+        }}
+      >
         {/* Logo */}
-        <div className="mb-10 flex flex-col items-center gap-3">
-          <BoardMark size={48} />
-          <h1 className="text-2xl font-bold tracking-widest text-white">DAMAS</h1>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 36 }}>
+          <BoardMark size={40} />
+          <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 4, color: 'var(--text)' }}>
+            Damas Clash
+          </span>
+        </div>
+
+        {/* Heading */}
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
+            Entrar
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+            Use seu usuário ou e-mail para continuar.
+          </p>
         </div>
 
         {/* Form */}
-        <div className="flex flex-col gap-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <Input
             label="Usuário ou e-mail"
             value={identifier}
@@ -37,10 +69,18 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister }: LoginScreenPro
           />
 
           {error && (
-            <p className="rounded-xl px-4 py-3 text-sm text-red-400"
-              style={{ background: 'rgba(231,76,60,0.1)', border: '1px solid rgba(231,76,60,0.3)' }}>
+            <div
+              style={{
+                padding: '11px 14px',
+                borderRadius: 12,
+                background: 'rgba(255,69,58,0.08)',
+                border: '1px solid rgba(255,69,58,0.3)',
+                color: 'var(--danger)',
+                fontSize: 13,
+              }}
+            >
               {error}
-            </p>
+            </div>
           )}
 
           <Button
@@ -51,16 +91,21 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister }: LoginScreenPro
           />
         </div>
 
-        {/* Footer */}
-        <div className="mt-8 flex flex-col items-center gap-4">
-          <div className="h-px w-full" style={{ background: 'var(--border)' }} />
+        {/* Divider + switch */}
+        <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+          <div style={{ width: '100%', height: 1, background: 'var(--border)' }} />
           <button
             onClick={onNavigateToRegister}
-            className="text-sm transition-opacity hover:opacity-80"
-            style={{ color: 'var(--text-muted)' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 14,
+              color: 'var(--text-muted)',
+            }}
           >
             Não tem conta?{' '}
-            <span className="font-semibold text-white">Criar conta</span>
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>Criar conta</span>
           </button>
         </div>
       </div>

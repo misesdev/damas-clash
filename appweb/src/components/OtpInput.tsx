@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 interface OtpInputProps {
   value: string;
@@ -11,6 +11,7 @@ interface OtpInputProps {
 
 export function OtpInput({ value, onChange, error, length = 6 }: OtpInputProps) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
   const digits = Array.from({ length }, (_, i) => value[i] ?? '');
 
@@ -50,29 +51,50 @@ export function OtpInput({ value, onChange, error, length = 6 }: OtpInputProps) 
   };
 
   return (
-    <div className="flex justify-center gap-3">
-      {digits.map((digit, i) => (
-        <input
-          key={i}
-          ref={el => { refs.current[i] = el; }}
-          type="text"
-          inputMode="numeric"
-          maxLength={1}
-          value={digit}
-          autoFocus={i === 0}
-          autoComplete={i === 0 ? 'one-time-code' : 'off'}
-          onChange={e => handleChange(i, e)}
-          onKeyDown={e => handleKeyDown(i, e)}
-          onPaste={handlePaste}
-          onFocus={e => e.target.select()}
-          className="h-14 w-12 rounded-xl text-center text-xl font-bold text-white outline-none transition-colors focus:border-white"
-          style={{
-            background: 'var(--surface)',
-            border: `2px solid ${error ? 'var(--danger)' : 'var(--border)'}`,
-            caretColor: 'transparent',
-          }}
-        />
-      ))}
+    <div style={{ display: 'flex', justifyContent: 'center', gap: 10 }}>
+      {digits.map((digit, i) => {
+        const isFocused = focusedIndex === i;
+        const borderColor = error
+          ? 'var(--danger)'
+          : isFocused
+          ? 'rgba(255,255,255,0.5)'
+          : digit
+          ? 'var(--border)'
+          : 'var(--border)';
+
+        return (
+          <input
+            key={i}
+            ref={el => { refs.current[i] = el; }}
+            type="text"
+            inputMode="numeric"
+            maxLength={1}
+            value={digit}
+            autoFocus={i === 0}
+            autoComplete={i === 0 ? 'one-time-code' : 'off'}
+            onChange={e => handleChange(i, e)}
+            onKeyDown={e => handleKeyDown(i, e)}
+            onPaste={handlePaste}
+            onFocus={e => { e.target.select(); setFocusedIndex(i); }}
+            onBlur={() => setFocusedIndex(null)}
+            style={{
+              width: 48,
+              height: 58,
+              borderRadius: 12,
+              textAlign: 'center',
+              fontSize: 22,
+              fontWeight: 700,
+              color: 'var(--text)',
+              background: isFocused ? 'var(--surface2)' : 'var(--surface)',
+              border: `2px solid ${borderColor}`,
+              outline: 'none',
+              caretColor: 'transparent',
+              transition: 'border-color 0.15s, background 0.15s',
+              boxSizing: 'border-box',
+            }}
+          />
+        );
+      })}
     </div>
   );
 }

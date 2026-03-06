@@ -47,21 +47,44 @@ export function HomeScreen({
   } = useHomeScreen(user, pendingGame, liveGames, onGameSelect, onGameCancelled);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-
-      {/* ── Header ── */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: "100%", overflow: 'hidden' }}>
+      {/* ── Toolbar ── */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '20px 24px 0',
+          gap: 12,
+          padding: '16px 24px',
+          borderBottom: '1px solid var(--border)',
           flexShrink: 0,
+          maxWidth: 960,
+          width: '100%',
+          margin: '0 auto',
+          boxSizing: 'border-box',
         }}
       >
-        <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', letterSpacing: -0.3 }}>
-          Partidas
-        </h2>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              style={{
+                padding: '7px 16px',
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                border: 'none',
+                background: activeTab === tab.key ? 'var(--text)' : 'var(--surface2)',
+                color: activeTab === tab.key ? 'var(--bg)' : 'var(--text-muted)',
+                transition: 'background 0.15s, color 0.15s',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
         <button
           onClick={handleRefresh}
@@ -99,41 +122,12 @@ export function HomeScreen({
         </button>
       </div>
 
-      {/* ── Filter tabs ── */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 6,
-          padding: '14px 24px 0',
-          flexShrink: 0,
-        }}
-      >
-        {TABS.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 10,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              border: 'none',
-              background: activeTab === tab.key ? 'var(--text)' : 'var(--surface2)',
-              color: activeTab === tab.key ? 'var(--bg)' : 'var(--text-muted)',
-              transition: 'background 0.15s, color 0.15s',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
       {/* ── Error banner ── */}
       {error && (
         <div
           style={{
-            margin: '12px 24px 0',
+            margin: '0 auto',
+            marginTop: 12,
             padding: '10px 14px',
             borderRadius: 12,
             background: 'var(--danger-bg)',
@@ -141,6 +135,8 @@ export function HomeScreen({
             color: 'var(--danger)',
             fontSize: 13,
             flexShrink: 0,
+            maxWidth: 912,
+            width: 'calc(100% - 48px)',
           }}
         >
           {error}
@@ -162,46 +158,52 @@ export function HomeScreen({
           />
         </div>
       ) : (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px 24px' }}>
-          {filtered.length === 0 ? (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                gap: 12,
-                paddingBottom: 40,
-              }}
-            >
-              <span style={{ fontSize: 44, filter: 'grayscale(1)', opacity: 0.4 }}>♟</span>
-              <p style={{ fontSize: 14, color: 'var(--text-faint)', textAlign: 'center' }}>
-                {EMPTY_MESSAGES[activeTab]}
-              </p>
-            </div>
-          ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                gap: 10,
-                alignContent: 'start',
-              }}
-            >
-              {filtered.map(game => (
-                <GameCard
-                  key={game.id}
-                  game={game}
-                  currentPlayerId={user.playerId}
-                  loading={joiningId === game.id}
-                  cancelling={cancellingId === game.id}
-                  onPress={() => handleGamePress(game)}
-                  onCancel={() => handleCancelGame(game)}
-                />
-              ))}
-            </div>
-          )}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <div
+            style={{
+              maxWidth: 960,
+              margin: '0 auto',
+              padding: '20px 24px 32px',
+            }}
+          >
+            {filtered.length === 0 ? (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '80px 0',
+                  gap: 12,
+                }}
+              >
+                <span style={{ fontSize: 44, filter: 'grayscale(1)', opacity: 0.4 }}>♟</span>
+                <p style={{ fontSize: 14, color: 'var(--text-faint)', textAlign: 'center' }}>
+                  {EMPTY_MESSAGES[activeTab]}
+                </p>
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                  gap: 12,
+                }}
+              >
+                {filtered.map(game => (
+                  <GameCard
+                    key={game.id}
+                    game={game}
+                    currentPlayerId={user.playerId}
+                    loading={joiningId === game.id}
+                    cancelling={cancellingId === game.id}
+                    onPress={() => handleGamePress(game)}
+                    onCancel={() => handleCancelGame(game)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

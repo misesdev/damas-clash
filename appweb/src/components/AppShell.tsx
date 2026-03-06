@@ -8,6 +8,7 @@ import { ConfirmEmailScreen } from '../screens/ConfirmEmailScreen';
 import { EditEmailScreen } from '../screens/EditEmailScreen';
 import { EditUsernameScreen } from '../screens/EditUsernameScreen';
 import { HomeScreen } from '../screens/HomeScreen';
+import { LandingScreen } from '../screens/LandingScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
@@ -16,7 +17,7 @@ import { useApp } from '../hooks/useApp';
 
 type TabName = 'home' | 'profile';
 
-function SidebarNav({
+function TopNav({
   active,
   onPress,
   onNewGame,
@@ -34,81 +35,126 @@ function SidebarNav({
   const initials = username ? username.slice(0, 2).toUpperCase() : '?';
 
   return (
-    <aside
-      className="hidden md:flex flex-col h-full"
+    <header
       style={{
-        width: 'var(--sidebar-w)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 24px',
+        height: 60,
+        borderBottom: '1px solid var(--border)',
         background: 'var(--surface)',
-        borderRight: '1px solid var(--border)',
         flexShrink: 0,
+        gap: 16,
       }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-6" style={{ borderBottom: '1px solid var(--border)' }}>
-        <BoardMark size={28} />
-        <span className="text-base font-bold tracking-widest text-white">DAMAS</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <BoardMark size={22} />
+        <span style={{ fontWeight: 800, fontSize: 14, letterSpacing: 3, color: 'var(--text)' }}>
+          DAMAS
+        </span>
       </div>
 
-      {/* Nav links */}
-      <nav className="flex flex-col gap-1 p-3 flex-1">
-        <NavItem
-          icon="⊞"
-          label="Partidas"
-          active={active === 'home'}
-          onClick={() => onPress('home')}
-        />
-        <NavItem
-          icon="◉"
-          label="Perfil"
-          active={active === 'profile'}
-          onClick={() => onPress('profile')}
-        />
+      {/* Nav tabs */}
+      <nav style={{ display: 'flex', gap: 4, flex: 1, justifyContent: 'center' }}>
+        <NavTab label="Partidas" active={active === 'home'} onClick={() => onPress('home')} />
+        <NavTab label="Perfil" active={active === 'profile'} onClick={() => onPress('profile')} />
       </nav>
 
-      {/* User + New Game */}
-      <div className="p-3 flex flex-col gap-3" style={{ borderTop: '1px solid var(--border)' }}>
-        <button
-          onClick={onNewGame}
-          disabled={creating}
-          className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-40"
-          style={{ background: 'var(--text)', color: 'var(--bg)' }}
-        >
-          {creating ? (
-            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
-          ) : (
-            <>
-              <span className="text-base font-bold">+</span> Nova Partida
-            </>
-          )}
-        </button>
-
+      {/* Right side: user + new game */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         {username && (
-          <div className="flex items-center gap-2 px-1">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {avatarUrl ? (
-              <img src={avatarUrl} alt={username} className="h-7 w-7 rounded-full object-cover flex-shrink-0" />
+              <img
+                src={avatarUrl}
+                alt={username}
+                style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+              />
             ) : (
               <div
-                className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold flex-shrink-0"
-                style={{ background: 'var(--surface2)', color: 'var(--text)' }}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  background: 'var(--surface2)',
+                  border: '1px solid var(--border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: 'var(--text)',
+                }}
               >
                 {initials}
               </div>
             )}
-            <span className="text-sm font-medium text-white truncate">{username}</span>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                maxWidth: 120,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {username}
+            </span>
           </div>
         )}
+
+        <button
+          onClick={onNewGame}
+          disabled={creating}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '7px 16px',
+            background: 'var(--text)',
+            color: 'var(--bg)',
+            border: 'none',
+            borderRadius: 10,
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: 'pointer',
+            opacity: creating ? 0.5 : 1,
+            flexShrink: 0,
+          }}
+        >
+          {creating ? (
+            <span
+              style={{
+                display: 'inline-block',
+                width: 14,
+                height: 14,
+                borderRadius: '50%',
+                border: '2px solid var(--bg)',
+                borderTopColor: 'transparent',
+                animation: 'spin 0.7s linear infinite',
+              }}
+            />
+          ) : (
+            <>
+              <span style={{ fontSize: 16, fontWeight: 900, lineHeight: 1 }}>+</span>
+              <span className="hidden sm:inline">Nova Partida</span>
+            </>
+          )}
+        </button>
       </div>
-    </aside>
+    </header>
   );
 }
 
-function NavItem({
-  icon,
+function NavTab({
   label,
   active,
   onClick,
 }: {
-  icon: string;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -116,13 +162,18 @@ function NavItem({
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left"
       style={{
+        padding: '6px 16px',
+        borderRadius: 8,
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: 'pointer',
+        border: 'none',
         background: active ? 'var(--surface2)' : 'transparent',
         color: active ? 'var(--text)' : 'var(--text-muted)',
+        transition: 'background 0.15s, color 0.15s',
       }}
     >
-      <span className="text-base">{icon}</span>
       {label}
     </button>
   );
@@ -151,21 +202,44 @@ function MobileTabBar({
       <button
         onClick={() => onPress('home')}
         className="flex flex-1 flex-col items-center gap-1 py-2"
-        style={{ color: active === 'home' ? 'var(--text)' : 'var(--text-muted)' }}
+        style={{ color: active === 'home' ? 'var(--text)' : 'var(--text-muted)', border: 'none', background: 'transparent', cursor: 'pointer' }}
       >
-        <span className="text-xl">⊞</span>
-        <span className="text-[10px] font-medium">Partidas</span>
+        <span style={{ fontSize: 20 }}>⊞</span>
+        <span style={{ fontSize: 10, fontWeight: 600 }}>Partidas</span>
       </button>
 
       <div className="flex flex-1 justify-center">
         <button
           onClick={onNewGame}
           disabled={creating}
-          className="flex h-12 w-12 items-center justify-center rounded-full text-xl font-bold shadow-lg transition-opacity hover:opacity-90 disabled:opacity-50"
-          style={{ background: 'var(--text)', color: 'var(--bg)' }}
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            background: 'var(--text)',
+            color: 'var(--bg)',
+            border: 'none',
+            fontSize: 20,
+            fontWeight: 900,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: creating ? 0.5 : 1,
+          }}
         >
           {creating ? (
-            <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            <span
+              style={{
+                display: 'inline-block',
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                border: '2px solid var(--bg)',
+                borderTopColor: 'transparent',
+                animation: 'spin 0.7s linear infinite',
+              }}
+            />
           ) : '+'}
         </button>
       </div>
@@ -173,10 +247,10 @@ function MobileTabBar({
       <button
         onClick={() => onPress('profile')}
         className="flex flex-1 flex-col items-center gap-1 py-2"
-        style={{ color: active === 'profile' ? 'var(--text)' : 'var(--text-muted)' }}
+        style={{ color: active === 'profile' ? 'var(--text)' : 'var(--text-muted)', border: 'none', background: 'transparent', cursor: 'pointer' }}
       >
-        <span className="text-xl">◉</span>
-        <span className="text-[10px] font-medium">Perfil</span>
+        <span style={{ fontSize: 20 }}>◉</span>
+        <span style={{ fontSize: 10, fontWeight: 600 }}>Perfil</span>
       </button>
     </div>
   );
@@ -272,52 +346,58 @@ export function AppShell() {
 
       // Main tab layout
       return (
-        <div className="flex h-full">
-          {/* Desktop sidebar */}
-          <SidebarNav
-            active={tab as TabName}
-            onPress={setTab as (t: TabName) => void}
-            onNewGame={handleNewGame}
-            creating={creatingGame}
-            username={session.username}
-            avatarUrl={session.avatarUrl}
-          />
-
-          {/* Content + mobile tab bar */}
-          <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-            <div className="flex-1 overflow-hidden">
-              {tab === 'home' ? (
-                <HomeScreen
-                  user={session}
-                  pendingGame={pendingGameId ? selectedGame : null}
-                  liveGames={liveGames}
-                  onGameSelect={handleGameSelect}
-                  onGameCancelled={gameId => {
-                    if (pendingGameId === gameId) setPendingGameId(null);
-                  }}
-                />
-              ) : (
-                <ProfileScreen
-                  user={session}
-                  onLogout={handleLogout}
-                  onEditUsername={handleNavigateToEditUsername}
-                  onEditEmail={handleNavigateToEditEmail}
-                  onAvatarChanged={url => updateSession({ avatarUrl: url })}
-                />
-              )}
-            </div>
-            <MobileTabBar
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: "100%" }}>
+          {/* Desktop top nav */}
+          <div className="hidden md:block">
+            <TopNav
               active={tab as TabName}
               onPress={setTab as (t: TabName) => void}
               onNewGame={handleNewGame}
               creating={creatingGame}
+              username={session.username}
+              avatarUrl={session.avatarUrl}
             />
           </div>
+
+          {/* Content */}
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            {tab === 'home' ? (
+              <HomeScreen
+                user={session}
+                pendingGame={pendingGameId ? selectedGame : null}
+                liveGames={liveGames}
+                onGameSelect={handleGameSelect}
+                onGameCancelled={gameId => {
+                  if (pendingGameId === gameId) setPendingGameId(null);
+                }}
+              />
+            ) : (
+              <ProfileScreen
+                user={session}
+                onLogout={handleLogout}
+                onEditUsername={handleNavigateToEditUsername}
+                onEditEmail={handleNavigateToEditEmail}
+                onAvatarChanged={url => updateSession({ avatarUrl: url })}
+              />
+            )}
+          </div>
+
+          {/* Mobile bottom tab bar */}
+          <MobileTabBar
+            active={tab as TabName}
+            onPress={setTab as (t: TabName) => void}
+            onNewGame={handleNewGame}
+            creating={creatingGame}
+          />
         </div>
       );
     }
 
     // Unauthenticated
+    if (screen === 'landing') {
+      return <LandingScreen onPlay={() => setScreen('login')} />;
+    }
+
     return (
       <div className="flex flex-1 flex-col overflow-y-auto">
         {screen === 'login' && (
@@ -357,18 +437,24 @@ export function AppShell() {
     );
   };
 
+  const isLanding = !session && screen === 'landing';
+
   return (
     <MessageBoxProvider>
       <div
-        className="flex flex-col overflow-hidden"
         style={{
-          height: '100dvh',
+          height: isLanding ? 'auto' : '100dvh',
+          minHeight: '100dvh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: isLanding ? 'visible' : 'hidden',
           background: 'var(--bg)',
-          // No max-width — full viewport on desktop
         }}
       >
         {/* Board / waiting room: full screen without nav */}
         {session && isFullScreen ? (
+          renderContent()
+        ) : isLanding ? (
           renderContent()
         ) : (
           <div className="flex flex-1 overflow-hidden">

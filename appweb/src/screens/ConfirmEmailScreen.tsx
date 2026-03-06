@@ -33,34 +33,84 @@ export function ConfirmEmailScreen({
   } = useConfirmEmail({ email, onConfirmed, onSubmitCode, onResendCode });
 
   return (
-    <div className="flex min-h-full flex-col items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm">
+    <div
+      style={{
+        minHeight: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 20px',
+        background: 'var(--bg)',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 400,
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 20,
+          padding: '40px 36px',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
+        }}
+      >
         {/* Icon */}
-        <div className="mb-8 flex justify-center">
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
           <div
-            className="flex h-16 w-16 items-center justify-center rounded-2xl text-3xl"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+            style={{
+              width: 60,
+              height: 60,
+              borderRadius: 16,
+              background: 'var(--surface2)',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 26,
+            }}
           >
             ✉
           </div>
         </div>
 
-        <div className="mb-8 text-center">
-          <h2 className="whitespace-pre-line text-2xl font-bold text-white">{heading}</h2>
-          <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+        {/* Heading */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <h1
+            style={{
+              fontSize: 22,
+              fontWeight: 800,
+              color: 'var(--text)',
+              marginBottom: 8,
+              whiteSpace: 'pre-line',
+            }}
+          >
+            {heading}
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
             Enviamos um código de 6 dígitos para{' '}
-            <span className="font-semibold text-white">{email}</span>
+            <span style={{ fontWeight: 600, color: 'var(--text)' }}>{email}</span>
           </p>
         </div>
 
-        <div className="flex flex-col gap-4">
+        {/* OTP + actions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <OtpInput value={code} onChange={setCode} error={!!error} />
 
           {error && (
-            <p className="rounded-xl px-4 py-3 text-sm text-red-400"
-              style={{ background: 'rgba(231,76,60,0.1)', border: '1px solid rgba(231,76,60,0.3)' }}>
+            <div
+              style={{
+                padding: '11px 14px',
+                borderRadius: 12,
+                background: 'rgba(255,69,58,0.08)',
+                border: '1px solid rgba(255,69,58,0.3)',
+                color: 'var(--danger)',
+                fontSize: 13,
+                textAlign: 'center',
+              }}
+            >
               {error}
-            </p>
+            </div>
           )}
 
           <Button
@@ -71,15 +121,21 @@ export function ConfirmEmailScreen({
           />
 
           {onResendCode && (
-            <div className="flex flex-col items-center gap-2 pt-2">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, paddingTop: 4 }}>
               {resendSuccess && resendCooldown > 0 && (
-                <p className="text-xs text-green-400">Código reenviado ✓</p>
+                <p style={{ fontSize: 12, color: '#4ade80' }}>Código reenviado ✓</p>
               )}
               <button
                 onClick={handleResend}
                 disabled={resendCooldown > 0}
-                className="text-sm transition-opacity disabled:opacity-40 hover:opacity-80"
-                style={{ color: 'var(--text-muted)' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: resendCooldown > 0 ? 'default' : 'pointer',
+                  fontSize: 13,
+                  color: 'var(--text-muted)',
+                  opacity: resendCooldown > 0 ? 0.4 : 1,
+                }}
               >
                 {resendCooldown > 0
                   ? `Reenviar código em ${resendCooldown}s`
@@ -89,14 +145,21 @@ export function ConfirmEmailScreen({
           )}
         </div>
 
-        <div className="mt-8 flex flex-col items-center gap-4">
-          <div className="h-px w-full" style={{ background: 'var(--border)' }} />
+        {/* Divider + back */}
+        <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+          <div style={{ width: '100%', height: 1, background: 'var(--border)' }} />
           <button
             onClick={onNavigateToLogin}
-            className="text-sm transition-opacity hover:opacity-80"
-            style={{ color: 'var(--text-muted)' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 14,
+              color: 'var(--text-muted)',
+            }}
           >
-            Voltar para o <span className="font-semibold text-white">Login</span>
+            Voltar para o{' '}
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>Login</span>
           </button>
         </div>
       </div>

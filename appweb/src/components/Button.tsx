@@ -19,24 +19,61 @@ export function Button({
   type = 'button',
   fullWidth = true,
 }: ButtonProps) {
-  const base =
-    'flex items-center justify-center rounded-xl py-3 px-6 text-sm font-semibold transition-opacity disabled:opacity-40';
+  const isDisabled = disabled || loading;
 
-  const styles: Record<string, string> = {
-    primary: 'bg-white text-black hover:opacity-90',
-    ghost: 'bg-transparent text-white border border-white/20 hover:bg-white/5',
-    danger: 'bg-transparent text-red-500 border border-red-500/50 hover:bg-red-500/10',
-  };
+  const variantStyle: React.CSSProperties =
+    variant === 'primary'
+      ? {
+          background: 'var(--text)',
+          color: 'var(--bg)',
+          border: 'none',
+        }
+      : variant === 'ghost'
+      ? {
+          background: 'transparent',
+          color: 'var(--text)',
+          border: '1.5px solid var(--border)',
+        }
+      : {
+          background: 'transparent',
+          color: 'var(--danger)',
+          border: '1.5px solid rgba(255,69,58,0.4)',
+        };
 
   return (
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled || loading}
-      className={`${base} ${styles[variant]} ${fullWidth ? 'w-full' : ''}`}
+      disabled={isDisabled}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: fullWidth ? '100%' : undefined,
+        height: 52,
+        padding: '0 24px',
+        borderRadius: 14,
+        fontSize: 15,
+        fontWeight: 700,
+        letterSpacing: 0.2,
+        cursor: isDisabled ? 'not-allowed' : 'pointer',
+        opacity: isDisabled ? 0.45 : 1,
+        transition: 'opacity 0.15s',
+        ...variantStyle,
+      }}
     >
       {loading ? (
-        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        <span
+          style={{
+            display: 'inline-block',
+            width: 18,
+            height: 18,
+            borderRadius: '50%',
+            border: '2.5px solid currentColor',
+            borderTopColor: 'transparent',
+            animation: 'spin 0.7s linear infinite',
+          }}
+        />
       ) : (
         label
       )}
