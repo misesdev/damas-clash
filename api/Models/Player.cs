@@ -14,5 +14,7 @@ public class Player
     public string? EmailChangeCode { get; set; }
     public DateTimeOffset? EmailChangeCodeExpiry { get; set; }
     public string? AvatarUrl { get; set; }
+    public string? RefreshToken { get; set; }
+    public DateTimeOffset? RefreshTokenExpiry { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 }

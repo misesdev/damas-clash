@@ -1,0 +1,72 @@
+import {StyleSheet} from 'react-native';
+import {colors} from '../theme/colors';
+
+export const styles = StyleSheet.create({
+  container: {flex: 1, backgroundColor: colors.bg},
+  scroll: {paddingBottom: 32},
+
+  profileHeader: {alignItems: 'center', paddingTop: 36, paddingBottom: 36},
+  avatarWrapper: {position: 'relative', marginBottom: 14},
+  avatarFallback: {
+    backgroundColor: colors.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  avatarImage: {borderWidth: 2, borderColor: colors.border},
+  avatarInitials: {color: colors.text, fontWeight: '700', fontSize: 32},
+  avatarBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.bg,
+  },
+  avatarBadgeText: {color: colors.primaryText, fontSize: 13},
+  displayName: {color: colors.text, fontSize: 22, fontWeight: '700'},
+  emailLabel: {color: colors.textSecondary, fontSize: 14, marginTop: 4},
+
+  section: {paddingHorizontal: 20, marginBottom: 14},
+  sectionTitle: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  menuLabel: {color: colors.text, fontSize: 15},
+  menuRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  menuValue: {color: colors.textSecondary, fontSize: 14, maxWidth: 150},
+  chevron: {color: colors.textMuted, fontSize: 22, fontWeight: '300'},
+  separator: {height: 1, backgroundColor: colors.border, marginHorizontal: 18},
+  version: {color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 8},
+});

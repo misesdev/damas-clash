@@ -91,11 +91,36 @@ public class AuthService(
         player.LoginCodeExpiry = null;
         player.IsEmailConfirmed = true;
 
+        var refreshToken = tokenService.GenerateRefreshToken();
+        player.RefreshToken = refreshToken;
+        player.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(30);
+
         await db.SaveChangesAsync(ct);
 
-        var token = tokenService.Generate(player);
+        var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
-            new LoginResponse(token, player.Id, player.Username, player.Email, player.AvatarUrl));
+            new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
+                player.Id, player.Username, player.Email, player.AvatarUrl));
+    }
+
+    public async Task<ServiceResult<LoginResponse>> RefreshAsync(string refreshToken, CancellationToken ct = default)
+    {
+        var player = await db.Players.FirstOrDefaultAsync(
+            p => p.RefreshToken == refreshToken, ct);
+
+        if (player is null || player.RefreshTokenExpiry < DateTimeOffset.UtcNow)
+            return ServiceResult<LoginResponse>.Fail("invalid_or_expired_token");
+
+        var newRefreshToken = tokenService.GenerateRefreshToken();
+        player.RefreshToken = newRefreshToken;
+        player.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(30);
+
+        await db.SaveChangesAsync(ct);
+
+        var tokenResult = tokenService.Generate(player);
+        return ServiceResult<LoginResponse>.Ok(
+            new LoginResponse(tokenResult.Token, newRefreshToken, tokenResult.ExpiresAt,
+                player.Id, player.Username, player.Email, player.AvatarUrl));
     }
 
     public async Task<ServiceResult<string>> ResendConfirmationAsync(ResendConfirmationRequest req, CancellationToken ct = default)

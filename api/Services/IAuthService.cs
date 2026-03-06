@@ -12,4 +12,5 @@ public interface IAuthService
     Task<ServiceResult<string>> ResendConfirmationAsync(ResendConfirmationRequest req, CancellationToken ct = default);
     Task<ServiceResult<string>> RequestEmailChangeAsync(Guid playerId, string newEmail, CancellationToken ct = default);
     Task<ServiceResult<string>> ConfirmEmailChangeAsync(Guid playerId, string newEmail, string code, CancellationToken ct = default);
+    Task<ServiceResult<LoginResponse>> RefreshAsync(string refreshToken, CancellationToken ct = default);
 }

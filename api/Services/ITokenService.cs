@@ -2,7 +2,10 @@ using api.Models;
 
 namespace api.Services;
 
+public record TokenResult(string Token, DateTimeOffset ExpiresAt);
+
 public interface ITokenService
 {
-    string Generate(Player player);
+    TokenResult Generate(Player player);
+    string GenerateRefreshToken();
 }

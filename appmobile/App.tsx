@@ -1,13 +1,9 @@
-import {HubConnectionBuilder, HttpTransportType} from '@microsoft/signalr';
-import type {HubConnection} from '@microsoft/signalr';
-import React, {useEffect, useRef, useState} from 'react';
-import {ActivityIndicator, Alert, StatusBar, StyleSheet, View} from 'react-native';
+import React from 'react';
+import {ActivityIndicator, StatusBar, StyleSheet, View} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {login, resendConfirmation, verifyLogin} from './src/api/auth';
-import {BASE_URL} from './src/api/client';
-import {cancelGame, createGame} from './src/api/games';
 import {BottomTabBar} from './src/components/BottomTabBar';
-import type {TabName} from './src/components/BottomTabBar';
+import MessageBox from './src/components/MessageBox';
 import {CheckersBoardScreen} from './src/screens/CheckersBoardScreen';
 import {ConfirmEmailScreen} from './src/screens/ConfirmEmailScreen';
 import {EditEmailScreen} from './src/screens/EditEmailScreen';
@@ -17,232 +13,104 @@ import {LoginScreen} from './src/screens/LoginScreen';
 import {ProfileScreen} from './src/screens/ProfileScreen';
 import {RegisterScreen} from './src/screens/RegisterScreen';
 import {WaitingRoomScreen} from './src/screens/WaitingRoomScreen';
-import {clearSession, loadSession, saveSession} from './src/storage/auth';
+import {useApp} from './src/hooks/useApp';
 import {colors} from './src/theme/colors';
-import type {LoginResponse} from './src/types/auth';
-import type {GameResponse} from './src/types/game';
-
-type Screen = 'login' | 'register' | 'confirmEmail' | 'verifyLogin';
-type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail';
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('login');
-  const [authScreen, setAuthScreen] = useState<AuthScreen>('tabs');
-  const [tab, setTab] = useState<TabName>('home');
-  const [pendingEmail, setPendingEmail] = useState('');
-  const [session, setSession] = useState<LoginResponse | null>(null);
-  const [selectedGame, setSelectedGame] = useState<GameResponse | null>(null);
-  const [pendingGameId, setPendingGameId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [creatingGame, setCreatingGame] = useState(false);
+  const {
+    screen,
+    setScreen,
+    authScreen,
+    tab,
+    setTab,
+    pendingEmail,
+    setPendingEmail,
+    session,
+    loading,
+    handleLogin,
+    handleLogout,
+    updateSession,
+    selectedGame,
+    pendingGameId,
+    setPendingGameId,
+    creatingGame,
+    liveGames,
+    handleNewGame,
+    handleCancelWaitingRoom,
+    handleWaitingRoomBack,
+    handleGameSelect,
+    handleBackFromBoard,
+    handleNavigateToEditUsername,
+    handleNavigateToEditEmail,
+    handleBackToProfile,
+  } = useApp();
 
-  // Keep a ref to authScreen to avoid stale closures in SignalR handlers
-  const authScreenRef = useRef<AuthScreen>('tabs');
-  useEffect(() => {
-    authScreenRef.current = authScreen;
-  }, [authScreen]);
-
-  useEffect(() => {
-    loadSession()
-      .then(saved => {
-        if (saved) {setSession(saved);}
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  // SignalR: listen for GameStarted on the pending game
-  useEffect(() => {
-    if (!session || !pendingGameId) {return;}
-
-    let hub: HubConnection;
-    let active = true;
-
-    (async () => {
-      try {
-        hub = new HubConnectionBuilder()
-          .withUrl(`${BASE_URL}/hubs/game`, {
-            transport: HttpTransportType.WebSockets,
-            skipNegotiation: true,
-          })
-          .withAutomaticReconnect()
-          .build();
-
-        hub.on('GameStarted', (game: GameResponse) => {
-          if (!active) {return;}
-          setPendingGameId(null);
-
-          if (authScreenRef.current === 'waitingRoom') {
-            setSelectedGame(game);
-            setAuthScreen('checkersBoard');
-          } else {
-            Alert.alert(
-              'Oponente encontrado!',
-              'Alguém entrou na sua partida. Deseja jogar agora?',
-              [
-                {
-                  text: 'Jogar',
-                  onPress: () => {
-                    setSelectedGame(game);
-                    setAuthScreen('checkersBoard');
-                  },
-                },
-                {text: 'Depois', style: 'cancel'},
-              ],
-            );
-          }
-        });
-
-        await hub.start();
-        await hub.invoke('WatchGame', pendingGameId);
-      } catch {
-        // Connection failed — silently ignore; user can still play when they enter the board
-      }
-    })();
-
-    return () => {
-      active = false;
-      hub?.stop();
-    };
-  }, [pendingGameId, session?.token]);
-
-  const handleLogin = (data: LoginResponse) => {
-    saveSession(data);
-    setSession(data);
-    setAuthScreen('tabs');
-    setTab('home');
-  };
-
-  const handleLogout = () => {
-    clearSession();
-    setSession(null);
-    setScreen('login');
-    setAuthScreen('tabs');
-    setPendingGameId(null);
-  };
-
-  const handleNewGame = async () => {
-    if (!session || creatingGame) {return;}
-    setCreatingGame(true);
-    try {
-      const game = await createGame(session.token);
-      setSelectedGame(game);
-      setPendingGameId(game.id);
-      setAuthScreen('waitingRoom');
-    } catch {
-      // silently ignore — HomeScreen will show its own error if needed
-    } finally {
-      setCreatingGame(false);
-    }
-  };
-
-  const updateSession = (updates: Partial<LoginResponse>) => {
-    if (!session) {return;}
-    const updated = {...session, ...updates};
-    saveSession(updated);
-    setSession(updated);
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.splash}>
-        <ActivityIndicator color={colors.text} />
-      </View>
-    );
-  }
-
-  if (session) {
-    // Full-screen overlay screens
-    if (authScreen === 'waitingRoom' && selectedGame) {
+  const renderContent = () => {
+    if (loading) {
       return (
-        <SafeAreaProvider>
-          <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
+        <View style={styles.splash}>
+          <ActivityIndicator color={colors.text} />
+        </View>
+      );
+    }
+
+    if (session) {
+      if (authScreen === 'waitingRoom' && selectedGame) {
+        return (
           <WaitingRoomScreen
             game={selectedGame}
-            onBack={() => {
-              setAuthScreen('tabs');
-              setTab('home');
-              // Keep pendingGameId — notification fires if opponent joins later
-            }}
-            onCancelGame={async () => {
-              await cancelGame(session.token, selectedGame.id);
-              setSelectedGame(null);
-              setAuthScreen('tabs');
-              setTab('home');
-              // Keep pendingGameId — if opponent joins before cancel propagates, show alert
-            }}
+            onBack={handleWaitingRoomBack}
+            onCancelGame={handleCancelWaitingRoom}
           />
-        </SafeAreaProvider>
-      );
-    }
+        );
+      }
 
-    if (authScreen === 'checkersBoard') {
-      return (
-        <SafeAreaProvider>
-          <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
+      if (authScreen === 'checkersBoard' && selectedGame) {
+        return (
           <CheckersBoardScreen
-            onBack={() => {
-              setAuthScreen('tabs');
-              setSelectedGame(null);
-            }}
+            game={selectedGame}
+            session={session}
+            onBack={handleBackFromBoard}
           />
-        </SafeAreaProvider>
-      );
-    }
+        );
+      }
 
-    if (authScreen === 'editUsername') {
-      return (
-        <SafeAreaProvider>
-          <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
+      if (authScreen === 'editUsername') {
+        return (
           <EditUsernameScreen
             user={session}
             onSaved={newUsername => {
               updateSession({username: newUsername});
-              setAuthScreen('tabs');
-              setTab('profile');
+              handleBackToProfile();
             }}
-            onBack={() => {
-              setAuthScreen('tabs');
-              setTab('profile');
-            }}
+            onBack={handleBackToProfile}
           />
-        </SafeAreaProvider>
-      );
-    }
+        );
+      }
 
-    if (authScreen === 'editEmail') {
-      return (
-        <SafeAreaProvider>
-          <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
+      if (authScreen === 'editEmail') {
+        return (
           <EditEmailScreen
             user={session}
             onSaved={newEmail => {
               updateSession({email: newEmail});
-              setAuthScreen('tabs');
-              setTab('profile');
+              handleBackToProfile();
             }}
-            onBack={() => {
-              setAuthScreen('tabs');
-              setTab('profile');
-            }}
+            onBack={handleBackToProfile}
           />
-        </SafeAreaProvider>
-      );
-    }
+        );
+      }
 
-    // Tab layout
-    return (
-      <SafeAreaProvider>
-        <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
+      // Tab layout
+      return (
         <View style={styles.tabContainer}>
           <View style={styles.tabContent}>
             {tab === 'home' ? (
               <HomeScreen
                 user={session}
                 pendingGame={pendingGameId ? selectedGame : null}
-                onGameSelect={game => {
-                  setSelectedGame(game);
-                  setAuthScreen('checkersBoard');
-                }}
+                liveGames={liveGames}
+                onGameSelect={handleGameSelect}
                 onGameCancelled={gameId => {
                   if (pendingGameId === gameId) {setPendingGameId(null);}
                 }}
@@ -251,8 +119,8 @@ export default function App() {
               <ProfileScreen
                 user={session}
                 onLogout={handleLogout}
-                onEditUsername={() => setAuthScreen('editUsername')}
-                onEditEmail={() => setAuthScreen('editEmail')}
+                onEditUsername={handleNavigateToEditUsername}
+                onEditEmail={handleNavigateToEditEmail}
                 onAvatarChanged={url => updateSession({avatarUrl: url})}
               />
             )}
@@ -264,65 +132,73 @@ export default function App() {
             creating={creatingGame}
           />
         </View>
-      </SafeAreaProvider>
+      );
+    }
+
+    // Unauthenticated screens
+    return (
+      <View style={styles.root}>
+        {screen === 'login' && (
+          <LoginScreen
+            onCodeSent={email => {
+              setPendingEmail(email);
+              setScreen('verifyLogin');
+            }}
+            onNavigateToRegister={() => setScreen('register')}
+          />
+        )}
+
+        {screen === 'register' && (
+          <RegisterScreen
+            onRegistered={email => {
+              setPendingEmail(email);
+              setScreen('confirmEmail');
+            }}
+            onNavigateToLogin={() => setScreen('login')}
+          />
+        )}
+
+        {screen === 'confirmEmail' && (
+          <ConfirmEmailScreen
+            email={pendingEmail}
+            onConfirmed={() => setScreen('login')}
+            onNavigateToLogin={() => setScreen('login')}
+            onResendCode={() => resendConfirmation({email: pendingEmail})}
+          />
+        )}
+
+        {screen === 'verifyLogin' && (
+          <ConfirmEmailScreen
+            email={pendingEmail}
+            heading={'Confirme\nseu acesso'}
+            onConfirmed={() => setScreen('login')}
+            onNavigateToLogin={() => setScreen('login')}
+            onResendCode={async () => {
+              await login({identifier: pendingEmail});
+            }}
+            onSubmitCode={async code => {
+              const data = await verifyLogin({email: pendingEmail, code});
+              handleLogin(data);
+            }}
+          />
+        )}
+      </View>
     );
-  }
+  };
 
-  // Unauthenticated screens
   return (
-    <SafeAreaProvider style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
-
-      {screen === 'login' && (
-        <LoginScreen
-          onCodeSent={email => {
-            setPendingEmail(email);
-            setScreen('verifyLogin');
-          }}
-          onNavigateToRegister={() => setScreen('register')}
-        />
-      )}
-
-      {screen === 'register' && (
-        <RegisterScreen
-          onRegistered={email => {
-            setPendingEmail(email);
-            setScreen('confirmEmail');
-          }}
-          onNavigateToLogin={() => setScreen('login')}
-        />
-      )}
-
-      {screen === 'confirmEmail' && (
-        <ConfirmEmailScreen
-          email={pendingEmail}
-          onConfirmed={() => setScreen('login')}
-          onNavigateToLogin={() => setScreen('login')}
-          onResendCode={() => resendConfirmation({email: pendingEmail})}
-        />
-      )}
-
-      {screen === 'verifyLogin' && (
-        <ConfirmEmailScreen
-          email={pendingEmail}
-          heading={'Confirme\nseu acesso'}
-          onConfirmed={() => setScreen('login')}
-          onNavigateToLogin={() => setScreen('login')}
-          onResendCode={async () => {
-            await login({identifier: pendingEmail});
-          }}
-          onSubmitCode={async code => {
-            const data = await verifyLogin({email: pendingEmail, code});
-            handleLogin(data);
-          }}
-        />
-      )}
+    <SafeAreaProvider style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
+      {renderContent()}
+      {/* MessageBox is always mounted so showMessage() works from any hook */}
+      <MessageBox />
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {backgroundColor: colors.bg},
+  safeArea: {flex: 1, backgroundColor: colors.bg},
+  root: {flex: 1, backgroundColor: colors.bg},
   splash: {
     flex: 1,
     backgroundColor: colors.bg,

@@ -25,6 +25,8 @@ export interface VerifyLoginRequest {
 
 export interface LoginResponse {
   token: string;
+  refreshToken: string;
+  expiresAt: string; // ISO 8601
   playerId: string;
   username: string;
   email: string;

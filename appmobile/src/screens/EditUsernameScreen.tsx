@@ -1,17 +1,10 @@
-import React, {useState} from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import {updateUsername} from '../api/players';
+import React from 'react';
+import {KeyboardAvoidingView, Platform, SafeAreaView, Text, View} from 'react-native';
 import {Button} from '../components/Button';
 import {Input} from '../components/Input';
 import {ScreenHeader} from '../components/ScreenHeader';
-import {colors} from '../theme/colors';
+import {useEditUsername} from '../hooks/useEditUsername';
+import {styles} from '../styles/editUsernameStyles';
 import type {LoginResponse} from '../types/auth';
 
 interface Props {
@@ -21,24 +14,10 @@ interface Props {
 }
 
 export function EditUsernameScreen({user, onSaved, onBack}: Props) {
-  const [username, setUsername] = useState(user.username);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const valid = username.trim().length >= 3 && username.trim() !== user.username;
-
-  const handleSave = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      await updateUsername(user.token, user.playerId, username.trim());
-      onSaved(username.trim());
-    } catch (e: any) {
-      setError(e.message ?? 'Erro ao salvar. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {username, setUsername, loading, error, valid, handleSave} = useEditUsername(
+    user,
+    onSaved,
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -65,11 +44,3 @@ export function EditUsernameScreen({user, onSaved, onBack}: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: colors.bg},
-  body: {flex: 1},
-  form: {padding: 20},
-  hint: {color: colors.textMuted, fontSize: 12, marginTop: 8},
-  footer: {padding: 20},
-});

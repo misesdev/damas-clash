@@ -1,10 +1,25 @@
-import {Alert} from 'react-native';
 import {act, fireEvent, render, waitFor} from '@testing-library/react-native';
 import React from 'react';
 import App from '../App';
 import * as authApi from '../src/api/auth';
 import * as gamesApi from '../src/api/games';
 import * as authStorage from '../src/storage/auth';
+
+// Initial board state matching BoardEngine.CreateInitialState()
+const INITIAL_BOARD_STATE = JSON.stringify({
+  cells: [
+    [0, 1, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1, 0],
+    [0, 1, 0, 1, 0, 1, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [2, 0, 2, 0, 2, 0, 2, 0],
+    [0, 2, 0, 2, 0, 2, 0, 2],
+    [2, 0, 2, 0, 2, 0, 2, 0],
+  ],
+  pendingCaptureRow: -1,
+  pendingCaptureCol: -1,
+});
 
 jest.mock('../src/api/auth');
 jest.mock('../src/api/games');
@@ -27,13 +42,31 @@ jest.mock('react-native-safe-area-context', () => {
 jest.mock('@microsoft/signalr', () => ({
   HubConnectionBuilder: jest.fn(),
   HttpTransportType: {WebSockets: 4},
+  HubConnectionState: {Connected: 'Connected'},
 }));
 
-// ── Shared state to capture SignalR event handler ─────────────────────────────
+// Mock MessageBox so showMessage is interceptable and the Modal is not rendered
+jest.mock('../src/components/MessageBox', () => ({
+  __esModule: true,
+  showMessage: jest.fn(),
+  default: () => null,
+}));
+
+// ── Shared state to capture SignalR event handlers ────────────────────────────
 let capturedGameStartedHandler: ((game: object) => void) | null = null;
+let capturedMoveMadeHandler: ((game: object) => void) | null = null;
+let capturedWatchersUpdatedHandler: ((count: number) => void) | null = null;
 
 function fireGameStarted(game: object) {
   act(() => capturedGameStartedHandler?.(game));
+}
+
+function fireMoveMade(game: object) {
+  act(() => capturedMoveMadeHandler?.(game));
+}
+
+function fireWatchersUpdated(count: number) {
+  act(() => capturedWatchersUpdatedHandler?.(count));
 }
 
 // ── Shared mocks ──────────────────────────────────────────────────────────────
@@ -46,9 +79,12 @@ const mockSaveSession = authStorage.saveSession as jest.MockedFunction<typeof au
 const mockClearSession = authStorage.clearSession as jest.MockedFunction<typeof authStorage.clearSession>;
 const mockListGames = gamesApi.listGames as jest.MockedFunction<typeof gamesApi.listGames>;
 const mockCreateGame = gamesApi.createGame as jest.MockedFunction<typeof gamesApi.createGame>;
+const mockMakeMove = gamesApi.makeMove as jest.MockedFunction<typeof gamesApi.makeMove>;
 
 const fakeSession = {
   token: 'tok',
+  refreshToken: 'refresh-tok',
+  expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
   playerId: 'pid',
   username: 'testuser',
   email: 'test@test.com',
@@ -64,7 +100,7 @@ const fakeGame = {
   playerWhiteAvatarUrl: null,
   winnerId: null,
   status: 'WaitingForPlayers' as const,
-  boardState: '',
+  boardState: INITIAL_BOARD_STATE,
   currentTurn: 'Black' as const,
   createdAt: '',
   updatedAt: '',
@@ -75,10 +111,13 @@ const fakeGameStarted = {
   playerWhiteId: 'opponent-id',
   playerWhiteUsername: 'opponent',
   status: 'InProgress' as const,
+  boardState: INITIAL_BOARD_STATE,
 };
 
 beforeEach(() => {
   capturedGameStartedHandler = null;
+  capturedMoveMadeHandler = null;
+  capturedWatchersUpdatedHandler = null;
   jest.clearAllMocks();
 
   // Re-configure HubConnectionBuilder after clearAllMocks
@@ -87,10 +126,11 @@ beforeEach(() => {
   };
 
   const mockHub = {
-    on: jest.fn((event: string, handler: (game: object) => void) => {
-      if (event === 'GameStarted') {
-        capturedGameStartedHandler = handler;
-      }
+    state: 'Connected',
+    on: jest.fn((event: string, handler: (arg: any) => void) => {
+      if (event === 'GameStarted') {capturedGameStartedHandler = handler;}
+      if (event === 'MoveMade') {capturedMoveMadeHandler = handler;}
+      if (event === 'WatchersUpdated') {capturedWatchersUpdatedHandler = handler;}
     }),
     off: jest.fn(),
     start: jest.fn().mockResolvedValue(undefined),
@@ -109,6 +149,7 @@ beforeEach(() => {
   mockClearSession.mockResolvedValue(undefined);
   mockListGames.mockResolvedValue([]);
   mockCreateGame.mockResolvedValue(fakeGame);
+  mockMakeMove.mockResolvedValue(fakeGameStarted);
 });
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -212,9 +253,12 @@ describe('App navigation', () => {
 
   it('returns to login and clears session on logout', async () => {
     mockLoadSession.mockResolvedValue(fakeSession);
-    jest.spyOn(Alert, 'alert').mockImplementationOnce((_title, _msg, buttons) => {
-      const btn = (buttons as any[])?.find(b => b.style === 'destructive');
-      btn?.onPress?.();
+
+    // Intercept showMessage and immediately trigger the danger action (Sair)
+    const {showMessage} = require('../src/components/MessageBox');
+    (showMessage as jest.Mock).mockImplementationOnce(({actions}: any) => {
+      const danger = actions?.find((a: any) => a.danger);
+      danger?.onPress?.();
     });
 
     const {getByTestId} = render(<App />);
@@ -271,9 +315,114 @@ describe('App navigation', () => {
     expect(queryAllByTestId('piece-light')).toHaveLength(12);
   });
 
-  it('shows alert when opponent joins after user left waiting room', async () => {
+  // ── Board integration tests ───────────────────────────────────────────────
+
+  it('board shows correct player usernames', async () => {
     mockLoadSession.mockResolvedValue(fakeSession);
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const {getByTestId} = render(<App />);
+    await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
+    fireEvent.press(getByTestId('new-game-button'));
+
+    await waitFor(() => expect(getByTestId('waiting-room-code')).toBeTruthy());
+    await waitFor(() => expect(capturedGameStartedHandler).not.toBeNull());
+    fireGameStarted(fakeGameStarted);
+
+    await waitFor(() => expect(getByTestId('checkers-board')).toBeTruthy());
+  });
+
+  it('board renders 12 dark and 12 light pieces from API board state', async () => {
+    mockLoadSession.mockResolvedValue(fakeSession);
+    const {getByTestId, queryAllByTestId} = render(<App />);
+    await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
+    fireEvent.press(getByTestId('new-game-button'));
+
+    await waitFor(() => expect(getByTestId('waiting-room-code')).toBeTruthy());
+    await waitFor(() => expect(capturedGameStartedHandler).not.toBeNull());
+    fireGameStarted(fakeGameStarted);
+
+    await waitFor(() => expect(getByTestId('checkers-board')).toBeTruthy());
+    expect(queryAllByTestId('piece-dark')).toHaveLength(12);
+    expect(queryAllByTestId('piece-light')).toHaveLength(12);
+  });
+
+  it('updates watchers count when WatchersUpdated fires', async () => {
+    mockLoadSession.mockResolvedValue(fakeSession);
+    const {getByTestId} = render(<App />);
+    await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
+    fireEvent.press(getByTestId('new-game-button'));
+
+    await waitFor(() => expect(getByTestId('waiting-room-code')).toBeTruthy());
+    await waitFor(() => expect(capturedGameStartedHandler).not.toBeNull());
+    fireGameStarted(fakeGameStarted);
+
+    await waitFor(() => expect(getByTestId('checkers-board')).toBeTruthy());
+    await waitFor(() => expect(capturedWatchersUpdatedHandler).not.toBeNull());
+
+    fireWatchersUpdated(3);
+
+    await waitFor(() => expect(getByTestId('watchers-count').props.children).toContain(3));
+  });
+
+  it('board updates pieces when opponent makes a move (MoveMade event)', async () => {
+    mockLoadSession.mockResolvedValue(fakeSession);
+    const {getByTestId, queryAllByTestId} = render(<App />);
+    await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
+    fireEvent.press(getByTestId('new-game-button'));
+
+    await waitFor(() => expect(getByTestId('waiting-room-code')).toBeTruthy());
+    await waitFor(() => expect(capturedGameStartedHandler).not.toBeNull());
+    fireGameStarted(fakeGameStarted);
+    await waitFor(() => expect(getByTestId('checkers-board')).toBeTruthy());
+
+    // Simulate white capturing a black piece: board has 11 dark, 12 white
+    const afterMoveState = JSON.stringify({
+      cells: [
+        [0, 1, 0, 1, 0, 1, 0, 1], // row 0: 4 dark
+        [1, 0, 1, 0, 1, 0, 1, 0], // row 1: 4 dark
+        [0, 0, 0, 1, 0, 1, 0, 1], // row 2: 3 dark — (2,1) captured by white
+        [0, 0, 0, 0, 0, 0, 0, 0], // row 3: empty
+        [0, 0, 0, 0, 0, 0, 0, 0], // row 4: empty
+        [2, 0, 2, 0, 2, 0, 2, 0], // row 5: 4 white
+        [0, 2, 0, 2, 0, 2, 0, 2], // row 6: 4 white
+        [2, 0, 2, 0, 2, 0, 2, 0], // row 7: 4 white
+      ],
+      pendingCaptureRow: -1,
+      pendingCaptureCol: -1,
+    });
+
+    const afterMoveGame = {
+      ...fakeGameStarted,
+      boardState: afterMoveState,
+      currentTurn: 'White' as const,
+    };
+
+    await waitFor(() => expect(capturedMoveMadeHandler).not.toBeNull());
+    fireMoveMade(afterMoveGame);
+
+    // After move: 11 dark pieces (one captured by white), 12 light pieces
+    await waitFor(() => expect(queryAllByTestId('piece-dark')).toHaveLength(11));
+    expect(queryAllByTestId('piece-light')).toHaveLength(12);
+  });
+
+  it('back button from board returns to home', async () => {
+    mockLoadSession.mockResolvedValue(fakeSession);
+    const {getByTestId} = render(<App />);
+    await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
+    fireEvent.press(getByTestId('new-game-button'));
+
+    await waitFor(() => expect(getByTestId('waiting-room-code')).toBeTruthy());
+    await waitFor(() => expect(capturedGameStartedHandler).not.toBeNull());
+    fireGameStarted(fakeGameStarted);
+    await waitFor(() => expect(getByTestId('checkers-board')).toBeTruthy());
+
+    fireEvent.press(getByTestId('back-home-button'));
+    await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
+  });
+
+  it('shows modal when opponent joins after user left waiting room', async () => {
+    mockLoadSession.mockResolvedValue(fakeSession);
+
+    const {showMessage} = require('../src/components/MessageBox');
 
     const {getByTestId} = render(<App />);
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
@@ -287,14 +436,12 @@ describe('App navigation', () => {
     fireEvent.press(getByTestId('waiting-room-cancel'));
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
 
-    // Opponent joins — should show alert (not auto-navigate)
+    // Opponent joins — should show modal (not auto-navigate)
     fireGameStarted(fakeGameStarted);
 
     await waitFor(() =>
-      expect(alertSpy).toHaveBeenCalledWith(
-        'Oponente encontrado!',
-        expect.any(String),
-        expect.any(Array),
+      expect(showMessage).toHaveBeenCalledWith(
+        expect.objectContaining({title: 'Oponente encontrado!'}),
       ),
     );
   });

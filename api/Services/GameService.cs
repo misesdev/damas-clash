@@ -33,6 +33,8 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         // Load player navigation property for username
         await db.Entry(game).Reference(g => g.PlayerBlack).LoadAsync(ct);
 
+        await BroadcastGameListAsync(ct);
+
         return ServiceResult<GameResponse>.Ok(ToResponse(game));
     }
 
@@ -64,6 +66,8 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         var response = ToResponse(game);
         await hub.Clients.Group(gameId.ToString())
             .SendAsync("GameStarted", response, ct);
+
+        await BroadcastGameListAsync(ct);
 
         return ServiceResult<GameResponse>.Ok(response);
     }
@@ -154,9 +158,17 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         var games = await db.Games
             .Include(g => g.PlayerBlack)
             .Include(g => g.PlayerWhite)
+            .Where(g => g.Status == GameStatus.WaitingForPlayers || g.Status == GameStatus.InProgress)
             .OrderByDescending(g => g.UpdatedAt)
             .ToListAsync(ct);
         return games.Select(ToResponse);
+    }
+
+    private async Task BroadcastGameListAsync(CancellationToken ct = default)
+    {
+        var games = (await GetActiveAsync(ct)).ToList();
+        await cache.SetGameListAsync(games, ct);
+        await hub.Clients.Group("lobby").SendAsync("GameListUpdated", games, ct);
     }
 
     public async Task<ServiceResult<bool>> CancelAsync(Guid gameId, Guid playerId, CancellationToken ct = default)
@@ -174,6 +186,8 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
 
         db.Games.Remove(game);
         await db.SaveChangesAsync(ct);
+
+        await BroadcastGameListAsync(ct);
 
         return ServiceResult<bool>.Ok(true);
     }

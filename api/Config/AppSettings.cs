@@ -13,6 +13,7 @@ public static class AppSettings
         builder.Services.AddStackExchangeRedisCache(options =>
             options.Configuration = builder.Configuration["Redis:Configuration"]);
         builder.Services.AddScoped<IGameCacheService, GameCacheService>();
+        builder.Services.AddSingleton<IGameWatcherService, GameWatcherService>();
 
         builder.Services.AddScoped<IPlayerService, PlayerService>();
         builder.Services.AddScoped<IGameService, GameService>();

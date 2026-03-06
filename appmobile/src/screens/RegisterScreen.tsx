@@ -1,70 +1,25 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import {register} from '../api/auth';
-import {ApiError} from '../api/client';
 import {Button} from '../components/Button';
 import {Input} from '../components/Input';
-import {colors} from '../theme/colors';
+import {useRegister} from '../hooks/useRegister';
+import {styles} from '../styles/registerStyles';
 
 interface RegisterScreenProps {
   onRegistered: (email: string) => void;
   onNavigateToLogin: () => void;
 }
 
-type FormErrors = Partial<Record<'username' | 'email' | 'general', string>>;
-
-function validate(username: string, email: string): FormErrors {
-  const errors: FormErrors = {};
-  if (username.length < 3) {
-    errors.username = 'Mínimo 3 caracteres.';
-  }
-  if (!email.includes('@')) {
-    errors.email = 'E-mail inválido.';
-  }
-  return errors;
-}
-
 export function RegisterScreen({onRegistered, onNavigateToLogin}: RegisterScreenProps) {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [loading, setLoading] = useState(false);
-
-  const handleRegister = async () => {
-    const validationErrors = validate(username, email);
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-    setErrors({});
-    setLoading(true);
-    try {
-      await register({username, email});
-      onRegistered(email);
-    } catch (e) {
-      if (e instanceof ApiError) {
-        if (e.message === 'email_taken') {
-          setErrors({email: 'E-mail já cadastrado.'});
-        } else if (e.message === 'username_taken') {
-          setErrors({username: 'Nome de usuário já existe.'});
-        } else {
-          setErrors({general: 'Erro ao criar conta. Tente novamente.'});
-        }
-      } else {
-        setErrors({general: 'Erro de conexão. Tente novamente.'});
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {username, setUsername, email, setEmail, errors, loading, handleRegister} =
+    useRegister(onRegistered);
 
   return (
     <KeyboardAvoidingView
@@ -139,37 +94,3 @@ export function RegisterScreen({onRegistered, onNavigateToLogin}: RegisterScreen
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: {flex: 1, backgroundColor: colors.bg},
-  container: {flexGrow: 1, paddingHorizontal: 28, paddingTop: 64, paddingBottom: 40},
-
-  back: {marginBottom: 48},
-  backText: {color: colors.textMuted, fontSize: 14, fontWeight: '500'},
-
-  header: {marginBottom: 36},
-  title: {
-    color: colors.text,
-    fontSize: 30,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-    marginBottom: 8,
-  },
-  subtitle: {color: colors.textMuted, fontSize: 15, lineHeight: 22},
-
-  form: {marginBottom: 32},
-  errorBox: {
-    backgroundColor: colors.errorBg,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 16,
-  },
-  errorText: {color: colors.error, fontSize: 14, lineHeight: 20},
-  submitButton: {marginTop: 16},
-
-  footer: {alignItems: 'center', gap: 18},
-  divider: {width: 32, height: 1, backgroundColor: colors.border},
-  footerText: {color: colors.textMuted, fontSize: 14},
-  footerLink: {color: colors.textSecondary, fontWeight: '600'},
-});

@@ -45,3 +45,10 @@ export function resendConfirmation(data: {email: string}): Promise<void> {
     body: JSON.stringify(data),
   });
 }
+
+export function refreshAccessToken(refreshToken: string): Promise<LoginResponse> {
+  return request('/api/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({refreshToken}),
+  });
+}

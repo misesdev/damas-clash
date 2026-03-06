@@ -1,18 +1,11 @@
-import React, {useState} from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import {confirmEmailChange, requestEmailChange} from '../api/players';
+import React from 'react';
+import {KeyboardAvoidingView, Platform, SafeAreaView, Text, View} from 'react-native';
 import {Button} from '../components/Button';
 import {Input} from '../components/Input';
 import {OtpInput} from '../components/OtpInput';
 import {ScreenHeader} from '../components/ScreenHeader';
-import {colors} from '../theme/colors';
+import {useEditEmail} from '../hooks/useEditEmail';
+import {styles} from '../styles/editEmailStyles';
 import type {LoginResponse} from '../types/auth';
 
 interface Props {
@@ -22,51 +15,19 @@ interface Props {
 }
 
 export function EditEmailScreen({user, onSaved, onBack}: Props) {
-  const [phase, setPhase] = useState<'input' | 'confirm'>('input');
-  const [newEmail, setNewEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const emailValid =
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail.trim()) &&
-    newEmail.trim() !== user.email;
-
-  const handleRequestChange = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      await requestEmailChange(user.token, newEmail.trim());
-      setPhase('confirm');
-    } catch (e: any) {
-      setError(e.message ?? 'Erro ao solicitar alteração.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConfirmChange = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      await confirmEmailChange(user.token, newEmail.trim(), code);
-      onSaved(newEmail.trim());
-    } catch (e: any) {
-      setError(e.message ?? 'Código inválido. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBack = () => {
-    if (phase === 'confirm') {
-      setPhase('input');
-      setCode('');
-      setError('');
-    } else {
-      onBack();
-    }
-  };
+  const {
+    phase,
+    newEmail,
+    setNewEmail,
+    code,
+    setCode,
+    loading,
+    error,
+    emailValid,
+    handleRequestChange,
+    handleConfirmChange,
+    handleBack,
+  } = useEditEmail(user, onSaved, onBack);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -82,7 +43,7 @@ export function EditEmailScreen({user, onSaved, onBack}: Props) {
               <Input
                 label="Novo e-mail"
                 value={newEmail}
-                onChangeText={t => { setNewEmail(t); setError(''); }}
+                onChangeText={setNewEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoCorrect={false}
@@ -125,20 +86,3 @@ export function EditEmailScreen({user, onSaved, onBack}: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: colors.bg},
-  body: {flex: 1},
-  form: {padding: 20},
-  current: {color: colors.textSecondary, fontSize: 13, marginBottom: 16},
-  hint: {color: colors.textMuted, fontSize: 12, marginTop: 8},
-  instruction: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  emailHighlight: {color: colors.text, fontWeight: '600'},
-  errorText: {color: colors.error, fontSize: 13, marginTop: 14},
-  footer: {padding: 20},
-});

@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using api.Config;
 using api.Models;
@@ -12,10 +13,11 @@ public class JwtTokenService(IOptions<JwtSettings> opts) : ITokenService
 {
     private readonly JwtSettings _settings = opts.Value;
 
-    public string Generate(Player player)
+    public TokenResult Generate(Player player)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var expiresAt = DateTimeOffset.UtcNow.AddMinutes(_settings.ExpiryMinutes);
 
         var claims = new[]
         {
@@ -29,9 +31,16 @@ public class JwtTokenService(IOptions<JwtSettings> opts) : ITokenService
             issuer: _settings.Issuer,
             audience: _settings.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_settings.ExpiryMinutes),
+            expires: expiresAt.UtcDateTime,
             signingCredentials: creds);
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return new TokenResult(new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
+    }
+
+    public string GenerateRefreshToken()
+    {
+        var bytes = new byte[64];
+        RandomNumberGenerator.Fill(bytes);
+        return Convert.ToBase64String(bytes);
     }
 }

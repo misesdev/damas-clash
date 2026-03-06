@@ -72,6 +72,17 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok(result.Value);
     }
 
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequest request, CancellationToken ct)
+    {
+        var result = await authService.RefreshAsync(request.RefreshToken, ct);
+
+        if (!result.IsSuccess)
+            return Unauthorized(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
     [Authorize]
     [HttpPost("request-email-change")]
     public async Task<IActionResult> RequestEmailChange([FromBody] RequestEmailChangeRequest request, CancellationToken ct)
