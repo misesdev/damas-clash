@@ -1,6 +1,7 @@
 import React from 'react';
 import {Text, TouchableOpacity, View} from 'react-native';
 import {styles} from '../styles/screenHeaderStyles';
+import { Icon } from './Icon';
 
 interface Props {
   title: string;
@@ -15,10 +16,7 @@ export function ScreenHeader({title, onBack}: Props) {
         style={styles.backBtn}
         hitSlop={styles.hitSlop}
         testID="screen-header-back">
-        <View style={styles.arrow}>
-          <View style={styles.arrowTop} />
-          <View style={styles.arrowBottom} />
-        </View>
+        <Icon name='chevron-back' size={20}/>
       </TouchableOpacity>
       <Text style={styles.title}>{title}</Text>
       <View style={styles.spacer} />

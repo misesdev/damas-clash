@@ -1,9 +1,6 @@
 import {StyleSheet} from 'react-native';
 import {colors} from '../theme/colors';
 
-const ARROW_THICKNESS = 2;
-const ARROW_SIZE = 10;
-
 export const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
@@ -20,25 +17,6 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   hitSlop: {top: 8, bottom: 8, left: 8, right: 8} as any,
-  arrow: {
-    width: ARROW_SIZE,
-    height: ARROW_SIZE * 2,
-    justifyContent: 'center',
-  },
-  arrowTop: {
-    width: ARROW_SIZE,
-    height: ARROW_THICKNESS,
-    backgroundColor: colors.text,
-    borderRadius: ARROW_THICKNESS,
-    transform: [{rotate: '45deg'}, {translateY: ARROW_SIZE / 2 - 1}],
-  },
-  arrowBottom: {
-    width: ARROW_SIZE,
-    height: ARROW_THICKNESS,
-    backgroundColor: colors.text,
-    borderRadius: ARROW_THICKNESS,
-    transform: [{rotate: '-45deg'}, {translateY: -(ARROW_SIZE / 2 - 1)}],
-  },
   title: {
     flex: 1,
     textAlign: 'center',

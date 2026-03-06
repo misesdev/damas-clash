@@ -6,7 +6,6 @@ export const styles = StyleSheet.create({
   container: {flexGrow: 1, paddingHorizontal: 28, paddingTop: 64, paddingBottom: 40},
 
   back: {marginBottom: 48},
-  backText: {color: colors.textMuted, fontSize: 14, fontWeight: '500'},
 
   header: {marginBottom: 36},
   title: {

@@ -11,6 +11,8 @@ import {Button} from '../components/Button';
 import {Input} from '../components/Input';
 import {useRegister} from '../hooks/useRegister';
 import {styles} from '../styles/registerStyles';
+import { BoardMark } from '../components/BoardMark';
+import { Icon } from '../components/Icon';
 
 interface RegisterScreenProps {
   onRegistered: (email: string) => void;
@@ -33,13 +35,18 @@ export function RegisterScreen({onRegistered, onNavigateToLogin}: RegisterScreen
           onPress={onNavigateToLogin}
           style={styles.back}
           testID="back-button">
-          <Text style={styles.backText}>← Voltar</Text>
+            <Icon name='chevron-back' size={20}/>
         </TouchableOpacity>
 
-        <View style={styles.header}>
+        <View style={{alignItems: 'center', marginBottom: 56}}>
+          <BoardMark size={85} />
           <Text style={styles.title}>Criar conta</Text>
           <Text style={styles.subtitle}>Preencha seus dados para começar</Text>
         </View>
+        {/* <View style={styles.header}> */}
+        {/*   <Text style={styles.title}>Criar conta</Text> */}
+        {/*   <Text style={styles.subtitle}>Preencha seus dados para começar</Text> */}
+        {/* </View> */}
 
         <View style={styles.form}>
           <Input

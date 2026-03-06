@@ -30,7 +30,7 @@ export function LoginScreen({onCodeSent, onNavigateToRegister}: LoginScreenProps
         keyboardShouldPersistTaps="handled">
 
         <View style={styles.logoArea}>
-          <BoardMark size={44} />
+          <BoardMark size={85} />
           <Text style={styles.appName}>DAMAS</Text>
         </View>
 
