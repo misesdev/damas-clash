@@ -31,7 +31,8 @@ export function LoginScreen({onCodeSent, onNavigateToRegister}: LoginScreenProps
 
         <View style={styles.logoArea}>
           <BoardMark size={85} />
-          <Text style={styles.appName}>DAMAS</Text>
+          <Text style={styles.appName}>DAMAS CLASH</Text>
+          <Text style={styles.subtitle}>Use seu usuário ou e-mail para continuar</Text>
         </View>
 
         <View style={styles.form}>

@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   container: {
     backgroundColor: '#181818',
-    borderRadius: 14,
+    borderRadius: 10,
     paddingHorizontal: 16,
     height: 62,
     justifyContent: 'flex-end',

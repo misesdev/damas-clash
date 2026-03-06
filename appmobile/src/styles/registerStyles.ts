@@ -3,7 +3,7 @@ import {colors} from '../theme/colors';
 
 export const styles = StyleSheet.create({
   flex: {flex: 1, backgroundColor: colors.bg},
-  container: {flexGrow: 1, paddingHorizontal: 28, paddingTop: 64, paddingBottom: 40},
+  container: {flexGrow: 1, paddingHorizontal: 28, paddingTop: 35, paddingBottom: 40},
 
   back: {marginBottom: 48},
 

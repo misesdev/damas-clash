@@ -16,6 +16,7 @@ import {styles} from '../styles/homeStyles';
 import type {LoginResponse} from '../types/auth';
 import type {GameResponse, GameStatus} from '../types/game';
 import {colors} from '../theme/colors';
+import { Icon } from '../components/Icon';
 
 interface Props {
   user: LoginResponse;
@@ -113,7 +114,7 @@ export function HomeScreen({user, pendingGame, liveGames, onGameSelect, onGameCa
               tintColor={colors.text}
             />
           }
-          ListEmptyComponent={
+          ListEmptyComponent={ 
             <Text style={styles.empty}>{EMPTY_MESSAGES[activeTab]}</Text>
           }
           renderItem={({item}) => (

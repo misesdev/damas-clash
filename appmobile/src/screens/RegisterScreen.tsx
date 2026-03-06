@@ -30,7 +30,6 @@ export function RegisterScreen({onRegistered, onNavigateToLogin}: RegisterScreen
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled">
-
         <TouchableOpacity
           onPress={onNavigateToLogin}
           style={styles.back}

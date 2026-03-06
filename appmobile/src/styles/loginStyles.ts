@@ -13,6 +13,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 8,
     marginTop: 18,
   },
+  subtitle: {color: colors.textMuted, fontSize: 15, lineHeight: 22, marginVertical: 10},
 
   form: {marginBottom: 36},
   errorBox: {
