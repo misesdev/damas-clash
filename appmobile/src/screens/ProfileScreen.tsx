@@ -18,6 +18,7 @@ interface Props {
   onEditUsername: () => void;
   onEditEmail: () => void;
   onAvatarChanged: (url: string) => void;
+  onOpenHistory: () => void;
 }
 
 const AVATAR_SIZE = 88;
@@ -99,8 +100,9 @@ export function ProfileScreen({
   onEditUsername,
   onEditEmail,
   onAvatarChanged,
+  onOpenHistory,
 }: Props) {
-  const {uploading, handleLogout, handleAvatarPress} = useProfileScreen(
+  const {uploading, stats, handleLogout, handleAvatarPress} = useProfileScreen(
     user,
     onLogout,
     onAvatarChanged,
@@ -115,6 +117,34 @@ export function ProfileScreen({
           <Text style={styles.emailLabel}>{user.email}</Text>
         </View>
 
+        {/* Stats */}
+        <View style={{flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginBottom: 14}}>
+          {[
+            {label: 'Partidas', value: stats?.total ?? '—'},
+            {label: 'Vitórias', value: stats?.wins ?? '—'},
+            {label: 'Derrotas', value: stats?.losses ?? '—'},
+          ].map(stat => (
+            <View
+              key={stat.label}
+              style={{
+                flex: 1,
+                backgroundColor: '#131313',
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: '#232323',
+                paddingVertical: 14,
+                alignItems: 'center',
+              }}>
+              <Text style={{color: '#fff', fontSize: 22, fontWeight: '800', lineHeight: 26}}>
+                {stat.value}
+              </Text>
+              <Text style={{color: '#4e4e4e', fontSize: 10, fontWeight: '600', marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5}}>
+                {stat.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Conta</Text>
           <View style={styles.card}>
@@ -125,12 +155,19 @@ export function ProfileScreen({
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Histórico</Text>
+          <View style={styles.card}>
+            <MenuItem label="Partidas jogadas" onPress={onOpenHistory} />
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <View style={styles.card}>
             <MenuItem label="Sair" danger onPress={handleLogout} testID="logout-button" />
           </View>
         </View>
 
-        <Text style={styles.version}>Damas · v0.1</Text>
+        <Text style={styles.version}>Damas Clash · v0.1</Text>
       </ScrollView>
     </SafeAreaView>
   );

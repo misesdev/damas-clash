@@ -7,11 +7,13 @@ import { CheckersBoardScreen } from '../screens/CheckersBoardScreen';
 import { ConfirmEmailScreen } from '../screens/ConfirmEmailScreen';
 import { EditEmailScreen } from '../screens/EditEmailScreen';
 import { EditUsernameScreen } from '../screens/EditUsernameScreen';
+import { GameHistoryScreen } from '../screens/GameHistoryScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LandingScreen } from '../screens/LandingScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
+import { ReplayScreen } from '../screens/ReplayScreen';
 import { WaitingRoomScreen } from '../screens/WaitingRoomScreen';
 import { useApp } from '../hooks/useApp';
 
@@ -283,10 +285,15 @@ export function AppShell() {
     handleNavigateToEditUsername,
     handleNavigateToEditEmail,
     handleBackToProfile,
+    replayGame,
+    handleOpenHistory,
+    handleBackFromHistory,
+    handleOpenReplay,
+    handleBackFromReplay,
   } = useApp();
 
   // Full-screen screens (no sidebar/tabs)
-  const isFullScreen = authScreen === 'checkersBoard' || authScreen === 'waitingRoom';
+  const isFullScreen = authScreen === 'checkersBoard' || authScreen === 'waitingRoom' || authScreen === 'gameHistory' || authScreen === 'replay';
 
   const renderContent = () => {
     if (loading) {
@@ -327,6 +334,26 @@ export function AppShell() {
               handleBackToProfile();
             }}
             onBack={handleBackToProfile}
+          />
+        );
+      }
+
+      if (authScreen === 'gameHistory') {
+        return (
+          <GameHistoryScreen
+            user={session}
+            onReplay={handleOpenReplay}
+            onBack={handleBackFromHistory}
+          />
+        );
+      }
+
+      if (authScreen === 'replay' && replayGame) {
+        return (
+          <ReplayScreen
+            game={replayGame}
+            session={session}
+            onBack={handleBackFromReplay}
           />
         );
       }
@@ -378,6 +405,7 @@ export function AppShell() {
                 onEditUsername={handleNavigateToEditUsername}
                 onEditEmail={handleNavigateToEditEmail}
                 onAvatarChanged={url => updateSession({ avatarUrl: url })}
+                onOpenHistory={handleOpenHistory}
               />
             )}
           </div>

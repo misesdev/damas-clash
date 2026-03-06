@@ -8,10 +8,12 @@ import {CheckersBoardScreen} from './src/screens/CheckersBoardScreen';
 import {ConfirmEmailScreen} from './src/screens/ConfirmEmailScreen';
 import {EditEmailScreen} from './src/screens/EditEmailScreen';
 import {EditUsernameScreen} from './src/screens/EditUsernameScreen';
+import {GameHistoryScreen} from './src/screens/GameHistoryScreen';
 import {HomeScreen} from './src/screens/HomeScreen';
 import {LoginScreen} from './src/screens/LoginScreen';
 import {ProfileScreen} from './src/screens/ProfileScreen';
 import {RegisterScreen} from './src/screens/RegisterScreen';
+import {ReplayScreen} from './src/screens/ReplayScreen';
 import {WaitingRoomScreen} from './src/screens/WaitingRoomScreen';
 import {useApp} from './src/hooks/useApp';
 import {colors} from './src/theme/colors';
@@ -43,6 +45,11 @@ export default function App() {
     handleNavigateToEditUsername,
     handleNavigateToEditEmail,
     handleBackToProfile,
+    replayGame,
+    handleOpenHistory,
+    handleBackFromHistory,
+    handleOpenReplay,
+    handleBackFromReplay,
   } = useApp();
 
   const renderContent = () => {
@@ -71,6 +78,26 @@ export default function App() {
             game={selectedGame}
             session={session}
             onBack={handleBackFromBoard}
+          />
+        );
+      }
+
+      if (authScreen === 'gameHistory') {
+        return (
+          <GameHistoryScreen
+            user={session}
+            onReplay={handleOpenReplay}
+            onBack={handleBackFromHistory}
+          />
+        );
+      }
+
+      if (authScreen === 'replay' && replayGame) {
+        return (
+          <ReplayScreen
+            game={replayGame}
+            session={session}
+            onBack={handleBackFromReplay}
           />
         );
       }
@@ -122,6 +149,7 @@ export default function App() {
                 onEditUsername={handleNavigateToEditUsername}
                 onEditEmail={handleNavigateToEditEmail}
                 onAvatarChanged={url => updateSession({avatarUrl: url})}
+                onOpenHistory={handleOpenHistory}
               />
             )}
           </View>

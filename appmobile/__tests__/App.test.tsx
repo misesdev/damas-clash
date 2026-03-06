@@ -87,6 +87,7 @@ const mockCreateGame = gamesApi.createGame as jest.MockedFunction<typeof gamesAp
 const mockGetGame = gamesApi.getGame as jest.MockedFunction<typeof gamesApi.getGame>;
 const mockMakeMove = gamesApi.makeMove as jest.MockedFunction<typeof gamesApi.makeMove>;
 const mockResign = gamesApi.resign as jest.MockedFunction<typeof gamesApi.resign>;
+const mockGetPlayerStats = gamesApi.getPlayerStats as jest.MockedFunction<typeof gamesApi.getPlayerStats>;
 
 const fakeSession = {
   token: 'tok',
@@ -159,6 +160,7 @@ beforeEach(() => {
   mockClearActiveGameId.mockResolvedValue(undefined);
   mockListGames.mockResolvedValue([]);
   mockCreateGame.mockResolvedValue(fakeGame);
+  mockGetPlayerStats.mockResolvedValue({wins: 0, losses: 0, total: 0});
   mockGetGame.mockResolvedValue(fakeGameStarted);
   mockMakeMove.mockResolvedValue(fakeGameStarted);
   mockResign.mockResolvedValue({...fakeGameStarted, status: 'Completed' as const, winnerId: 'opponent-id'});

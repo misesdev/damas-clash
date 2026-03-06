@@ -9,6 +9,7 @@ interface Props {
   onEditUsername: () => void;
   onEditEmail: () => void;
   onAvatarChanged: (url: string) => void;
+  onOpenHistory: () => void;
 }
 
 interface MenuItemProps {
@@ -105,8 +106,9 @@ export function ProfileScreen({
   onEditUsername,
   onEditEmail,
   onAvatarChanged,
+  onOpenHistory,
 }: Props) {
-  const { uploading, fileInputRef, handleLogout, handleAvatarPress, handleFileChange } =
+  const { uploading, stats, fileInputRef, handleLogout, handleAvatarPress, handleFileChange } =
     useProfileScreen(user, onLogout, onAvatarChanged);
 
   const initials = user.username.slice(0, 2).toUpperCase();
@@ -217,11 +219,49 @@ export function ProfileScreen({
           </div>
         </div>
 
+        {/* ── Stats ── */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr',
+            gap: 10,
+          }}
+        >
+          {[
+            { label: 'Partidas', value: stats?.total ?? '—' },
+            { label: 'Vitórias', value: stats?.wins ?? '—' },
+            { label: 'Derrotas', value: stats?.losses ?? '—' },
+          ].map(stat => (
+            <div
+              key={stat.label}
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 14,
+                padding: '14px 10px',
+                textAlign: 'center',
+              }}
+            >
+              <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>
+                {stat.value}
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {stat.label}
+              </p>
+            </div>
+          ))}
+        </div>
+
         {/* ── Account section ── */}
         <Section label="Conta">
           <MenuItem label="Nome de usuário" value={user.username} onClick={onEditUsername} />
           <Divider />
           <MenuItem label="E-mail" value={user.email} onClick={onEditEmail} />
+        </Section>
+
+        {/* ── History section ── */}
+        <Section label="Histórico">
+          <MenuItem label="Partidas jogadas" onClick={onOpenHistory} />
         </Section>
 
         {/* ── Session section ── */}

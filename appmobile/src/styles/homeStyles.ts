@@ -3,13 +3,61 @@ import {colors} from '../theme/colors';
 
 export const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.bg},
-  header: {
+
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  topBarLogo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  topBarTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 3,
+  },
+  topBarAvatar: {},
+  avatarImg: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  avatarPlaceholder: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitials: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  sectionHeading: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 16,
+    paddingBottom: 4,
   },
-  greeting: {color: colors.textSecondary, fontSize: 13},
-  username: {color: colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.3},
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
 
   tabs: {
     flexDirection: 'row',

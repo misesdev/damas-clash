@@ -1,5 +1,5 @@
 import {request} from './client';
-import type {GameResponse} from '../types/game';
+import type {GameResponse, MoveResponse, PlayerStats} from '../types/game';
 
 export interface MakeMoveRequest {
   fromRow: number;
@@ -49,3 +49,12 @@ export const resign = (token: string, gameId: string) =>
     method: 'POST',
     headers: auth(token),
   });
+
+export const getGameMoves = (token: string, gameId: string) =>
+  request<MoveResponse[]>(`/api/games/${gameId}/moves`, {headers: auth(token)});
+
+export const getPlayerGames = (token: string, playerId: string) =>
+  request<GameResponse[]>(`/api/players/${playerId}/games`, {headers: auth(token)});
+
+export const getPlayerStats = (token: string, playerId: string) =>
+  request<PlayerStats>(`/api/players/${playerId}/stats`, {headers: auth(token)});

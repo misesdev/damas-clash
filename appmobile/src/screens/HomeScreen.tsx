@@ -2,12 +2,14 @@ import React from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   RefreshControl,
   SafeAreaView,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import {BoardMark} from '../components/BoardMark';
 import {GameCard} from '../components/GameCard';
 import {useHomeScreen} from '../hooks/useHomeScreen';
 import {styles} from '../styles/homeStyles';
@@ -52,13 +54,32 @@ export function HomeScreen({user, pendingGame, liveGames, onGameSelect, onGameCa
     handleCancelGame,
   } = useHomeScreen(user, pendingGame, liveGames, onGameSelect, onGameCancelled);
 
+  const initials = user.username ? user.username.slice(0, 2).toUpperCase() : '?';
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.greeting}>Olá, {' '}
-          <Text style={styles.username}>{user.username}</Text>
-        </Text>
+      {/* Top bar */}
+      <View style={styles.topBar}>
+        <View style={styles.topBarLogo}>
+          <BoardMark size={26} />
+          <Text style={styles.topBarTitle}>DAMAS CLASH</Text>
+        </View>
+        <View style={styles.topBarAvatar}>
+          {user.avatarUrl ? (
+            <Image source={{uri: user.avatarUrl}} style={styles.avatarImg} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarInitials}>{initials}</Text>
+            </View>
+          )}
+        </View>
       </View>
+
+      {/* Section heading */}
+      {/* <View style={styles.sectionHeading}> */}
+      {/*   <Text style={styles.sectionTitle}>Partidas</Text> */}
+      {/* </View> */}
+      <View style={{ height: 15 }} />
 
       <View style={styles.tabs}>
         {TABS.map(tab => (

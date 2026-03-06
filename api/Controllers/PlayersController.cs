@@ -7,7 +7,7 @@ namespace api.Controllers;
 
 [ApiController]
 [Route("api/players")]
-public class PlayersController(IPlayerService playerService) : ControllerBase
+public class PlayersController(IPlayerService playerService, IGameService gameService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken ct)
@@ -39,6 +39,21 @@ public class PlayersController(IPlayerService playerService) : ControllerBase
             return result.IsNotFound ? NotFound() : BadRequest(new { error = result.Error });
 
         return Ok(new { avatarUrl = result.Value });
+    }
+
+    [HttpGet("{id:guid}/stats")]
+    public async Task<IActionResult> GetPlayerStats(Guid id, CancellationToken ct)
+    {
+        var stats = await gameService.GetPlayerStatsAsync(id, ct);
+        return Ok(stats);
+    }
+
+    [Authorize]
+    [HttpGet("{id:guid}/games")]
+    public async Task<IActionResult> GetPlayerGames(Guid id, CancellationToken ct)
+    {
+        var games = await gameService.GetCompletedByPlayerAsync(id, ct);
+        return Ok(games);
     }
 
     [Authorize]

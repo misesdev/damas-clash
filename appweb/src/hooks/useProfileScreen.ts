@@ -1,9 +1,11 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { showMessage } from '../components/MessageBox';
 import { updateAvatar } from '../api/players';
+import { getPlayerStats } from '../api/games';
 import type { LoginResponse } from '../types/auth';
+import type { PlayerStats } from '../types/game';
 
 export function useProfileScreen(
   user: LoginResponse,
@@ -11,7 +13,14 @@ export function useProfileScreen(
   onAvatarChanged: (url: string) => void,
 ) {
   const [uploading, setUploading] = useState(false);
+  const [stats, setStats] = useState<PlayerStats | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    getPlayerStats(user.token, user.playerId)
+      .then(setStats)
+      .catch(() => {});
+  }, [user.token, user.playerId]);
 
   const handleLogout = () => {
     showMessage({
@@ -48,5 +57,5 @@ export function useProfileScreen(
     }
   };
 
-  return { uploading, fileInputRef, handleLogout, handleAvatarPress, handleFileChange };
+  return { uploading, stats, fileInputRef, handleLogout, handleAvatarPress, handleFileChange };
 }

@@ -1,5 +1,6 @@
 using api.Data;
 using api.DTOs.Games;
+using api.DTOs.Players;
 using api.Engine;
 using api.Hubs;
 using api.Models;
@@ -228,6 +229,40 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
             .Include(g => g.PlayerWhite)
             .FirstOrDefaultAsync(g => g.Id == id, ct);
         return game is null ? null : ToResponse(game);
+    }
+
+    public async Task<IEnumerable<GameResponse>> GetCompletedByPlayerAsync(Guid playerId, CancellationToken ct = default)
+    {
+        var games = await db.Games
+            .Include(g => g.PlayerBlack)
+            .Include(g => g.PlayerWhite)
+            .Where(g => g.Status == GameStatus.Completed &&
+                       (g.PlayerBlackId == playerId || g.PlayerWhiteId == playerId))
+            .OrderByDescending(g => g.UpdatedAt)
+            .ToListAsync(ct);
+        return games.Select(ToResponse);
+    }
+
+    public async Task<IEnumerable<MoveResponse>> GetMovesAsync(Guid gameId, CancellationToken ct = default)
+    {
+        return await db.Moves
+            .Where(m => m.GameId == gameId)
+            .OrderBy(m => m.CreatedAt)
+            .Select(m => new MoveResponse(m.Id, m.PlayerId, m.FromRow, m.FromCol, m.ToRow, m.ToCol, m.CreatedAt))
+            .ToListAsync(ct);
+    }
+
+    public async Task<PlayerStatsResponse> GetPlayerStatsAsync(Guid playerId, CancellationToken ct = default)
+    {
+        var counts = await db.Games
+            .Where(g => g.Status == GameStatus.Completed &&
+                       (g.PlayerBlackId == playerId || g.PlayerWhiteId == playerId))
+            .Select(g => new { g.WinnerId })
+            .ToListAsync(ct);
+
+        var total = counts.Count;
+        var wins = counts.Count(g => g.WinnerId == playerId);
+        return new PlayerStatsResponse(wins, total - wins, total);
     }
 
     public async Task<IEnumerable<GameResponse>> GetActiveAsync(CancellationToken ct = default)

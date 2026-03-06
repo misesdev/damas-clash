@@ -16,7 +16,7 @@ import type {LoginResponse} from '../types/auth';
 import type {GameResponse} from '../types/game';
 
 type Screen = 'login' | 'register' | 'confirmEmail' | 'verifyLogin';
-type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail';
+type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay';
 
 const REFRESH_BUFFER_MS = 2 * 60 * 1000; // refresh 2 min before expiry
 
@@ -27,6 +27,7 @@ export function useApp() {
   const [pendingEmail, setPendingEmail] = useState('');
   const [session, setSession] = useState<LoginResponse | null>(null);
   const [selectedGame, setSelectedGame] = useState<GameResponse | null>(null);
+  const [replayGame, setReplayGame] = useState<GameResponse | null>(null);
   const [pendingGameId, setPendingGameId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [creatingGame, setCreatingGame] = useState(false);
@@ -261,6 +262,11 @@ export function useApp() {
   const handleNavigateToEditUsername = () => setAuthScreen('editUsername');
   const handleNavigateToEditEmail = () => setAuthScreen('editEmail');
 
+  const handleOpenHistory = () => setAuthScreen('gameHistory');
+  const handleBackFromHistory = () => {setAuthScreen('tabs'); setTab('profile');};
+  const handleOpenReplay = (game: GameResponse) => {setReplayGame(game); setAuthScreen('replay');};
+  const handleBackFromReplay = () => setAuthScreen('gameHistory');
+
   const handleBackToProfile = () => {
     setAuthScreen('tabs');
     setTab('profile');
@@ -302,5 +308,10 @@ export function useApp() {
     handleNavigateToEditUsername,
     handleNavigateToEditEmail,
     handleBackToProfile,
+    replayGame,
+    handleOpenHistory,
+    handleBackFromHistory,
+    handleOpenReplay,
+    handleBackFromReplay,
   };
 }

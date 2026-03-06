@@ -16,3 +16,19 @@ export interface GameResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface MoveResponse {
+  id: string;
+  playerId: string;
+  fromRow: number;
+  fromCol: number;
+  toRow: number;
+  toCol: number;
+  createdAt: string;
+}
+
+export interface PlayerStats {
+  wins: number;
+  losses: number;
+  total: number;
+}

@@ -1,8 +1,10 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {showMessage} from '../components/MessageBox';
 import {updateAvatar} from '../api/players';
+import {getPlayerStats} from '../api/games';
 import type {LoginResponse} from '../types/auth';
+import type {PlayerStats} from '../types/game';
 
 export function useProfileScreen(
   user: LoginResponse,
@@ -10,6 +12,13 @@ export function useProfileScreen(
   onAvatarChanged: (url: string) => void,
 ) {
   const [uploading, setUploading] = useState(false);
+  const [stats, setStats] = useState<PlayerStats | null>(null);
+
+  useEffect(() => {
+    getPlayerStats(user.token, user.playerId)
+      .then(setStats)
+      .catch(() => {});
+  }, [user.token, user.playerId]);
 
   const handleLogout = () => {
     showMessage({
@@ -54,5 +63,5 @@ export function useProfileScreen(
     );
   };
 
-  return {uploading, handleLogout, handleAvatarPress};
+  return {uploading, stats, handleLogout, handleAvatarPress};
 }

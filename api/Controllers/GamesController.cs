@@ -92,6 +92,13 @@ public class GamesController(IGameService gameService) : ControllerBase
         return Ok(result.Value);
     }
 
+    [HttpGet("{id:guid}/moves")]
+    public async Task<IActionResult> GetMoves(Guid id, CancellationToken ct)
+    {
+        var moves = await gameService.GetMovesAsync(id, ct);
+        return Ok(moves);
+    }
+
     [HttpPost("{id:guid}/moves")]
     [Authorize]
     public async Task<IActionResult> MakeMove(Guid id, [FromBody] MakeMoveRequest request, CancellationToken ct)
