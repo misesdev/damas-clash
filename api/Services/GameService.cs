@@ -13,6 +13,13 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
 {
     public async Task<ServiceResult<GameResponse>> CreateAsync(Guid playerId, CancellationToken ct = default)
     {
+        var existingPending = await db.Games
+            .Include(g => g.PlayerBlack)
+            .FirstOrDefaultAsync(g => g.PlayerBlackId == playerId && g.Status == GameStatus.WaitingForPlayers, ct);
+
+        if (existingPending is not null)
+            return ServiceResult<GameResponse>.Ok(ToResponse(existingPending));
+
         var initialState = BoardEngine.CreateInitialState();
 
         var game = new Game

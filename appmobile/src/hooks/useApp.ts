@@ -201,6 +201,17 @@ export function useApp() {
 
   const handleNewGame = async () => {
     if (!session || creatingGame) {return;}
+
+    const existingGame = liveGames?.find(
+      g => g.playerBlackId === session.playerId && g.status === 'WaitingForPlayers',
+    );
+    if (existingGame) {
+      setSelectedGame(existingGame);
+      setPendingGameId(existingGame.id);
+      setAuthScreen('waitingRoom');
+      return;
+    }
+
     setCreatingGame(true);
     try {
       const game = await createGame(session.token);
