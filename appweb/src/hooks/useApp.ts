@@ -8,10 +8,10 @@ import {
 import type { HubConnection } from '@microsoft/signalr';
 import { useEffect, useRef, useState } from 'react';
 import { showMessage } from '../components/MessageBox';
-import { cancelGame, createGame } from '../api/games';
+import { cancelGame, createGame, getGame } from '../api/games';
 import { refreshAccessToken } from '../api/auth';
 import { BASE_URL } from '../api/client';
-import { clearSession, loadSession, saveSession } from '../utils/session';
+import { clearActiveGameId, clearSession, loadActiveGameId, loadSession, saveActiveGameId, saveSession } from '../utils/session';
 import type { LoginResponse } from '../types/auth';
 import type { GameResponse } from '../types/game';
 
@@ -39,11 +39,24 @@ export function useApp() {
   const pendingGameIdRef = useRef<string | null>(null);
   const hubRef = useRef<HubConnection | null>(null);
 
-  // Load persisted session
+  // Load persisted session + active game
   useEffect(() => {
     const saved = loadSession();
-    if (saved) setSession(saved);
-    setLoading(false);
+    if (!saved) { setLoading(false); return; }
+    setSession(saved);
+    const gameId = loadActiveGameId();
+    if (!gameId) { setLoading(false); return; }
+    getGame(saved.token, gameId)
+      .then(activeGame => {
+        if (activeGame.status === 'InProgress') {
+          setSelectedGame(activeGame);
+          setAuthScreen('checkersBoard');
+        } else {
+          clearActiveGameId();
+        }
+      })
+      .catch(() => clearActiveGameId())
+      .finally(() => setLoading(false));
   }, []);
 
   // Proactive token refresh
@@ -93,6 +106,7 @@ export function useApp() {
         hub.on('GameStarted', (game: GameResponse) => {
           if (!active) return;
           setPendingGameId(null);
+          saveActiveGameId(game.id);
 
           if (authScreenRef.current === 'waitingRoom') {
             setSelectedGame(game);
@@ -158,6 +172,7 @@ export function useApp() {
 
   const handleLogout = () => {
     clearSession();
+    clearActiveGameId();
     setSession(null);
     setScreen('login');
     setAuthScreen('tabs');
@@ -196,9 +211,12 @@ export function useApp() {
   const handleGameSelect = (game: GameResponse) => {
     setSelectedGame(game);
     setAuthScreen('checkersBoard');
+    const isPlayer = game.playerBlackId === session?.playerId || game.playerWhiteId === session?.playerId;
+    if (isPlayer && game.status === 'InProgress') saveActiveGameId(game.id);
   };
 
   const handleBackFromBoard = () => {
+    clearActiveGameId();
     setAuthScreen('tabs');
     setSelectedGame(null);
   };

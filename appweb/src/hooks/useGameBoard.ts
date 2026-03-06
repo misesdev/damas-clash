@@ -3,12 +3,12 @@
 import {
   HubConnectionBuilder,
   HttpTransportType,
-  HubConnectionState,
 } from '@microsoft/signalr';
 import type { HubConnection } from '@microsoft/signalr';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { makeMove } from '../api/games';
+import { makeMove, resign, skipTurn } from '../api/games';
 import { BASE_URL } from '../api/client';
+import { showMessage } from '../components/MessageBox';
 import type { Piece, PieceColor } from '../game/checkers';
 import { BOARD_SIZE, findAt } from '../game/checkers';
 import { GameEngine } from '../game/GameEngine';
@@ -16,15 +16,19 @@ import { boardStateToEngine, getMyColor, parseApiColor } from '../utils/boardSta
 import type { LoginResponse } from '../types/auth';
 import type { GameResponse } from '../types/game';
 
-// Piece position state for CSS transitions
 export interface PiecePos {
   row: number;
   col: number;
   opacity: number;
 }
 
+const TURN_TIMEOUT_SEC = 60;
+
 export function useGameBoard(initialGame: GameResponse, session: LoginResponse) {
-  const boardSize = Math.min(typeof window !== 'undefined' ? window.innerWidth - 48 : 360, 480);
+  const boardSize = Math.min(
+    typeof window !== 'undefined' ? Math.min(window.innerWidth - 48, window.innerHeight - 280) : 400,
+    560,
+  );
   const cellSize = boardSize / BOARD_SIZE;
 
   const initialEngine = boardStateToEngine(initialGame.boardState, initialGame.currentTurn);
@@ -35,8 +39,8 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   const [watchersCount, setWatchersCount] = useState(1);
   const [sendingMove, setSendingMove] = useState(false);
   const [error, setError] = useState('');
+  const [timeLeft, setTimeLeft] = useState(TURN_TIMEOUT_SEC);
 
-  // Track piece positions for CSS transitions
   const [piecePositions, setPiecePositions] = useState<Map<string, PiecePos>>(() => {
     const m = new Map<string, PiecePos>();
     initialEngine.pieces.forEach(p => {
@@ -52,13 +56,15 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   useEffect(() => { engineRef.current = engine; }, [engine]);
   useEffect(() => { gameRef.current = game; }, [game]);
 
+  const myColor: PieceColor = getMyColor(initialGame, session.playerId);
+  const isFlipped = myColor === 'dark';
+
   const syncPositionsFromEngine = useCallback((eng: GameEngine) => {
     setPiecePositions(prev => {
       const next = new Map<string, PiecePos>();
       eng.pieces.forEach(p => {
         next.set(p.id, { row: p.row, col: p.col, opacity: 1 });
       });
-      // Keep captured pieces that are fading out
       prev.forEach((pos, id) => {
         if (!next.has(id) && pos.opacity > 0) {
           next.set(id, { ...pos, opacity: 0 });
@@ -68,7 +74,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     });
   }, []);
 
-  // ── SignalR connection ──────────────────────────────────────────────────────
+  // ── SignalR ─────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     let hub: HubConnection;
@@ -107,7 +113,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
 
         await hub.start();
         if (!active) { hub.stop(); return; }
-        await hub.invoke('WatchGame', initialGame.id);
+        await hub.invoke('JoinGameRoom', initialGame.id);
       } catch {
         // Silently ignore
       }
@@ -119,18 +125,15 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     };
   }, [initialGame.id, session.token, syncPositionsFromEngine]);
 
-  // ── Move animation (CSS transition) ────────────────────────────────────────
+  // ── Move animation ──────────────────────────────────────────────────────────
 
   const runMoveAnimation = useCallback(
     (movingPiece: Piece, captureId: string | undefined, nextEngine: GameEngine) => {
       setAnimating(true);
-
-      // Start transition: update positions of moving + captured pieces
       setPiecePositions(prev => {
         const next = new Map(prev);
-        const movingPos = next.get(movingPiece.id);
         const updated = nextEngine.pieces.find(p => p.id === movingPiece.id);
-        if (movingPos && updated) {
+        if (updated) {
           next.set(movingPiece.id, { row: updated.row, col: updated.col, opacity: 1 });
         }
         if (captureId) {
@@ -140,7 +143,6 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
         return next;
       });
 
-      // After animation duration, commit engine state and clean up
       setTimeout(() => {
         setEngine(nextEngine);
         setPiecePositions(prev => {
@@ -154,9 +156,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     [],
   );
 
-  // ── Cell press ─────────────────────────────────────────────────────────────
-
-  const myColor: PieceColor = getMyColor(initialGame, session.playerId);
+  // ── Cell press ──────────────────────────────────────────────────────────────
 
   const handleCellPress = useCallback(
     (row: number, col: number) => {
@@ -223,29 +223,105 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     [session.token, initialGame.id, syncPositionsFromEngine],
   );
 
-  const isMyTurn = parseApiColor(game.currentTurn) === myColor;
+  // ── Skip turn API ───────────────────────────────────────────────────────────
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const skipTurnToApi = useCallback(async () => {
+    try {
+      const updated = await skipTurn(session.token, initialGame.id);
+      setGame(updated);
+    } catch {
+      // ignore — SignalR will propagate opponent move
+    }
+  }, [session.token, initialGame.id]);
+
+  // ── Turn timer ──────────────────────────────────────────────────────────────
+
+  const isMyTurnDerived = parseApiColor(game.currentTurn) === myColor;
+
+  useEffect(() => {
+    if (!isMyTurnDerived || game.status === 'Completed') {
+      setTimeLeft(TURN_TIMEOUT_SEC);
+      return;
+    }
+    setTimeLeft(TURN_TIMEOUT_SEC);
+    const tick = setInterval(() => {
+      setTimeLeft(prev => (prev > 1 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(tick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMyTurnDerived, game.status]);
+
+  useEffect(() => {
+    if (timeLeft === 0 && isMyTurnDerived && game.status === 'InProgress') {
+      skipTurnToApi();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft]);
+
+  // ── Resign ──────────────────────────────────────────────────────────────────
+
+  const handleResign = useCallback(async () => {
+    setSendingMove(true);
+    try {
+      const updated = await resign(session.token, initialGame.id);
+      setGame(updated);
+      setError('');
+    } catch {
+      setError('Não foi possível desistir.');
+    } finally {
+      setSendingMove(false);
+    }
+  }, [session.token, initialGame.id]);
+
+  const confirmResign = useCallback(() => {
+    showMessage({
+      title: 'Desistir da partida?',
+      message: 'Você cederá a vitória ao adversário. Esta ação não pode ser desfeita.',
+      type: 'confirm',
+      actions: [
+        { label: 'Cancelar' },
+        { label: 'Desistir', danger: true, onPress: handleResign },
+      ],
+    });
+  }, [handleResign]);
+
+  // ── Derived ─────────────────────────────────────────────────────────────────
+
+  const isMyTurn = isMyTurnDerived;
   const opponentColor: PieceColor = myColor === 'dark' ? 'light' : 'dark';
 
   const winner: PieceColor | null = game.winnerId
-    ? game.winnerId === game.playerBlackId
-      ? 'dark'
-      : 'light'
+    ? game.winnerId === game.playerBlackId ? 'dark' : 'light'
     : null;
 
   const myUsername = myColor === 'dark' ? game.playerBlackUsername : game.playerWhiteUsername;
   const opponentUsername = myColor === 'dark' ? game.playerWhiteUsername : game.playerBlackUsername;
+  const myAvatarUrl = myColor === 'dark' ? game.playerBlackAvatarUrl : game.playerWhiteAvatarUrl;
+  const opponentAvatarUrl = myColor === 'dark' ? game.playerWhiteAvatarUrl : game.playerBlackAvatarUrl;
 
   const darkCount = engine.pieces.filter(p => p.color === 'dark').length;
   const lightCount = engine.pieces.filter(p => p.color === 'light').length;
+  const myCount = myColor === 'dark' ? darkCount : lightCount;
+  const oppCount = myColor === 'dark' ? lightCount : darkCount;
+
+  const isTimerActive = isMyTurn && !winner && game.status !== 'Completed';
+  const isUrgent = isTimerActive && timeLeft <= 10;
 
   return {
     game,
     engine,
     myColor,
     opponentColor,
+    isFlipped,
     myUsername,
     opponentUsername,
+    myAvatarUrl,
+    opponentAvatarUrl,
     isMyTurn,
+    timeLeft,
+    isTimerActive,
+    isUrgent,
     winner,
     watchersCount,
     sendingMove,
@@ -256,6 +332,9 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     piecePositions,
     darkCount,
     lightCount,
+    myCount,
+    oppCount,
     handleCellPress,
+    confirmResign,
   };
 }

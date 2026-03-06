@@ -8,6 +8,20 @@ public class GameHub(
     IGameService gameService,
     IGameWatcherService watchers) : Hub
 {
+    /// <summary>Called by the two players — joins the game room without counting as a spectator.</summary>
+    public async Task JoinGameRoom(string gameId)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+
+        if (Guid.TryParse(gameId, out var id))
+        {
+            var state = await cache.GetBoardStateAsync(id);
+            if (state is not null)
+                await Clients.Caller.SendAsync("GameState", state);
+        }
+    }
+
+    /// <summary>Called by spectators — joins the game room and increments the watcher count.</summary>
     public async Task WatchGame(string gameId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);

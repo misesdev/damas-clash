@@ -1,9 +1,9 @@
 {
-  "name": "appmobile",
+  "name": "DamasClash",
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "android": "react-native run-android",
+    "android": "react-native run-android && react-native start --reset-cache",
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
@@ -38,6 +38,7 @@
     "jest": "^29.6.3",
     "prettier": "2.8.8",
     "react-native-dotenv": "^3.4.11",
+    "react-native-make": "^1.0.1",
     "react-test-renderer": "19.2.3",
     "typescript": "^5.8.3"
   },

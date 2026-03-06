@@ -66,6 +66,32 @@ public class GamesController(IGameService gameService) : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/skip-turn")]
+    [Authorize]
+    public async Task<IActionResult> SkipTurn(Guid id, CancellationToken ct)
+    {
+        var playerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await gameService.SkipTurnAsync(id, playerId, ct);
+
+        if (!result.IsSuccess)
+            return result.IsNotFound ? NotFound(result.Error) : BadRequest(result.Error);
+
+        return Ok(result.Value);
+    }
+
+    [HttpPost("{id:guid}/resign")]
+    [Authorize]
+    public async Task<IActionResult> Resign(Guid id, CancellationToken ct)
+    {
+        var playerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var result = await gameService.ResignAsync(id, playerId, ct);
+
+        if (!result.IsSuccess)
+            return result.IsNotFound ? NotFound(result.Error) : BadRequest(result.Error);
+
+        return Ok(result.Value);
+    }
+
     [HttpPost("{id:guid}/moves")]
     [Authorize]
     public async Task<IActionResult> MakeMove(Guid id, [FromBody] MakeMoveRequest request, CancellationToken ct)

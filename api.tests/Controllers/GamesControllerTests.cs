@@ -21,8 +21,10 @@ public class GamesControllerTests(CustomWebApplicationFactory factory)
     private IGameCacheService GetCache() =>
         factory.Services.CreateScope().ServiceProvider.GetRequiredService<IGameCacheService>();
 
-    private static readonly JsonSerializerOptions JsonOpts =
-        new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+    };
 
     // ── GET /api/games ──────────────────────────────────────────────────────────
 
@@ -34,6 +36,33 @@ public class GamesControllerTests(CustomWebApplicationFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var games = await response.Content.ReadFromJsonAsync<List<GameResponse>>(JsonOpts);
         Assert.NotNull(games);
+    }
+
+    [Fact]
+    public async Task GetActive_AfterCreate_ReturnsGameWithStringEnums()
+    {
+        var (_, token) = await CreatePlayer("list_strings");
+        await CreateGame(token);
+
+        var response = await _client.GetAsync("/api/games");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        Assert.Contains("WaitingForPlayers", json);
+    }
+
+    [Fact]
+    public async Task GetActive_AfterCreate_GameAppearsInList()
+    {
+        var (_, token) = await CreatePlayer("list_after_create");
+        var game = await CreateGame(token);
+
+        var response = await _client.GetAsync("/api/games");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var games = await response.Content.ReadFromJsonAsync<List<GameResponse>>(JsonOpts);
+        Assert.NotNull(games);
+        Assert.Contains(games, g => g.Id == game.Id);
     }
 
     // ── POST /api/games ─────────────────────────────────────────────────────────
@@ -347,6 +376,162 @@ public class GamesControllerTests(CustomWebApplicationFactory factory)
         Assert.NotNull(updated);
         Assert.Equal(GameStatus.Completed, updated.Status);
         Assert.NotNull(updated.WinnerId);
+    }
+
+    // ── POST /api/games/{id}/skip-turn ──────────────────────────────────────
+
+    [Fact]
+    public async Task SkipTurn_ValidTurn_PassesTurnToOpponent()
+    {
+        var (_, blackToken) = await CreatePlayer("skip_b");
+        var (_, whiteToken) = await CreatePlayer("skip_w");
+        var game = await CreateGame(blackToken);
+        await JoinGame(game.Id, whiteToken);
+
+        // Black skips their turn
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", blackToken);
+        var response = await _client.PostAsync($"/api/games/{game.Id}/skip-turn", null);
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = await response.Content.ReadFromJsonAsync<GameResponse>(JsonOpts);
+        Assert.NotNull(updated);
+        Assert.Equal(api.Models.Enums.PieceColor.White, updated.CurrentTurn);
+    }
+
+    [Fact]
+    public async Task SkipTurn_WrongTurn_Returns400()
+    {
+        var (_, blackToken) = await CreatePlayer("skip_wt_b");
+        var (_, whiteToken) = await CreatePlayer("skip_wt_w");
+        var game = await CreateGame(blackToken);
+        await JoinGame(game.Id, whiteToken);
+
+        // White tries to skip but it's black's turn
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", whiteToken);
+        var response = await _client.PostAsync($"/api/games/{game.Id}/skip-turn", null);
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SkipTurn_NotParticipant_Returns400()
+    {
+        var (_, blackToken) = await CreatePlayer("skip_np_b");
+        var (_, whiteToken) = await CreatePlayer("skip_np_w");
+        var (_, outsiderToken) = await CreatePlayer("skip_np_x");
+        var game = await CreateGame(blackToken);
+        await JoinGame(game.Id, whiteToken);
+
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", outsiderToken);
+        var response = await _client.PostAsync($"/api/games/{game.Id}/skip-turn", null);
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task MakeMove_WhenGameEnds_GameNoLongerInActiveList()
+    {
+        var (_, blackToken) = await CreatePlayer("end_list_b");
+        var (_, whiteToken) = await CreatePlayer("end_list_w");
+        var game = await CreateGame(blackToken);
+        await JoinGame(game.Id, whiteToken);
+
+        // Seed near-endgame board
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
+            var g = await db.Games.FindAsync(game.Id);
+            var board = new int[8][];
+            for (int r = 0; r < 8; r++) board[r] = new int[8];
+            board[3][3] = BoardEngine.BlackMan;
+            board[4][4] = BoardEngine.WhiteMan;
+            g!.BoardState = new BoardStateData { Cells = board }.Serialize();
+            await db.SaveChangesAsync();
+            var cache = scope.ServiceProvider.GetRequiredService<IGameCacheService>();
+            await cache.SetBoardStateAsync(game.Id, new BoardStateData { Cells = board });
+        }
+
+        // Black captures last white piece → game over
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", blackToken);
+        await _client.PostAsJsonAsync($"/api/games/{game.Id}/moves", new MakeMoveRequest(3, 3, 5, 5));
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        var listResponse = await _client.GetAsync("/api/games");
+        var games = await listResponse.Content.ReadFromJsonAsync<List<GameResponse>>(JsonOpts);
+        Assert.NotNull(games);
+        Assert.DoesNotContain(games, g => g.Id == game.Id);
+    }
+
+    // ── POST /api/games/{id}/resign ──────────────────────────────────────────
+
+    [Fact]
+    public async Task Resign_BlackResigns_WhiteWins()
+    {
+        var (_, blackToken) = await CreatePlayer("resign_b");
+        var (whiteId, whiteToken) = await CreatePlayer("resign_w");
+        var game = await CreateGame(blackToken);
+        await JoinGame(game.Id, whiteToken);
+
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", blackToken);
+        var response = await _client.PostAsync($"/api/games/{game.Id}/resign", null);
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = await response.Content.ReadFromJsonAsync<GameResponse>(JsonOpts);
+        Assert.NotNull(updated);
+        Assert.Equal(GameStatus.Completed, updated.Status);
+        Assert.Equal(whiteId, updated.WinnerId);
+    }
+
+    [Fact]
+    public async Task Resign_GameNoLongerInActiveList()
+    {
+        var (_, blackToken) = await CreatePlayer("resign_list_b");
+        var (_, whiteToken) = await CreatePlayer("resign_list_w");
+        var game = await CreateGame(blackToken);
+        await JoinGame(game.Id, whiteToken);
+
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", blackToken);
+        await _client.PostAsync($"/api/games/{game.Id}/resign", null);
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        var listResponse = await _client.GetAsync("/api/games");
+        var games = await listResponse.Content.ReadFromJsonAsync<List<GameResponse>>(JsonOpts);
+        Assert.NotNull(games);
+        Assert.DoesNotContain(games, g => g.Id == game.Id);
+    }
+
+    [Fact]
+    public async Task Resign_NotParticipant_Returns400()
+    {
+        var (_, blackToken) = await CreatePlayer("resign_np_b");
+        var (_, whiteToken) = await CreatePlayer("resign_np_w");
+        var (_, outsiderToken) = await CreatePlayer("resign_np_x");
+        var game = await CreateGame(blackToken);
+        await JoinGame(game.Id, whiteToken);
+
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", outsiderToken);
+        var response = await _client.PostAsync($"/api/games/{game.Id}/resign", null);
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Resign_GameNotInProgress_Returns400()
+    {
+        var (_, blackToken) = await CreatePlayer("resign_ns_b");
+        var game = await CreateGame(blackToken);
+
+        // Game is WaitingForPlayers, not InProgress
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", blackToken);
+        var response = await _client.PostAsync($"/api/games/{game.Id}/resign", null);
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     // ── Cache tests ──────────────────────────────────────────────────────────

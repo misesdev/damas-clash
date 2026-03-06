@@ -34,3 +34,18 @@ export const makeMove = (token: string, gameId: string, move: MakeMoveRequest) =
     headers: {...auth(token), 'Content-Type': 'application/json'},
     body: JSON.stringify(move),
   });
+
+export const skipTurn = (token: string, gameId: string) =>
+  request<GameResponse>(`/api/games/${gameId}/skip-turn`, {
+    method: 'POST',
+    headers: auth(token),
+  });
+
+export const getGame = (token: string, gameId: string) =>
+  request<GameResponse>(`/api/games/${gameId}`, {headers: auth(token)});
+
+export const resign = (token: string, gameId: string) =>
+  request<GameResponse>(`/api/games/${gameId}/resign`, {
+    method: 'POST',
+    headers: auth(token),
+  });

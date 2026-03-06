@@ -4,8 +4,8 @@ import {
 } from '@microsoft/signalr';
 import type {HubConnection} from '@microsoft/signalr';
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {Animated, useWindowDimensions} from 'react-native';
-import {makeMove} from '../api/games';
+import {Animated, BackHandler, useWindowDimensions} from 'react-native';
+import {makeMove, resign, skipTurn} from '../api/games';
 import {BASE_URL} from '../api/client';
 import type {Piece, Move, PieceColor} from '../game/checkers';
 import {BOARD_SIZE, findAt} from '../game/checkers';
@@ -131,7 +131,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
         await hub.start();
         if (!active) {hub.stop(); return;}
 
-        await hub.invoke('WatchGame', initialGame.id);
+        await hub.invoke('JoinGameRoom', initialGame.id);
       } catch {
         // Connection failed — silently ignore
       }
@@ -267,10 +267,58 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     [session.token, initialGame.id],
   );
 
+  // ── Block hardware back during active game ────────────────────────────────
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Allow back only after game ends
+      return !winner;
+    });
+    return () => sub.remove();
+  }, [winner]);
+
+  // ── Turn timer ────────────────────────────────────────────────────────────
+
+  const TURN_TIMEOUT_SEC = 60;
+  const [timeLeft, setTimeLeft] = useState(TURN_TIMEOUT_SEC);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const skipTurnToApi = useCallback(async () => {
+    try {
+      const updated = await skipTurn(session.token, initialGame.id);
+      setGame(updated);
+    } catch {
+      // ignore — opponent's turn will propagate via SignalR anyway
+    }
+  }, [session.token, initialGame.id]);
+
+  const isMyTurnDerived = parseApiColor(game.currentTurn) === myColor;
+
+  useEffect(() => {
+    if (!isMyTurnDerived || game.status === 'Completed') {
+      setTimeLeft(TURN_TIMEOUT_SEC);
+      return;
+    }
+    setTimeLeft(TURN_TIMEOUT_SEC);
+    const tick = setInterval(() => {
+      setTimeLeft(prev => (prev > 1 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(tick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMyTurnDerived, game.status]);
+
+  useEffect(() => {
+    if (timeLeft === 0 && isMyTurnDerived && game.status === 'InProgress') {
+      skipTurnToApi();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft]);
+
   // ── Derived ───────────────────────────────────────────────────────────────
 
-  const isMyTurn = parseApiColor(game.currentTurn) === myColor;
+  const isMyTurn = isMyTurnDerived;
   const opponentColor: PieceColor = myColor === 'dark' ? 'light' : 'dark';
+  const isFlipped = myColor === 'dark';
 
   const winner: PieceColor | null = game.winnerId
     ? game.winnerId === game.playerBlackId
@@ -283,17 +331,38 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   const opponentUsername =
     myColor === 'dark' ? game.playerWhiteUsername : game.playerBlackUsername;
 
+  const myAvatarUrl =
+    myColor === 'dark' ? game.playerBlackAvatarUrl : game.playerWhiteAvatarUrl;
+  const opponentAvatarUrl =
+    myColor === 'dark' ? game.playerWhiteAvatarUrl : game.playerBlackAvatarUrl;
+
   const darkCount = engine.pieces.filter(p => p.color === 'dark').length;
   const lightCount = engine.pieces.filter(p => p.color === 'light').length;
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const handleResign = useCallback(async () => {
+    setSendingMove(true);
+    try {
+      const updated = await resign(session.token, initialGame.id);
+      setGame(updated);
+      setError('');
+    } catch {
+      setError('Não foi possível desistir.');
+    } finally {
+      setSendingMove(false);
+    }
+  }, [session.token, initialGame.id]);
 
   return {
     game,
     engine,
     myColor,
     opponentColor,
+    isFlipped,
     myUsername,
     opponentUsername,
     isMyTurn,
+    timeLeft,
     winner,
     watchersCount,
     sendingMove,
@@ -305,6 +374,9 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     getAnim,
     darkCount,
     lightCount,
+    myAvatarUrl,
+    opponentAvatarUrl,
     handleCellPress,
+    handleResign,
   };
 }

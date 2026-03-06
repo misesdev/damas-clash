@@ -1,9 +1,10 @@
 import {StyleSheet} from 'react-native';
+import {colors} from '../theme/colors';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D0F14',
+    backgroundColor: colors.bg,
     paddingHorizontal: 16,
     paddingTop: 56,
     paddingBottom: 32,
@@ -14,50 +15,70 @@ export const styles = StyleSheet.create({
   // Header
   header: {alignItems: 'center', gap: 2},
   title: {
-    color: '#F0EDE6',
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  subtitle: {
-    color: '#8A90A0',
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: 0.3,
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   watchers: {
-    color: '#4A5068',
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: '500',
     marginTop: 2,
   },
 
+  // Status + timer row (below board)
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  statusLabel: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  statusUrgent: {color: colors.error},
+  timerText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+    minWidth: 36,
+    textAlign: 'right',
+  },
+  timerUrgent: {color: colors.error},
+
   // Score row
-  scoreRow: {flexDirection: 'row', alignItems: 'center', gap: 12},
+  scoreRow: {flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%'},
   playerChip: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#181C26',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#2A3042',
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    minWidth: 110,
-    justifyContent: 'center',
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
-  activeChip: {borderColor: '#C9A84C', backgroundColor: '#1E1F15'},
-  chipDot: {width: 10, height: 10, borderRadius: 5},
-  lightDot: {backgroundColor: '#E8E0D0', borderWidth: 1, borderColor: '#B8AD9D'},
-  darkDot: {backgroundColor: '#2A2F3C', borderWidth: 1, borderColor: '#1A1E28'},
-  chipLabel: {color: '#9AA0B2', fontSize: 10, fontWeight: '600'},
-  chipName: {color: '#E0DCD4', fontSize: 12, fontWeight: '700', maxWidth: 80},
-  chipCount: {color: '#E0DCD4', fontSize: 15, fontWeight: '800', marginLeft: 4},
-  vs: {color: '#3A4058', fontSize: 16, fontWeight: '700'},
-  errorText: {color: '#C0392B', fontSize: 12, textAlign: 'center'},
+  activeChip: {borderColor: colors.text},
+  chipInfo: {flex: 1},
+  chipLabel: {color: colors.textMuted, fontSize: 9, fontWeight: '600', letterSpacing: 0.3},
+  chipName: {color: colors.text, fontSize: 12, fontWeight: '600'},
+  chipCount: {
+    color: colors.textSecondary,
+    fontSize: 15,
+    fontWeight: '800',
+    flexShrink: 0,
+  },
+  vs: {color: colors.textMuted, fontSize: 14, fontWeight: '700'},
+  errorText: {color: colors.error, fontSize: 12, textAlign: 'center'},
   winnerText: {
-    color: '#C9A84C',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '700',
     textAlign: 'center',
@@ -78,6 +99,7 @@ export const styles = StyleSheet.create({
     elevation: 12,
   },
   board: {borderRadius: 6, overflow: 'hidden'},
+  boardFlipped: {transform: [{scaleX: -1}, {scaleY: -1}]},
 
   // Cell grid layer
   cellGrid: {flexDirection: 'row', flexWrap: 'wrap'},
@@ -146,6 +168,28 @@ export const styles = StyleSheet.create({
   // Selection glow ring (rendered in pieces layer, position: absolute)
   selectionRing: {position: 'absolute', borderWidth: 2.5, borderColor: '#D4A843'},
 
-  // Actions
-  actions: {width: '100%', gap: 10, alignItems: 'stretch'},
+  // Win / loss overlay
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  overlayContent: {alignItems: 'center', gap: 16},
+  overlayEmoji: {fontSize: 64},
+  overlayHeading: {fontSize: 32, fontWeight: '800', letterSpacing: 0.5},
+  winColor: {color: colors.text},
+  lossColor: {color: colors.textSecondary},
+  overlaySubtitle: {
+    color: colors.textSecondary,
+    fontSize: 15,
+    fontWeight: '400',
+    textAlign: 'center',
+  },
+  overlayActions: {marginTop: 8, width: '100%'},
 });

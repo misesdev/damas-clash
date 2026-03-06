@@ -4,6 +4,7 @@ import App from '../App';
 import * as authApi from '../src/api/auth';
 import * as gamesApi from '../src/api/games';
 import * as authStorage from '../src/storage/auth';
+import * as gameStorage from '../src/storage/game';
 
 // Initial board state matching BoardEngine.CreateInitialState()
 const INITIAL_BOARD_STATE = JSON.stringify({
@@ -24,6 +25,7 @@ const INITIAL_BOARD_STATE = JSON.stringify({
 jest.mock('../src/api/auth');
 jest.mock('../src/api/games');
 jest.mock('../src/storage/auth');
+jest.mock('../src/storage/game');
 
 jest.mock('react-native-safe-area-context', () => {
   const {View} = require('react-native');
@@ -77,9 +79,14 @@ const mockVerifyLogin = authApi.verifyLogin as jest.MockedFunction<typeof authAp
 const mockLoadSession = authStorage.loadSession as jest.MockedFunction<typeof authStorage.loadSession>;
 const mockSaveSession = authStorage.saveSession as jest.MockedFunction<typeof authStorage.saveSession>;
 const mockClearSession = authStorage.clearSession as jest.MockedFunction<typeof authStorage.clearSession>;
+const mockLoadActiveGameId = gameStorage.loadActiveGameId as jest.MockedFunction<typeof gameStorage.loadActiveGameId>;
+const mockSaveActiveGameId = gameStorage.saveActiveGameId as jest.MockedFunction<typeof gameStorage.saveActiveGameId>;
+const mockClearActiveGameId = gameStorage.clearActiveGameId as jest.MockedFunction<typeof gameStorage.clearActiveGameId>;
 const mockListGames = gamesApi.listGames as jest.MockedFunction<typeof gamesApi.listGames>;
 const mockCreateGame = gamesApi.createGame as jest.MockedFunction<typeof gamesApi.createGame>;
+const mockGetGame = gamesApi.getGame as jest.MockedFunction<typeof gamesApi.getGame>;
 const mockMakeMove = gamesApi.makeMove as jest.MockedFunction<typeof gamesApi.makeMove>;
+const mockResign = gamesApi.resign as jest.MockedFunction<typeof gamesApi.resign>;
 
 const fakeSession = {
   token: 'tok',
@@ -147,9 +154,14 @@ beforeEach(() => {
   mockLoadSession.mockResolvedValue(null);
   mockSaveSession.mockResolvedValue(undefined);
   mockClearSession.mockResolvedValue(undefined);
+  mockLoadActiveGameId.mockResolvedValue(null);
+  mockSaveActiveGameId.mockResolvedValue(undefined);
+  mockClearActiveGameId.mockResolvedValue(undefined);
   mockListGames.mockResolvedValue([]);
   mockCreateGame.mockResolvedValue(fakeGame);
+  mockGetGame.mockResolvedValue(fakeGameStarted);
   mockMakeMove.mockResolvedValue(fakeGameStarted);
+  mockResign.mockResolvedValue({...fakeGameStarted, status: 'Completed' as const, winnerId: 'opponent-id'});
 });
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -404,7 +416,7 @@ describe('App navigation', () => {
     expect(queryAllByTestId('piece-light')).toHaveLength(12);
   });
 
-  it('back button from board returns to home', async () => {
+  it('overlay back button from board returns to home after game ends', async () => {
     mockLoadSession.mockResolvedValue(fakeSession);
     const {getByTestId} = render(<App />);
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
@@ -415,8 +427,32 @@ describe('App navigation', () => {
     fireGameStarted(fakeGameStarted);
     await waitFor(() => expect(getByTestId('checkers-board')).toBeTruthy());
 
-    fireEvent.press(getByTestId('back-home-button'));
+    // Simulate game completion via MoveMade
+    await waitFor(() => expect(capturedMoveMadeHandler).not.toBeNull());
+    const completedGame = {
+      ...fakeGameStarted,
+      status: 'Completed' as const,
+      winnerId: fakeSession.playerId,
+    };
+    fireMoveMade(completedGame);
+
+    await waitFor(() => expect(getByTestId('overlay-back-button')).toBeTruthy());
+    fireEvent.press(getByTestId('overlay-back-button'));
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
+  });
+
+  it('restores active game from storage on startup', async () => {
+    const inProgressGame = {
+      ...fakeGameStarted,
+      id: 'saved-game-id',
+      status: 'InProgress' as const,
+    };
+    mockLoadSession.mockResolvedValue(fakeSession);
+    mockLoadActiveGameId.mockResolvedValue('saved-game-id');
+    mockGetGame.mockResolvedValue(inProgressGame);
+
+    const {getByTestId} = render(<App />);
+    await waitFor(() => expect(getByTestId('checkers-board')).toBeTruthy());
   });
 
   it('shows modal when opponent joins after user left waiting room', async () => {

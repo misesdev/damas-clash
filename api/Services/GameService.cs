@@ -141,6 +141,76 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         await hub.Clients.Group(gameId.ToString())
             .SendAsync("MoveMade", response, ct);
 
+        if (result.GameOver)
+            await BroadcastGameListAsync(ct);
+
+        return ServiceResult<GameResponse>.Ok(response);
+    }
+
+    public async Task<ServiceResult<GameResponse>> SkipTurnAsync(Guid gameId, Guid playerId, CancellationToken ct = default)
+    {
+        var game = await db.Games
+            .Include(g => g.PlayerBlack)
+            .Include(g => g.PlayerWhite)
+            .FirstOrDefaultAsync(g => g.Id == gameId, ct);
+
+        if (game is null)
+            return ServiceResult<GameResponse>.NotFound("Game not found");
+
+        if (game.Status != GameStatus.InProgress)
+            return ServiceResult<GameResponse>.Fail("Game is not in progress");
+
+        PieceColor playerColor;
+        if (game.PlayerBlackId == playerId) playerColor = PieceColor.Black;
+        else if (game.PlayerWhiteId == playerId) playerColor = PieceColor.White;
+        else return ServiceResult<GameResponse>.Fail("You are not a participant in this game");
+
+        if (game.CurrentTurn != playerColor)
+            return ServiceResult<GameResponse>.Fail("It is not your turn");
+
+        game.CurrentTurn = playerColor == PieceColor.Black ? PieceColor.White : PieceColor.Black;
+        game.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await db.SaveChangesAsync(ct);
+
+        var response = ToResponse(game);
+        await hub.Clients.Group(gameId.ToString())
+            .SendAsync("MoveMade", response, ct);
+
+        return ServiceResult<GameResponse>.Ok(response);
+    }
+
+    public async Task<ServiceResult<GameResponse>> ResignAsync(Guid gameId, Guid playerId, CancellationToken ct = default)
+    {
+        var game = await db.Games
+            .Include(g => g.PlayerBlack)
+            .Include(g => g.PlayerWhite)
+            .FirstOrDefaultAsync(g => g.Id == gameId, ct);
+
+        if (game is null)
+            return ServiceResult<GameResponse>.NotFound("Game not found");
+
+        if (game.Status != GameStatus.InProgress)
+            return ServiceResult<GameResponse>.Fail("Game is not in progress");
+
+        Guid winnerId;
+        if (game.PlayerBlackId == playerId)
+            winnerId = game.PlayerWhiteId!.Value;
+        else if (game.PlayerWhiteId == playerId)
+            winnerId = game.PlayerBlackId!.Value;
+        else
+            return ServiceResult<GameResponse>.Fail("You are not a participant in this game");
+
+        game.Status = GameStatus.Completed;
+        game.WinnerId = winnerId;
+        game.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await db.SaveChangesAsync(ct);
+
+        var response = ToResponse(game);
+        await hub.Clients.Group(gameId.ToString()).SendAsync("MoveMade", response, ct);
+        await BroadcastGameListAsync(ct);
+
         return ServiceResult<GameResponse>.Ok(response);
     }
 

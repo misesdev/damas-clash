@@ -15,6 +15,12 @@ import * as gamesApi from '../src/api/games';
 
 jest.mock('../src/api/games');
 
+jest.mock('../src/components/MessageBox', () => ({
+  __esModule: true,
+  showMessage: jest.fn(),
+  default: () => null,
+}));
+
 jest.mock('@microsoft/signalr', () => ({
   HubConnectionBuilder: jest.fn(),
   HttpTransportType: {WebSockets: 4},
@@ -93,6 +99,8 @@ const fakeSessionLight = {
 };
 
 const mockMakeMove = gamesApi.makeMove as jest.MockedFunction<typeof gamesApi.makeMove>;
+const mockSkipTurn = gamesApi.skipTurn as jest.MockedFunction<typeof gamesApi.skipTurn>;
+const mockResign = gamesApi.resign as jest.MockedFunction<typeof gamesApi.resign>;
 
 // ── Setup ──────────────────────────────────────────────────────────────────────
 
@@ -118,6 +126,17 @@ beforeEach(() => {
   mockMakeMove.mockResolvedValue({
     ...fakeGame,
     currentTurn: 'White' as const,
+  });
+
+  mockSkipTurn.mockResolvedValue({
+    ...fakeGame,
+    currentTurn: 'White' as const,
+  });
+
+  mockResign.mockResolvedValue({
+    ...fakeGame,
+    status: 'Completed' as const,
+    winnerId: 'player-white',
   });
 });
 
@@ -164,14 +183,20 @@ describe('initial render', () => {
     expect(getByText(`Vez de darkPlayer`)).toBeTruthy();
   });
 
-  it('renders the back button', () => {
-    const {getByTestId} = renderBoard();
-    expect(getByTestId('back-home-button')).toBeTruthy();
+  it('shows overlay back button when game is completed', () => {
+    const {getByTestId} = renderBoard({
+      status: 'Completed' as const,
+      winnerId: 'player-black',
+    });
+    expect(getByTestId('overlay-back-button')).toBeTruthy();
   });
 
-  it('calls onBack when back button is pressed', () => {
-    const {getByTestId, onBack} = renderBoard();
-    fireEvent.press(getByTestId('back-home-button'));
+  it('calls onBack when overlay back button is pressed', () => {
+    const {getByTestId, onBack} = renderBoard({
+      status: 'Completed' as const,
+      winnerId: 'player-black',
+    });
+    fireEvent.press(getByTestId('overlay-back-button'));
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 });
@@ -263,20 +288,106 @@ describe('capture', () => {
   });
 });
 
+// ── Turn timer ────────────────────────────────────────────────────────────────
+
+describe('turn timer', () => {
+  it('shows timer when it is my turn', () => {
+    const {getByTestId} = renderBoard(); // dark session, currentTurn='Black' → my turn
+    expect(getByTestId('turn-timer')).toBeTruthy();
+  });
+
+  it('does not show timer when it is not my turn', () => {
+    const {queryByTestId} = renderBoard({}, fakeSessionLight); // light session, dark's turn
+    expect(queryByTestId('turn-timer')).toBeNull();
+  });
+
+  it('does not show timer when game is completed', () => {
+    const {queryByTestId} = renderBoard({
+      status: 'Completed' as const,
+      winnerId: 'player-black',
+      currentTurn: 'Black' as const,
+    });
+    expect(queryByTestId('turn-timer')).toBeNull();
+  });
+
+  it('shows status text below the board', () => {
+    const {getByTestId} = renderBoard();
+    expect(getByTestId('status-text')).toBeTruthy();
+  });
+});
+
 // ── Win condition UI ──────────────────────────────────────────────────────────
 
 describe('win condition', () => {
-  it('does NOT show "Nova partida" button during game', () => {
+  it('does NOT show overlay during game', () => {
     const {queryByTestId} = renderBoard();
-    expect(queryByTestId('new-game-button')).toBeNull();
+    expect(queryByTestId('overlay-back-button')).toBeNull();
   });
 
-  it('shows winner text when game is completed', () => {
-    const {getAllByText} = renderBoard({
+  it('shows victory overlay when I win', () => {
+    const {getByText, getByTestId} = renderBoard({
       status: 'Completed' as const,
-      winnerId: 'player-black', // dark wins
+      winnerId: 'player-black', // dark wins, dark session → I won
       currentTurn: 'White' as const,
     });
-    expect(getAllByText(/venceu/).length).toBeGreaterThan(0);
+    expect(getByText('Vitória!')).toBeTruthy();
+    expect(getByText(/Parabéns/)).toBeTruthy();
+    expect(getByTestId('overlay-back-button')).toBeTruthy();
+  });
+
+  it('shows defeat overlay when opponent wins', () => {
+    const {getByText} = renderBoard(
+      {
+        status: 'Completed' as const,
+        winnerId: 'player-white', // light wins, dark session → I lost
+        currentTurn: 'White' as const,
+      },
+      fakeSessionDark,
+    );
+    expect(getByText('Derrota')).toBeTruthy();
+    expect(getByText(/venceu a partida/)).toBeTruthy();
+  });
+});
+
+// ── Resign ────────────────────────────────────────────────────────────────────
+
+describe('resign', () => {
+  it('shows resign button during InProgress game', () => {
+    const {getByTestId} = renderBoard(); // status='InProgress'
+    expect(getByTestId('resign-button')).toBeTruthy();
+  });
+
+  it('does not show resign button when game is completed', () => {
+    const {queryByTestId} = renderBoard({
+      status: 'Completed' as const,
+      winnerId: 'player-black',
+    });
+    expect(queryByTestId('resign-button')).toBeNull();
+  });
+
+  it('opens confirmation dialog when resign button is pressed', () => {
+    const {showMessage} = require('../src/components/MessageBox');
+    const {getByTestId} = renderBoard();
+    fireEvent.press(getByTestId('resign-button'));
+    expect(showMessage).toHaveBeenCalledWith(
+      expect.objectContaining({title: 'Desistir da partida?'}),
+    );
+  });
+
+  it('calls resign API when confirmation is accepted', async () => {
+    const {showMessage} = require('../src/components/MessageBox');
+    (showMessage as jest.Mock).mockImplementationOnce(({actions}: any) => {
+      const danger = actions?.find((a: any) => a.danger);
+      danger?.onPress?.();
+    });
+
+    const {getByTestId} = renderBoard();
+    await act(async () => {
+      fireEvent.press(getByTestId('resign-button'));
+    });
+
+    await waitFor(() => {
+      expect(mockResign).toHaveBeenCalledWith('tok', 'game-1');
+    });
   });
 });

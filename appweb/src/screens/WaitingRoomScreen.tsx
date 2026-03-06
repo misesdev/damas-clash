@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { showMessage } from '../components/MessageBox';
 import AnimatedLoader from '../components/AnimatedLoader';
-import { ScreenHeader } from '../components/ScreenHeader';
 import type { GameResponse } from '../types/game';
 
 interface Props {
@@ -33,50 +32,110 @@ export function WaitingRoomScreen({ game, onBack, onCancelGame }: Props) {
   };
 
   return (
-    <div className="flex h-full flex-col" style={{ background: 'var(--bg)' }}>
-      <ScreenHeader title="Aguardando oponente" onBack={onBack} />
-
-      <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6">
-        <AnimatedLoader />
-
-        <p className="text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-          Sua partida está pronta. Aguardando outro jogador entrar...
-        </p>
-
-        {/* Code card */}
-        <div
-          className="w-full max-w-xs rounded-2xl p-6 text-center"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-        >
-          <p className="mb-2 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
-            Código da partida
-          </p>
-          <p className="mb-2 text-2xl font-bold tracking-widest text-white">{shortCode}</p>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            O jogo começa automaticamente quando alguém entrar
-          </p>
-        </div>
-      </div>
-
-      <div
-        className="flex flex-col items-center gap-3 px-6 pb-8"
-        style={{ borderTop: '1px solid var(--border)', paddingTop: '20px' }}
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        background: 'var(--bg)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Top bar */}
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 20px',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--surface)',
+          flexShrink: 0,
+        }}
       >
-        <button
-          onClick={handleCancelGame}
-          disabled={cancelling}
-          className="flex items-center justify-center rounded-xl py-3 text-sm font-medium text-red-400 transition-opacity hover:opacity-80 disabled:opacity-50"
-          style={{ border: '1px solid rgba(231,76,60,0.4)', width: '100%', maxWidth: '320px' }}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button
+            onClick={onBack}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 4 }}
+          >
+            ←
+          </button>
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: 1 }}>AGUARDANDO OPONENTE</span>
+        </div>
+      </header>
+
+      {/* Content — centered */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 32,
+        }}
+      >
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 440,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 32,
+          }}
         >
-          {cancelling ? (
-            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-red-400 border-t-transparent" />
-          ) : (
-            'Cancelar partida'
-          )}
-        </button>
-        <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
-          Você será notificado quando alguém entrar na partida
-        </p>
+          <AnimatedLoader />
+
+          <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-muted)' }}>
+            Sua partida está pronta. Aguardando outro jogador entrar...
+          </p>
+
+          {/* Code card */}
+          <div
+            style={{
+              width: '100%',
+              borderRadius: 20,
+              padding: '28px 32px',
+              textAlign: 'center',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <p style={{ marginBottom: 8, fontSize: 12, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Código da partida
+            </p>
+            <p style={{ marginBottom: 12, fontSize: 32, fontWeight: 800, letterSpacing: '0.15em', color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+              {shortCode}
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              O jogo começa automaticamente quando alguém entrar
+            </p>
+          </div>
+
+          {/* Cancel */}
+          <button
+            onClick={handleCancelGame}
+            disabled={cancelling}
+            style={{
+              background: 'transparent',
+              color: 'var(--danger)',
+              border: '1px solid rgba(255,69,58,0.4)',
+              borderRadius: 12,
+              padding: '11px 32px',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: cancelling ? 'not-allowed' : 'pointer',
+              opacity: cancelling ? 0.5 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            {cancelling ? (
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : 'Cancelar partida'}
+          </button>
+        </div>
       </div>
     </div>
   );

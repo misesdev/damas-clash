@@ -1,5 +1,6 @@
 import React from 'react';
-import {Animated, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Animated, Image, Pressable, StyleSheet, Text, View} from 'react-native';
+import {showMessage} from '../components/MessageBox';
 import {Button} from '../components/Button';
 import {BOARD_SIZE, findAt, isDarkSquare} from '../game/checkers';
 import {useGameBoard} from '../hooks/useGameBoard';
@@ -7,23 +8,61 @@ import {styles} from '../styles/checkersBoardStyles';
 import type {LoginResponse} from '../types/auth';
 import type {GameResponse} from '../types/game';
 
+function PlayerAvatar({
+  avatarUrl,
+  username,
+  size = 30,
+}: {
+  avatarUrl?: string | null;
+  username?: string | null;
+  size?: number;
+}) {
+  const radius = size / 2;
+  if (avatarUrl) {
+    return (
+      <Image
+        source={{uri: avatarUrl}}
+        style={{width: size, height: size, borderRadius: radius}}
+      />
+    );
+  }
+  const initial = username ? username[0].toUpperCase() : '?';
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        backgroundColor: '#232323',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      <Text style={{color: '#FFFFFF', fontSize: size * 0.44, fontWeight: '600'}}>
+        {initial}
+      </Text>
+    </View>
+  );
+}
+
 export interface CheckersBoardScreenProps {
   game: GameResponse;
   session: LoginResponse;
   onBack: () => void;
 }
 
-const colorLabel = (color: 'dark' | 'light') => (color === 'dark' ? 'Escuras' : 'Claras');
 
 export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreenProps) {
   const {
     game: liveGame,
     engine,
     myColor,
-    opponentColor,
+    isFlipped,
     myUsername,
     opponentUsername,
+    myAvatarUrl,
+    opponentAvatarUrl,
     isMyTurn,
+    timeLeft,
     winner,
     watchersCount,
     sendingMove,
@@ -35,6 +74,7 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
     darkCount,
     lightCount,
     handleCellPress,
+    handleResign,
   } = useGameBoard(game, session);
 
   const {
@@ -52,6 +92,10 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
   const myCount = myColor === 'dark' ? darkCount : lightCount;
   const oppCount = myColor === 'dark' ? lightCount : darkCount;
 
+  // When isFlipped, dark pieces render as light and vice versa (player always sees self as white)
+  const displayColor = (gameColor: 'dark' | 'light') =>
+    isFlipped ? (gameColor === 'dark' ? 'light' : 'dark') : gameColor;
+
   const statusText = () => {
     if (winner) {
       return winner === myColor ? 'Você venceu! 🏆' : 'Você perdeu.';
@@ -62,49 +106,51 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
     return isMyTurn ? 'Sua vez' : `Vez de ${opponentUsername ?? 'oponente'}`;
   };
 
+  const isTimerActive = isMyTurn && !winner && liveGame.status !== 'Completed';
+  const isUrgent = isTimerActive && timeLeft <= 10;
+
+  const confirmResign = () => {
+    showMessage({
+      title: 'Desistir da partida?',
+      message: 'Você cederá a vitória ao adversário. Esta ação não pode ser desfeita.',
+      type: 'confirm',
+      actions: [
+        {label: 'Cancelar'},
+        {label: 'Desistir', danger: true, onPress: handleResign},
+      ],
+    });
+  };
+
   return (
     <View style={styles.container} testID="game-screen">
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Damas</Text>
-        <Text style={styles.subtitle}>{statusText()}</Text>
         <Text style={styles.watchers} testID="watchers-count">
-          {watchersCount} {watchersCount === 1 ? 'assistindo' : 'assistindo'}
+          {watchersCount} {watchersCount === 1 ? 'espectador' : 'espectadores'}
         </Text>
       </View>
 
       {/* Player chips */}
       <View style={styles.scoreRow}>
-        <View
-          style={[
-            styles.playerChip,
-            myColor === 'light' && isMyTurn && !winner && styles.activeChip,
-          ]}>
-          <View style={[styles.chipDot, styles.lightDot]} />
-          <View>
-            <Text style={styles.chipLabel}>Você</Text>
-            <Text style={styles.chipName} numberOfLines={1}>
-              {myColor === 'light' ? myUsername : opponentUsername}
-            </Text>
+        <View style={[styles.playerChip, isMyTurn && !winner && styles.activeChip]}>
+          <PlayerAvatar avatarUrl={myAvatarUrl} username={myUsername} />
+          <View style={styles.chipInfo}>
+            <Text style={styles.chipLabel}>VOCÊ</Text>
+            <Text style={styles.chipName} numberOfLines={1}>{myUsername}</Text>
           </View>
-          <Text style={styles.chipCount}>{lightCount}</Text>
+          <Text style={styles.chipCount}>{myCount}</Text>
         </View>
 
         <Text style={styles.vs}>×</Text>
 
-        <View
-          style={[
-            styles.playerChip,
-            myColor === 'dark' && !isMyTurn && !winner && styles.activeChip,
-          ]}>
-          <View style={[styles.chipDot, styles.darkDot]} />
-          <View>
-            <Text style={styles.chipLabel}>Adversário</Text>
-            <Text style={styles.chipName} numberOfLines={1}>
-              {myColor === 'dark' ? opponentUsername : myUsername}
-            </Text>
+        <View style={[styles.playerChip, !isMyTurn && !winner && styles.activeChip]}>
+          <PlayerAvatar avatarUrl={opponentAvatarUrl} username={opponentUsername} />
+          <View style={styles.chipInfo}>
+            <Text style={styles.chipLabel}>ADVERSÁRIO</Text>
+            <Text style={styles.chipName} numberOfLines={1}>{opponentUsername}</Text>
           </View>
-          <Text style={styles.chipCount}>{darkCount}</Text>
+          <Text style={styles.chipCount}>{oppCount}</Text>
         </View>
       </View>
 
@@ -113,7 +159,11 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
       {/* Board frame */}
       <View style={[styles.boardFrame, {width: boardSize + 24, height: boardSize + 24}]}>
         <View
-          style={[styles.board, {width: boardSize, height: boardSize}]}
+          style={[
+            styles.board,
+            {width: boardSize, height: boardSize},
+            isFlipped && styles.boardFlipped,
+          ]}
           testID="checkers-board">
 
           {/* Layer 1: Cell grid */}
@@ -154,6 +204,7 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
             {pieces.map(piece => {
               const anim = getAnim(piece);
               const isSelected = piece.id === activeId;
+              const visColor = displayColor(piece.color);
               return (
                 <Animated.View
                   key={piece.id}
@@ -165,7 +216,12 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
                     height: cellSize,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    transform: [{translateX: anim.pos.x}, {translateY: anim.pos.y}],
+                    transform: [
+                      {translateX: anim.pos.x},
+                      {translateY: anim.pos.y},
+                      // Counter-rotate piece contents so crown stays readable
+                      ...(isFlipped ? [{rotate: '180deg'}] : []),
+                    ],
                     opacity: anim.opacity,
                   }}>
                   <View
@@ -173,20 +229,20 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
                     style={[
                       styles.piece,
                       {width: pieceSize, height: pieceSize, borderRadius: pieceSize / 2},
-                      piece.color === 'dark' ? styles.darkPiece : styles.lightPiece,
+                      visColor === 'dark' ? styles.darkPiece : styles.lightPiece,
                       isSelected && styles.selectedPiece,
                     ]}>
                     <View
                       style={[
                         styles.pieceShine,
-                        piece.color === 'dark' ? styles.darkShine : styles.lightShine,
+                        visColor === 'dark' ? styles.darkShine : styles.lightShine,
                       ]}
                     />
                     {piece.isKing && (
                       <Text
                         style={[
                           styles.crown,
-                          piece.color === 'dark' ? styles.darkCrown : styles.lightCrown,
+                          visColor === 'dark' ? styles.darkCrown : styles.lightCrown,
                         ]}>
                         ♛
                       </Text>
@@ -213,22 +269,49 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
         </View>
       </View>
 
-      {/* Actions */}
-      <View style={styles.actions}>
-        {winner && (
-          <Text style={styles.winnerText}>
-            {winner === myColor
-              ? `Você venceu com as ${colorLabel(myColor)}!`
-              : `${opponentUsername} venceu.`}
+      {/* Status + timer (below board) */}
+      <View style={styles.statusRow}>
+        <Text style={[styles.statusLabel, isUrgent && styles.statusUrgent]} testID="status-text">
+          {statusText()}
+        </Text>
+        {isTimerActive && (
+          <Text style={[styles.timerText, isUrgent && styles.timerUrgent]} testID="turn-timer">
+            {timeLeft}s
           </Text>
         )}
-        <Button
-          label="Voltar"
-          variant="ghost"
-          onPress={onBack}
-          testID="back-home-button"
-        />
       </View>
+
+      {/* Resign button — only during active game */}
+      {liveGame.status === 'InProgress' && !winner && (
+        <Button
+          label="Desistir"
+          variant="ghost"
+          onPress={confirmResign}
+          testID="resign-button"
+        />
+      )}
+
+      {/* Win / loss overlay */}
+      {winner && (
+        <View style={styles.overlay}>
+          <View style={styles.overlayContent}>
+            <Text style={styles.overlayEmoji}>
+              {winner === myColor ? '🏆' : '💔'}
+            </Text>
+            <Text style={[styles.overlayHeading, winner === myColor ? styles.winColor : styles.lossColor]}>
+              {winner === myColor ? 'Vitória!' : 'Derrota'}
+            </Text>
+            <Text style={styles.overlaySubtitle}>
+              {winner === myColor
+                ? 'Parabéns! Você venceu a partida.'
+                : `${opponentUsername ?? 'Adversário'} venceu a partida.`}
+            </Text>
+            <View style={styles.overlayActions}>
+              <Button label="Voltar ao início" onPress={onBack} testID="overlay-back-button" />
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }

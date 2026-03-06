@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '../components/Button';
 import { BOARD_SIZE, findAt, isDarkSquare } from '../game/checkers';
 import { useGameBoard } from '../hooks/useGameBoard';
 import type { LoginResponse } from '../types/auth';
@@ -12,16 +11,99 @@ export interface CheckersBoardScreenProps {
   onBack: () => void;
 }
 
-const colorLabel = (color: 'dark' | 'light') => (color === 'dark' ? 'Escuras' : 'Claras');
+function PlayerAvatar({
+  avatarUrl,
+  username,
+  size = 40,
+}: {
+  avatarUrl?: string | null;
+  username?: string | null;
+  size?: number;
+}) {
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={username ?? ''}
+        style={{ width: size, height: size, borderRadius: size / 2, objectFit: 'cover', flexShrink: 0 }}
+      />
+    );
+  }
+  const initial = username ? username[0].toUpperCase() : '?';
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        background: 'var(--surface2)',
+        border: '1px solid var(--border)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        color: 'var(--text)',
+        fontSize: size * 0.4,
+        fontWeight: 700,
+      }}
+    >
+      {initial}
+    </div>
+  );
+}
+
+function PlayerChip({
+  username,
+  avatarUrl,
+  pieceCount,
+  label,
+  active,
+}: {
+  username?: string | null;
+  avatarUrl?: string | null;
+  pieceCount: number;
+  label: string;
+  active: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '10px 14px',
+        borderRadius: 14,
+        background: 'var(--surface)',
+        border: `1px solid ${active ? 'var(--text)' : 'var(--border)'}`,
+        transition: 'border-color 0.2s',
+      }}
+    >
+      <PlayerAvatar avatarUrl={avatarUrl} username={username} size={36} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 10, color: 'var(--text-faint)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', lineHeight: 1.2 }}>{label}</p>
+        <p style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{username ?? '—'}</p>
+      </div>
+      <span style={{ fontSize: 18, fontWeight: 800, color: active ? 'var(--text)' : 'var(--text-muted)', flexShrink: 0 }}>
+        {pieceCount}
+      </span>
+    </div>
+  );
+}
 
 export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScreenProps) {
   const {
     game: liveGame,
     engine,
     myColor,
+    isFlipped,
     myUsername,
     opponentUsername,
+    myAvatarUrl,
+    opponentAvatarUrl,
     isMyTurn,
+    timeLeft,
+    isTimerActive,
+    isUrgent,
     winner,
     watchersCount,
     sendingMove,
@@ -30,9 +112,10 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
     cellSize,
     animating,
     piecePositions,
-    darkCount,
-    lightCount,
+    myCount,
+    oppCount,
     handleCellPress,
+    confirmResign,
   } = useGameBoard(game, session);
 
   const {
@@ -45,203 +128,154 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
   } = engine;
 
   const pieceSize = Math.round(cellSize * 0.78);
-  const pieceOffset = (cellSize - pieceSize) / 2;
-
-  const myCount = myColor === 'dark' ? darkCount : lightCount;
-  const oppCount = myColor === 'dark' ? lightCount : darkCount;
 
   const statusText = () => {
-    if (winner) return winner === myColor ? 'Você venceu! 🏆' : 'Você perdeu.';
-    if (sendingMove) return 'Enviando movimento...';
+    if (winner) return winner === myColor ? 'Você venceu!' : 'Você perdeu.';
+    if (sendingMove) return 'Enviando...';
     if (pendingCaptureId) return 'Captura múltipla!';
     if (mustCapture) return 'Captura obrigatória';
     return isMyTurn ? 'Sua vez' : `Vez de ${opponentUsername ?? 'oponente'}`;
   };
 
-  return (
+  // Board DOM (shared between mobile and desktop layouts)
+  const boardEl = (
     <div
-      className="flex h-full flex-col items-center overflow-y-auto py-4"
-      style={{ background: 'var(--bg)' }}
+      style={{
+        background: '#2e1a0a',
+        borderRadius: 16,
+        padding: 10,
+        border: '2px solid #5a3515',
+        boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+        display: 'inline-block',
+      }}
     >
-      {/* Header */}
-      <div className="mb-4 flex w-full max-w-lg flex-col items-center gap-1 px-4">
-        <h2 className="text-xl font-bold text-white">Damas</h2>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{statusText()}</p>
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          {watchersCount} assistindo
-        </p>
-      </div>
-
-      {/* Player chips */}
-      <div className="mb-4 flex w-full max-w-lg items-center justify-between px-4">
-        {/* Light (white pieces) player */}
-        <div
-          className="flex items-center gap-2 rounded-xl px-3 py-2 transition-colors"
-          style={{
-            background: myColor === 'light' && isMyTurn && !winner ? 'var(--surface2)' : 'var(--surface)',
-            border: myColor === 'light' && isMyTurn && !winner ? '1px solid var(--text)' : '1px solid var(--border)',
-          }}
-        >
-          <div className="h-4 w-4 rounded-full bg-white" style={{ border: '2px solid #999' }} />
-          <div>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Claras</p>
-            <p className="max-w-[80px] truncate text-sm font-medium text-white">
-              {myColor === 'light' ? myUsername : opponentUsername}
-            </p>
-          </div>
-          <span className="text-sm font-bold text-white">{lightCount}</span>
-        </div>
-
-        <span className="text-lg" style={{ color: 'var(--text-muted)' }}>×</span>
-
-        {/* Dark (black pieces) player */}
-        <div
-          className="flex items-center gap-2 rounded-xl px-3 py-2 transition-colors"
-          style={{
-            background: myColor === 'dark' && isMyTurn && !winner ? 'var(--surface2)' : 'var(--surface)',
-            border: myColor === 'dark' && isMyTurn && !winner ? '1px solid var(--text)' : '1px solid var(--border)',
-          }}
-        >
-          <span className="text-sm font-bold text-white">{darkCount}</span>
-          <div>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Escuras</p>
-            <p className="max-w-[80px] truncate text-sm font-medium text-white">
-              {myColor === 'dark' ? myUsername : opponentUsername}
-            </p>
-          </div>
-          <div className="h-4 w-4 rounded-full bg-black" style={{ border: '2px solid #555' }} />
-        </div>
-      </div>
-
-      {error && (
-        <p className="mb-4 rounded-xl px-4 py-2 text-sm text-red-400"
-          style={{ background: 'rgba(231,76,60,0.1)', border: '1px solid rgba(231,76,60,0.3)' }}>
-          {error}
-        </p>
-      )}
-
-      {/* Board */}
       <div
-        className="relative rounded-2xl p-3"
-        style={{ background: 'var(--surface)', border: '2px solid var(--border)' }}
+        style={{
+          position: 'relative',
+          width: boardSize,
+          height: boardSize,
+          borderRadius: 8,
+          overflow: 'hidden',
+          transform: isFlipped ? 'rotate(180deg)' : undefined,
+        }}
       >
-        <div
-          className="relative"
-          style={{ width: boardSize, height: boardSize }}
-        >
-          {/* Cell grid */}
-          {Array.from({ length: BOARD_SIZE }, (_, row) =>
-            Array.from({ length: BOARD_SIZE }, (_, col) => {
-              const dark = isDarkSquare(row, col);
-              const isTarget = validMoveMap.has(`${row}-${col}`);
-              const hasPiece = !!findAt(pieces, row, col);
-              const isSelectedCell =
-                selectedPiece?.row === row && selectedPiece?.col === col;
-
-              return (
-                <div
-                  key={`${row}-${col}`}
-                  onClick={() => handleCellPress(row, col)}
-                  className="absolute flex items-center justify-center cursor-pointer"
-                  style={{
-                    width: cellSize,
-                    height: cellSize,
-                    left: col * cellSize,
-                    top: row * cellSize,
-                    background: dark
-                      ? isSelectedCell
-                        ? '#4a3a2a'
-                        : '#3d2b1f'
-                      : '#f0d9b5',
-                    outline: isSelectedCell ? '2px solid #f0a040' : 'none',
-                  }}
-                >
-                  {/* Target indicator */}
-                  {isTarget && !hasPiece && (
-                    <div
-                      className="rounded-full"
-                      style={{
-                        width: cellSize * 0.3,
-                        height: cellSize * 0.3,
-                        background: 'rgba(255,255,255,0.4)',
-                      }}
-                    />
-                  )}
-                  {/* Capture ring */}
-                  {isTarget && hasPiece && (
-                    <div
-                      className="absolute rounded-full"
-                      style={{
-                        width: cellSize * 0.9,
-                        height: cellSize * 0.9,
-                        border: '3px solid rgba(255,100,100,0.8)',
-                      }}
-                    />
-                  )}
-                </div>
-              );
-            }),
-          )}
-
-          {/* Pieces layer — CSS transition for movement */}
-          {pieces.map(piece => {
-            const pos = piecePositions.get(piece.id);
-            const displayRow = pos?.row ?? piece.row;
-            const displayCol = pos?.col ?? piece.col;
-            const opacity = pos?.opacity ?? 1;
-            const isSelected = piece.id === activeId;
+        {/* Cells */}
+        {Array.from({ length: BOARD_SIZE }, (_, row) =>
+          Array.from({ length: BOARD_SIZE }, (_, col) => {
+            const dark = isDarkSquare(row, col);
+            const isTarget = validMoveMap.has(`${row}-${col}`);
+            const hasPiece = !!findAt(pieces, row, col);
+            const isSelectedCell = selectedPiece?.row === row && selectedPiece?.col === col;
 
             return (
               <div
-                key={piece.id}
-                className="absolute pointer-events-none"
+                key={`${row}-${col}`}
+                onClick={() => handleCellPress(row, col)}
                 style={{
+                  position: 'absolute',
                   width: cellSize,
                   height: cellSize,
-                  left: displayCol * cellSize,
-                  top: displayRow * cellSize,
-                  opacity,
-                  transition: animating ? 'left 0.22s ease, top 0.22s ease, opacity 0.2s ease' : 'none',
+                  left: col * cellSize,
+                  top: row * cellSize,
+                  background: dark
+                    ? isSelectedCell ? '#cdd16f' : '#b58863'
+                    : '#f0d9b5',
+                  cursor: dark ? 'pointer' : 'default',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  zIndex: isSelected ? 10 : 1,
                 }}
               >
+                {isTarget && !hasPiece && (
+                  <div
+                    style={{
+                      width: cellSize * 0.3,
+                      height: cellSize * 0.3,
+                      borderRadius: '50%',
+                      background: 'rgba(0,0,0,0.22)',
+                    }}
+                  />
+                )}
+                {isTarget && hasPiece && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 3,
+                      borderRadius: '50%',
+                      border: '3px solid rgba(220,50,50,0.7)',
+                    }}
+                  />
+                )}
+              </div>
+            );
+          }),
+        )}
+
+        {/* Pieces */}
+        {pieces.map(piece => {
+          const pos = piecePositions.get(piece.id);
+          const displayRow = pos?.row ?? piece.row;
+          const displayCol = pos?.col ?? piece.col;
+          const opacity = pos?.opacity ?? 1;
+          const isSelected = piece.id === activeId;
+
+          return (
+            <div
+              key={piece.id}
+              style={{
+                position: 'absolute',
+                width: cellSize,
+                height: cellSize,
+                left: displayCol * cellSize,
+                top: displayRow * cellSize,
+                opacity,
+                transition: animating ? 'left 0.22s ease, top 0.22s ease, opacity 0.2s ease' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pointerEvents: 'none',
+                zIndex: isSelected ? 10 : 1,
+              }}
+            >
+              {/* Counter-rotate content when board is flipped */}
+              <div style={{ transform: isFlipped ? 'rotate(180deg)' : undefined, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                 {isSelected && (
                   <div
-                    className="absolute rounded-full"
                     style={{
+                      position: 'absolute',
                       width: pieceSize + 10,
                       height: pieceSize + 10,
-                      border: '2px solid rgba(255,200,50,0.9)',
+                      border: '2.5px solid rgba(212,168,67,0.9)',
                       borderRadius: '50%',
                     }}
                   />
                 )}
                 <div
-                  className="relative flex items-center justify-center rounded-full"
                   style={{
                     width: pieceSize,
                     height: pieceSize,
+                    borderRadius: '50%',
                     background: piece.color === 'dark'
-                      ? 'radial-gradient(circle at 35% 35%, #555, #111)'
-                      : 'radial-gradient(circle at 35% 35%, #fff, #ccc)',
+                      ? 'radial-gradient(circle at 35% 35%, #3a3f4f, #0d0f18)'
+                      : 'radial-gradient(circle at 35% 35%, #ffffff, #d8d0c4)',
                     boxShadow: piece.color === 'dark'
-                      ? '0 2px 6px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.15)'
-                      : '0 2px 6px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.8)',
+                      ? '0 3px 8px rgba(0,0,0,0.7), inset 0 1px 3px rgba(255,255,255,0.1)'
+                      : '0 3px 8px rgba(0,0,0,0.3), inset 0 1px 3px rgba(255,255,255,0.9)',
                     border: isSelected
-                      ? `2px solid ${piece.color === 'dark' ? '#888' : '#aaa'}`
-                      : `2px solid ${piece.color === 'dark' ? '#333' : '#aaa'}`,
+                      ? '2px solid #d4a843'
+                      : piece.color === 'dark' ? '2px solid #0d0f18' : '2px solid #c8bca8',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
                   {piece.isKing && (
                     <span
-                      className="select-none"
                       style={{
                         fontSize: pieceSize * 0.45,
-                        color: piece.color === 'dark' ? '#ffd700' : '#8b4513',
+                        color: piece.color === 'dark' ? '#c9a84c' : '#7a5a18',
                         lineHeight: 1,
+                        userSelect: 'none',
                       }}
                     >
                       ♛
@@ -249,22 +283,275 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
                   )}
                 </div>
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // ── Win overlay ─────────────────────────────────────────────────────────────
+  const winOverlay = winner ? (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.92)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+        padding: 32,
+      }}
+    >
+      <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, maxWidth: 400 }}>
+        <span style={{ fontSize: 72 }}>{winner === myColor ? '🏆' : '💔'}</span>
+        <h2 style={{ fontSize: 40, fontWeight: 800, color: winner === myColor ? '#ffffff' : '#888888', letterSpacing: 0.5 }}>
+          {winner === myColor ? 'Vitória!' : 'Derrota'}
+        </h2>
+        <p style={{ fontSize: 16, color: '#888888' }}>
+          {winner === myColor
+            ? 'Parabéns! Você venceu a partida.'
+            : `${opponentUsername ?? 'Adversário'} venceu a partida.`}
+        </p>
+        <button
+          onClick={onBack}
+          style={{
+            marginTop: 8,
+            background: '#ffffff',
+            color: '#0c0c0c',
+            border: 'none',
+            borderRadius: 12,
+            padding: '12px 32px',
+            fontSize: 15,
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          Voltar ao início
+        </button>
+      </div>
+    </div>
+  ) : null;
+
+  // ── Layout ──────────────────────────────────────────────────────────────────
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        background: 'var(--bg)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Top bar */}
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 20px',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--surface)',
+          flexShrink: 0,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button
+            onClick={winner ? onBack : undefined}
+            title={winner ? 'Voltar' : undefined}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: winner ? 'var(--text)' : 'var(--text-faint)',
+              cursor: winner ? 'pointer' : 'default',
+              fontSize: 20,
+              lineHeight: 1,
+              padding: 4,
+            }}
+          >
+            ←
+          </button>
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: 1 }}>DAMAS</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-faint)', fontSize: 12 }}>
+          <span>👁</span>
+          <span>{watchersCount} {watchersCount === 1 ? 'espectador' : 'espectadores'}</span>
+        </div>
+      </header>
+
+      {error && (
+        <div style={{ padding: '8px 20px', background: 'var(--danger-bg)', borderBottom: '1px solid rgba(255,69,58,0.3)', fontSize: 13, color: '#ff453a', flexShrink: 0 }}>
+          {error}
+        </div>
+      )}
+
+      {/* Main area: desktop = 3 columns, mobile = column */}
+      <div
+        style={{
+          flex: 1,
+          overflow: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px 16px',
+          gap: 32,
+        }}
+      >
+        {/* === DESKTOP: Left panel (opponent top, me bottom) === */}
+        <div
+          className="hidden md:flex"
+          style={{ flexDirection: 'column', gap: 16, width: 200, flexShrink: 0 }}
+        >
+          <PlayerChip
+            username={opponentUsername}
+            avatarUrl={opponentAvatarUrl}
+            pieceCount={oppCount}
+            label="Adversário"
+            active={!isMyTurn && !winner}
+          />
+          <div style={{ flex: 1 }} />
+          <PlayerChip
+            username={myUsername}
+            avatarUrl={myAvatarUrl}
+            pieceCount={myCount}
+            label="Você"
+            active={isMyTurn && !winner}
+          />
+        </div>
+
+        {/* Board */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          {/* Mobile chips above board */}
+          <div className="flex md:hidden" style={{ gap: 8, width: '100%', maxWidth: boardSize + 20 }}>
+            <div style={{ flex: 1 }}>
+              <PlayerChip
+                username={myUsername}
+                avatarUrl={myAvatarUrl}
+                pieceCount={myCount}
+                label="Você"
+                active={isMyTurn && !winner}
+              />
+            </div>
+            <span style={{ color: 'var(--text-faint)', alignSelf: 'center', fontSize: 14 }}>×</span>
+            <div style={{ flex: 1 }}>
+              <PlayerChip
+                username={opponentUsername}
+                avatarUrl={opponentAvatarUrl}
+                pieceCount={oppCount}
+                label="Adversário"
+                active={!isMyTurn && !winner}
+              />
+            </div>
+          </div>
+
+          {boardEl}
+
+          {/* Status + timer below board */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, height: 28 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: isUrgent ? 'var(--danger)' : 'var(--text-muted)' }}>
+              {statusText()}
+            </span>
+            {isTimerActive && (
+              <span
+                style={{
+                  fontSize: 16,
+                  fontWeight: 800,
+                  color: isUrgent ? 'var(--danger)' : 'var(--text)',
+                  fontVariantNumeric: 'tabular-nums',
+                  minWidth: 36,
+                }}
+              >
+                {timeLeft}s
+              </span>
+            )}
+          </div>
+
+          {/* Resign: mobile only */}
+          {liveGame.status === 'InProgress' && !winner && (
+            <button
+              className="flex md:hidden"
+              onClick={confirmResign}
+              disabled={sendingMove}
+              style={{
+                background: 'transparent',
+                color: 'var(--danger)',
+                border: '1px solid rgba(255,69,58,0.4)',
+                borderRadius: 12,
+                padding: '8px 24px',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: sendingMove ? 'not-allowed' : 'pointer',
+                opacity: sendingMove ? 0.5 : 1,
+              }}
+            >
+              Desistir
+            </button>
+          )}
+        </div>
+
+        {/* === DESKTOP: Right panel === */}
+        <div
+          className="hidden md:flex"
+          style={{ flexDirection: 'column', gap: 16, width: 200, flexShrink: 0, alignSelf: 'stretch', paddingTop: 4 }}
+        >
+          {/* Status card */}
+          <div
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 14,
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}
+          >
+            <p style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: isUrgent ? 'var(--danger)' : 'var(--text)' }}>
+              {statusText()}
+            </p>
+            {isTimerActive && (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                <span style={{ fontSize: 36, fontWeight: 800, color: isUrgent ? 'var(--danger)' : 'var(--text)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+                  {timeLeft}
+                </span>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>s</span>
+              </div>
+            )}
+          </div>
+
+          <div style={{ flex: 1 }} />
+
+          {/* Resign button */}
+          {liveGame.status === 'InProgress' && !winner && (
+            <button
+              onClick={confirmResign}
+              disabled={sendingMove}
+              style={{
+                background: 'transparent',
+                color: 'var(--danger)',
+                border: '1px solid rgba(255,69,58,0.4)',
+                borderRadius: 12,
+                padding: '10px 16px',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: sendingMove ? 'not-allowed' : 'pointer',
+                opacity: sendingMove ? 0.5 : 1,
+                transition: 'background 0.15s',
+              }}
+              onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,69,58,0.08)')}
+              onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              Desistir da partida
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="mt-6 flex w-full max-w-lg flex-col items-center gap-3 px-4">
-        {winner && (
-          <p className="text-center text-base font-semibold text-white">
-            {winner === myColor
-              ? `Você venceu com as ${colorLabel(myColor)}!`
-              : `${opponentUsername} venceu.`}
-          </p>
-        )}
-        <Button label="Voltar" variant="ghost" onClick={onBack} fullWidth={false} />
-      </div>
+      {winOverlay}
     </div>
   );
 }

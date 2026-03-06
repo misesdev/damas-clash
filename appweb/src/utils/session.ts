@@ -1,6 +1,7 @@
 import type { LoginResponse } from '../types/auth';
 
 const SESSION_KEY = 'damas_session';
+const GAME_KEY = 'damas_active_game';
 
 export function loadSession(): LoginResponse | null {
   if (typeof window === 'undefined') return null;
@@ -20,4 +21,19 @@ export function saveSession(session: LoginResponse): void {
 export function clearSession(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(SESSION_KEY);
+}
+
+export function loadActiveGameId(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(GAME_KEY);
+}
+
+export function saveActiveGameId(gameId: string): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(GAME_KEY, gameId);
+}
+
+export function clearActiveGameId(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(GAME_KEY);
 }

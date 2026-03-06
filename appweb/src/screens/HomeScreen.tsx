@@ -47,63 +47,148 @@ export function HomeScreen({
   } = useHomeScreen(user, pendingGame, liveGames, onGameSelect, onGameCancelled);
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="px-4 pt-6 pb-4">
-        <p className="text-lg text-white">
-          Olá,{' '}
-          <span className="font-bold">{user.username}</span>
-        </p>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+
+      {/* ── Header ── */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '20px 24px 0',
+          flexShrink: 0,
+        }}
+      >
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', letterSpacing: -0.3 }}>
+          Partidas
+        </h2>
+
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          title="Atualizar"
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 10,
+            background: 'var(--surface2)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-muted)',
+            fontSize: 16,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: refreshing ? 0.4 : 1,
+            flexShrink: 0,
+          }}
+        >
+          {refreshing ? (
+            <span
+              style={{
+                display: 'inline-block',
+                width: 14,
+                height: 14,
+                borderRadius: '50%',
+                border: '2px solid var(--text-muted)',
+                borderTopColor: 'transparent',
+                animation: 'spin 0.7s linear infinite',
+              }}
+            />
+          ) : '↻'}
+        </button>
       </div>
 
-      {/* Filter tabs */}
+      {/* ── Filter tabs ── */}
       <div
-        className="flex px-4 pb-4 gap-2"
+        style={{
+          display: 'flex',
+          gap: 6,
+          padding: '14px 24px 0',
+          flexShrink: 0,
+        }}
       >
         {TABS.map(tab => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className="rounded-xl px-4 py-2 text-sm font-medium transition-colors"
             style={{
-              background: activeTab === tab.key ? 'var(--text)' : 'var(--surface)',
+              padding: '6px 14px',
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: 'none',
+              background: activeTab === tab.key ? 'var(--text)' : 'var(--surface2)',
               color: activeTab === tab.key ? 'var(--bg)' : 'var(--text-muted)',
+              transition: 'background 0.15s, color 0.15s',
             }}
           >
             {tab.label}
           </button>
         ))}
-
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="ml-auto rounded-xl px-3 py-2 text-sm transition-opacity hover:opacity-80 disabled:opacity-40"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          {refreshing ? '↻' : '↻'}
-        </button>
       </div>
 
-      {/* Content */}
+      {/* ── Error banner ── */}
       {error && (
-        <p className="mx-4 mb-4 rounded-xl px-4 py-3 text-sm text-red-400"
-          style={{ background: 'rgba(231,76,60,0.1)', border: '1px solid rgba(231,76,60,0.3)' }}>
+        <div
+          style={{
+            margin: '12px 24px 0',
+            padding: '10px 14px',
+            borderRadius: 12,
+            background: 'var(--danger-bg)',
+            border: '1px solid rgba(255,69,58,0.3)',
+            color: 'var(--danger)',
+            fontSize: 13,
+            flexShrink: 0,
+          }}
+        >
           {error}
-        </p>
+        </div>
       )}
 
+      {/* ── Content ── */}
       {loading ? (
-        <div className="flex flex-1 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              border: '2px solid rgba(255,255,255,0.12)',
+              borderTopColor: 'white',
+              animation: 'spin 0.7s linear infinite',
+            }}
+          />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px 24px' }}>
           {filtered.length === 0 ? (
-            <p className="pt-12 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-              {EMPTY_MESSAGES[activeTab]}
-            </p>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                gap: 12,
+                paddingBottom: 40,
+              }}
+            >
+              <span style={{ fontSize: 44, filter: 'grayscale(1)', opacity: 0.4 }}>♟</span>
+              <p style={{ fontSize: 14, color: 'var(--text-faint)', textAlign: 'center' }}>
+                {EMPTY_MESSAGES[activeTab]}
+              </p>
+            </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                gap: 10,
+                alignContent: 'start',
+              }}
+            >
               {filtered.map(game => (
                 <GameCard
                   key={game.id}

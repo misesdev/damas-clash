@@ -13,6 +13,9 @@ const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 export const listGames = (token: string) =>
   request<GameResponse[]>('/api/games', { headers: auth(token) });
 
+export const getGame = (token: string, gameId: string) =>
+  request<GameResponse>(`/api/games/${gameId}`, { headers: auth(token) });
+
 export const createGame = (token: string) =>
   request<GameResponse>('/api/games', { method: 'POST', headers: auth(token) });
 
@@ -33,4 +36,16 @@ export const makeMove = (token: string, gameId: string, move: MakeMoveRequest) =
     method: 'POST',
     headers: { ...auth(token), 'Content-Type': 'application/json' },
     body: JSON.stringify(move),
+  });
+
+export const skipTurn = (token: string, gameId: string) =>
+  request<GameResponse>(`/api/games/${gameId}/skip-turn`, {
+    method: 'POST',
+    headers: auth(token),
+  });
+
+export const resign = (token: string, gameId: string) =>
+  request<GameResponse>(`/api/games/${gameId}/resign`, {
+    method: 'POST',
+    headers: auth(token),
   });
