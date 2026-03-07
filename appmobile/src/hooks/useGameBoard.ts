@@ -10,7 +10,7 @@ import {BASE_URL} from '../api/client';
 import type {Piece, Move, PieceColor} from '../game/checkers';
 import {BOARD_SIZE, findAt} from '../game/checkers';
 import {GameEngine} from '../game/GameEngine';
-import {boardStateToEngine, getMyColor, parseApiColor} from '../utils/boardStateUtils';
+import {boardStateToEngine, getMyColor, isSpectator, parseApiColor} from '../utils/boardStateUtils';
 import type {LoginResponse} from '../types/auth';
 import type {GameResponse} from '../types/game';
 
@@ -185,11 +185,12 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   // ── Cell press handler ────────────────────────────────────────────────────
 
   const myColor: PieceColor = getMyColor(initialGame, session.playerId);
+  const spectator = isSpectator(initialGame, session.playerId);
 
   const handleCellPress = useCallback(
     (row: number, col: number) => {
       const current = engineRef.current;
-      const isMyTurn = parseApiColor(game.currentTurn) === myColor;
+      const isMyTurn = !spectator && parseApiColor(game.currentTurn) === myColor;
 
       if (
         game.status === 'Completed' ||
@@ -236,7 +237,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [game.status, game.currentTurn, animating, sendingMove, myColor, runMoveAnimation],
+    [game.status, game.currentTurn, animating, sendingMove, myColor, runMoveAnimation, spectator],
   );
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -271,11 +272,11 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
 
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Allow back only after game ends
-      return !winner;
+      // Allow back only after game ends, or always for spectators
+      return !winner && !spectator;
     });
     return () => sub.remove();
-  }, [winner]);
+  }, [winner, spectator]);
 
   // ── Turn timer ────────────────────────────────────────────────────────────
 
@@ -292,7 +293,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     }
   }, [session.token, initialGame.id]);
 
-  const isMyTurnDerived = parseApiColor(game.currentTurn) === myColor;
+  const isMyTurnDerived = !spectator && parseApiColor(game.currentTurn) === myColor;
 
   useEffect(() => {
     if (!isMyTurnDerived || game.status === 'Completed') {
@@ -362,6 +363,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     myUsername,
     opponentUsername,
     isMyTurn,
+    spectator,
     timeLeft,
     winner,
     watchersCount,

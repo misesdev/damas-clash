@@ -54,7 +54,7 @@ function TopNav({
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         <BoardMark size={22} />
         <span style={{ fontWeight: 800, fontSize: 14, letterSpacing: 3, color: 'var(--text)' }}>
-          DAMAS
+          DAMAS CLASH
         </span>
       </div>
 
@@ -277,6 +277,7 @@ export function AppShell() {
     setPendingGameId,
     creatingGame,
     liveGames,
+    onlineCount,
     handleNewGame,
     handleCancelWaitingRoom,
     handleWaitingRoomBack,
@@ -393,6 +394,7 @@ export function AppShell() {
                 user={session}
                 pendingGame={pendingGameId ? selectedGame : null}
                 liveGames={liveGames}
+                onlineCount={onlineCount}
                 onGameSelect={handleGameSelect}
                 onGameCancelled={gameId => {
                   if (pendingGameId === gameId) setPendingGameId(null);

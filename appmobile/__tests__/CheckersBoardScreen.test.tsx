@@ -98,6 +98,16 @@ const fakeSessionLight = {
   email: 'light@test.com',
 };
 
+/** Spectator session — not a player in the game. */
+const fakeSessionSpectator = {
+  token: 'tok',
+  refreshToken: 'ref',
+  expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+  playerId: 'spectator-123',
+  username: 'spectatorUser',
+  email: 'spec@test.com',
+};
+
 const mockMakeMove = gamesApi.makeMove as jest.MockedFunction<typeof gamesApi.makeMove>;
 const mockSkipTurn = gamesApi.skipTurn as jest.MockedFunction<typeof gamesApi.skipTurn>;
 const mockResign = gamesApi.resign as jest.MockedFunction<typeof gamesApi.resign>;
@@ -346,6 +356,57 @@ describe('win condition', () => {
     );
     expect(getByText('Derrota')).toBeTruthy();
     expect(getByText(/venceu a partida/)).toBeTruthy();
+  });
+});
+
+// ── Spectator mode ────────────────────────────────────────────────────────────
+
+describe('spectator mode', () => {
+  it('shows "Vez de darkPlayer" when Black is playing', () => {
+    // currentTurn='Black' → spectator sees "Vez de darkPlayer"
+    const {getByText} = renderBoard({currentTurn: 'Black' as const}, fakeSessionSpectator);
+    expect(getByText('Vez de darkPlayer')).toBeTruthy();
+  });
+
+  it('shows "Vez de lightPlayer" when White is playing', () => {
+    const {getByText} = renderBoard({currentTurn: 'White' as const}, fakeSessionSpectator);
+    expect(getByText('Vez de lightPlayer')).toBeTruthy();
+  });
+
+  it('does not show resign button for spectator', () => {
+    const {queryByTestId} = renderBoard({}, fakeSessionSpectator);
+    expect(queryByTestId('resign-button')).toBeNull();
+  });
+
+  it('shows leave button for spectator during InProgress game', () => {
+    const {getByTestId} = renderBoard({}, fakeSessionSpectator);
+    expect(getByTestId('leave-button')).toBeTruthy();
+  });
+
+  it('calls onBack when spectator presses leave button', () => {
+    const {getByTestId, onBack} = renderBoard({}, fakeSessionSpectator);
+    fireEvent.press(getByTestId('leave-button'));
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not show timer for spectator even when it would be a player turn', () => {
+    // White's turn — a light session would show timer, but spectator should not
+    const {queryByTestId} = renderBoard({currentTurn: 'White' as const}, fakeSessionSpectator);
+    expect(queryByTestId('turn-timer')).toBeNull();
+  });
+
+  it('shows neutral overlay when game is completed as spectator', () => {
+    const {getByText} = renderBoard(
+      {status: 'Completed' as const, winnerId: 'player-black'},
+      fakeSessionSpectator,
+    );
+    expect(getByText('Partida encerrada!')).toBeTruthy();
+    expect(getByText(/venceu a partida/)).toBeTruthy();
+  });
+
+  it('does not show "Sua vez" for spectator', () => {
+    const {queryByText} = renderBoard({currentTurn: 'Black' as const}, fakeSessionSpectator);
+    expect(queryByText('Sua vez')).toBeNull();
   });
 });
 

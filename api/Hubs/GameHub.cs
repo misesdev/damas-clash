@@ -6,7 +6,8 @@ namespace api.Hubs;
 public class GameHub(
     IGameCacheService cache,
     IGameService gameService,
-    IGameWatcherService watchers) : Hub
+    IGameWatcherService watchers,
+    ILobbyTracker lobbyTracker) : Hub
 {
     /// <summary>Called by the two players — joins the game room without counting as a spectator.</summary>
     public async Task JoinGameRoom(string gameId)
@@ -47,9 +48,12 @@ public class GameHub(
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var count = watchers.RemoveWatcher(Context.ConnectionId, out var gameId);
+        var watcherCount = watchers.RemoveWatcher(Context.ConnectionId, out var gameId);
         if (gameId is not null)
-            await Clients.Group(gameId).SendAsync("WatchersUpdated", count);
+            await Clients.Group(gameId).SendAsync("WatchersUpdated", watcherCount);
+
+        var onlineCount = lobbyTracker.Remove(Context.ConnectionId);
+        await Clients.Group("lobby").SendAsync("OnlinePlayersUpdated", onlineCount);
 
         await base.OnDisconnectedAsync(exception);
     }
@@ -57,6 +61,9 @@ public class GameHub(
     public async Task JoinLobby()
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, "lobby");
+
+        var onlineCount = lobbyTracker.Add(Context.ConnectionId);
+        await Clients.Group("lobby").SendAsync("OnlinePlayersUpdated", onlineCount);
 
         var cached = await cache.GetGameListAsync();
         if (cached is not null)
@@ -73,5 +80,8 @@ public class GameHub(
     public async Task LeaveLobby()
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, "lobby");
+
+        var onlineCount = lobbyTracker.Remove(Context.ConnectionId);
+        await Clients.Group("lobby").SendAsync("OnlinePlayersUpdated", onlineCount);
     }
 }

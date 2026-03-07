@@ -44,7 +44,7 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister }: LoginScreenPro
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 36 }}>
           <BoardMark size={40} />
           <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 4, color: 'var(--text)' }}>
-            Damas Clash
+           DAMAS CLASH 
           </span>
         </div>
 

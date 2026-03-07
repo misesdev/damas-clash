@@ -9,6 +9,7 @@ interface Props {
   user: LoginResponse;
   pendingGame?: GameResponse | null;
   liveGames?: GameResponse[] | null;
+  onlineCount?: number | null;
   onGameSelect: (game: GameResponse) => void;
   onGameCancelled?: (gameId: string) => void;
 }
@@ -29,6 +30,7 @@ export function HomeScreen({
   user,
   pendingGame,
   liveGames,
+  onlineCount,
   onGameSelect,
   onGameCancelled,
 }: Props) {
@@ -40,6 +42,8 @@ export function HomeScreen({
     error,
     activeTab,
     setActiveTab,
+    searchQuery,
+    setSearchQuery,
     filtered,
     handleRefresh,
     handleGamePress,
@@ -86,6 +90,60 @@ export function HomeScreen({
           ))}
         </div>
 
+        {/* Search field */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            flex: 1,
+            maxWidth: 280,
+            gap: 8,
+            padding: '0 10px',
+            height: 34,
+            borderRadius: 10,
+            background: 'var(--surface2)',
+            border: '1px solid var(--border)',
+            transition: 'border-color 0.15s',
+          }}
+          onFocusCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--text-muted)'; }}
+          onBlurCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)'; }}
+        >
+          <span style={{ fontSize: 13, color: 'var(--text-faint)', flexShrink: 0, lineHeight: 1 }}>⌕</span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Buscar jogador..."
+            style={{
+              flex: 1,
+              background: 'none',
+              border: 'none',
+              outline: 'none',
+              color: 'var(--text)',
+              fontSize: 13,
+              minWidth: 0,
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-faint)',
+                cursor: 'pointer',
+                fontSize: 12,
+                padding: 0,
+                lineHeight: 1,
+                flexShrink: 0,
+              }}
+              title="Limpar"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         <button
           onClick={handleRefresh}
           disabled={refreshing}
@@ -120,6 +178,34 @@ export function HomeScreen({
             />
           ) : '↻'}
         </button>
+
+        {onlineCount != null && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              borderRadius: 20,
+              border: '1px solid var(--border)',
+              background: 'var(--surface2)',
+              flexShrink: 0,
+            }}
+          >
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: '#4CAF50',
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+              {onlineCount} online
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── Error banner ── */}
@@ -179,7 +265,9 @@ export function HomeScreen({
               >
                 <span style={{ fontSize: 44, filter: 'grayscale(1)', opacity: 0.4 }}>♟</span>
                 <p style={{ fontSize: 14, color: 'var(--text-faint)', textAlign: 'center' }}>
-                  {EMPTY_MESSAGES[activeTab]}
+                  {searchQuery.trim()
+                    ? 'Nenhuma partida encontrada para esta busca.'
+                    : EMPTY_MESSAGES[activeTab]}
                 </p>
               </div>
             ) : (

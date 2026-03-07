@@ -37,6 +37,7 @@ export default function App() {
     setPendingGameId,
     creatingGame,
     liveGames,
+    onlineCount,
     handleNewGame,
     handleCancelWaitingRoom,
     handleWaitingRoomBack,
@@ -137,6 +138,7 @@ export default function App() {
                 user={session}
                 pendingGame={pendingGameId ? selectedGame : null}
                 liveGames={liveGames}
+                onlineCount={onlineCount}
                 onGameSelect={handleGameSelect}
                 onGameCancelled={gameId => {
                   if (pendingGameId === gameId) {setPendingGameId(null);}

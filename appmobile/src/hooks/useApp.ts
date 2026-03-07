@@ -32,6 +32,7 @@ export function useApp() {
   const [loading, setLoading] = useState(true);
   const [creatingGame, setCreatingGame] = useState(false);
   const [liveGames, setLiveGames] = useState<GameResponse[] | null>(null);
+  const [onlineCount, setOnlineCount] = useState<number | null>(null);
 
   // Refs to avoid stale closures in async callbacks
   const authScreenRef = useRef<AuthScreen>('tabs');
@@ -120,6 +121,11 @@ export function useApp() {
           setLiveGames(games);
         });
 
+        hub.on('OnlinePlayersUpdated', (count: number) => {
+          if (!active) {return;}
+          setOnlineCount(count);
+        });
+
         hub.on('GameStarted', (game: GameResponse) => {
           if (!active) {return;}
           setPendingGameId(null);
@@ -198,6 +204,7 @@ export function useApp() {
     setAuthScreen('tabs');
     setPendingGameId(null);
     setLiveGames(null);
+    setOnlineCount(null);
   };
 
   const handleNewGame = async () => {
@@ -300,6 +307,7 @@ export function useApp() {
     setPendingGameId,
     creatingGame,
     liveGames,
+    onlineCount,
     handleNewGame,
     handleCancelWaitingRoom,
     handleWaitingRoomBack,

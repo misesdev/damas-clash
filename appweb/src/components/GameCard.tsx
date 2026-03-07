@@ -86,8 +86,19 @@ export function GameCard({
     game.playerBlackId === currentPlayerId || game.playerWhiteId === currentPlayerId;
   const isOwner = game.playerBlackId === currentPlayerId;
   const isWaiting = game.status === 'WaitingForPlayers';
+  const isInProgress = game.status === 'InProgress';
 
-  const actionLabel = isParticipant ? 'Continuar' : 'Entrar';
+  let actionLabel: string | null;
+  if (isWaiting && !isParticipant) {
+    actionLabel = 'Entrar';
+  } else if (isInProgress && isParticipant) {
+    actionLabel = 'Continuar';
+  } else if (isInProgress && !isParticipant) {
+    actionLabel = 'Assistir';
+  } else {
+    // Owner waiting — cancel button handles it, no action button needed
+    actionLabel = null;
+  }
 
   return (
     <div
@@ -159,38 +170,40 @@ export function GameCard({
             </button>
           )}
 
-          <button
-            onClick={onPress}
-            disabled={loading}
-            style={{
-              padding: '5px 16px',
-              fontSize: 12,
-              fontWeight: 700,
-              color: 'var(--bg)',
-              background: 'var(--text)',
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer',
-              opacity: loading ? 0.5 : 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            {loading ? (
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  border: '2px solid var(--bg)',
-                  borderTopColor: 'transparent',
-                  animation: 'spin 0.7s linear infinite',
-                }}
-              />
-            ) : actionLabel}
-          </button>
+          {actionLabel && (
+            <button
+              onClick={onPress}
+              disabled={loading}
+              style={{
+                padding: '5px 16px',
+                fontSize: 12,
+                fontWeight: 700,
+                color: 'var(--bg)',
+                background: 'var(--text)',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+                opacity: loading ? 0.5 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              {loading ? (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50%',
+                    border: '2px solid var(--bg)',
+                    borderTopColor: 'transparent',
+                    animation: 'spin 0.7s linear infinite',
+                  }}
+                />
+              ) : actionLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>

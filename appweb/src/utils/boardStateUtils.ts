@@ -16,6 +16,10 @@ export function getMyColor(game: GameResponse, playerId: string): PieceColor {
   return game.playerBlackId === playerId ? 'dark' : 'light';
 }
 
+export function isSpectator(game: GameResponse, playerId: string): boolean {
+  return game.playerBlackId !== playerId && game.playerWhiteId !== playerId;
+}
+
 export function boardStateToEngine(
   boardStateJson: string,
   currentTurn: PieceColorApi,

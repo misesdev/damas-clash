@@ -6,6 +6,7 @@ import {
   RefreshControl,
   SafeAreaView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -22,6 +23,7 @@ interface Props {
   user: LoginResponse;
   pendingGame?: GameResponse | null;
   liveGames?: GameResponse[] | null;
+  onlineCount?: number | null;
   onGameSelect: (game: GameResponse) => void;
   onGameCancelled?: (gameId: string) => void;
 }
@@ -40,7 +42,7 @@ const EMPTY_MESSAGES: Record<FilterTab, string> = {
   //Completed: 'Nenhuma partida finalizada.',
 };
 
-export function HomeScreen({user, pendingGame, liveGames, onGameSelect, onGameCancelled}: Props) {
+export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSelect, onGameCancelled}: Props) {
   const {
     loading,
     refreshing,
@@ -49,6 +51,8 @@ export function HomeScreen({user, pendingGame, liveGames, onGameSelect, onGameCa
     error,
     activeTab,
     setActiveTab,
+    searchQuery,
+    setSearchQuery,
     filtered,
     handleRefresh,
     handleGamePress,
@@ -65,6 +69,12 @@ export function HomeScreen({user, pendingGame, liveGames, onGameSelect, onGameCa
           <BoardMark size={26} />
           <Text style={styles.topBarTitle}>DAMAS CLASH</Text>
         </View>
+        {onlineCount != null && (
+          <View style={styles.onlinePill}>
+            <View style={styles.onlineDot} />
+            <Text style={styles.onlineText}>{onlineCount} online</Text>
+          </View>
+        )}
         <View style={styles.topBarAvatar}>
           {user.avatarUrl ? (
             <Image source={{uri: user.avatarUrl}} style={styles.avatarImg} />
@@ -96,6 +106,27 @@ export function HomeScreen({user, pendingGame, liveGames, onGameSelect, onGameCa
         ))}
       </View>
 
+      {/* Search field */}
+      <View style={styles.searchWrapper}>
+        <Text style={styles.searchIcon}>⌕</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar jogador..."
+          placeholderTextColor="#4E4E4E"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          testID="search-input"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} testID="search-clear">
+            <Text style={styles.searchClear}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {loading ? (
@@ -114,8 +145,12 @@ export function HomeScreen({user, pendingGame, liveGames, onGameSelect, onGameCa
               tintColor={colors.text}
             />
           }
-          ListEmptyComponent={ 
-            <Text style={styles.empty}>{EMPTY_MESSAGES[activeTab]}</Text>
+          ListEmptyComponent={
+            <Text style={styles.empty}>
+              {searchQuery.trim()
+                ? 'Nenhuma partida encontrada para esta busca.'
+                : EMPTY_MESSAGES[activeTab]}
+            </Text>
           }
           renderItem={({item}) => (
             <GameCard

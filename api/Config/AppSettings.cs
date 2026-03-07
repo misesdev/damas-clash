@@ -14,6 +14,7 @@ public static class AppSettings
             options.Configuration = builder.Configuration["Redis:Configuration"]);
         builder.Services.AddScoped<IGameCacheService, GameCacheService>();
         builder.Services.AddSingleton<IGameWatcherService, GameWatcherService>();
+        builder.Services.AddSingleton<ILobbyTracker, LobbyTracker>();
 
         builder.Services.AddScoped<IPlayerService, PlayerService>();
         builder.Services.AddScoped<IGameService, GameService>();

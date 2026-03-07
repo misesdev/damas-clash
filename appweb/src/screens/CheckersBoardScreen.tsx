@@ -101,6 +101,7 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
     myAvatarUrl,
     opponentAvatarUrl,
     isMyTurn,
+    spectator,
     timeLeft,
     isTimerActive,
     isUrgent,
@@ -114,6 +115,8 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
     piecePositions,
     myCount,
     oppCount,
+    darkCount,
+    lightCount,
     handleCellPress,
     confirmResign,
   } = useGameBoard(game, session);
@@ -129,7 +132,30 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
 
   const pieceSize = Math.round(cellSize * 0.78);
 
+  // Spectator: show black player on left, white on right with turn-based highlighting
+  const isDarkTurn = liveGame.currentTurn === 'Black';
+  const leftUsername = spectator ? liveGame.playerBlackUsername : myUsername;
+  const rightUsername = spectator ? liveGame.playerWhiteUsername : opponentUsername;
+  const leftAvatarUrl = spectator ? liveGame.playerBlackAvatarUrl : myAvatarUrl;
+  const rightAvatarUrl = spectator ? liveGame.playerWhiteAvatarUrl : opponentAvatarUrl;
+  const leftLabel = spectator ? 'Preto' : 'Você';
+  const rightLabel = spectator ? 'Branco' : 'Adversário';
+  const leftCount = spectator ? darkCount : myCount;
+  const rightCount = spectator ? lightCount : oppCount;
+  const leftActive = spectator ? (isDarkTurn && !winner) : (isMyTurn && !winner);
+  const rightActive = spectator ? (!isDarkTurn && !winner) : (!isMyTurn && !winner);
+
   const statusText = () => {
+    if (spectator) {
+      if (winner) {
+        const winnerName = liveGame.winnerId === liveGame.playerBlackId
+          ? liveGame.playerBlackUsername
+          : liveGame.playerWhiteUsername;
+        return `${winnerName ?? 'Jogador'} venceu!`;
+      }
+      const turnName = isDarkTurn ? liveGame.playerBlackUsername : liveGame.playerWhiteUsername;
+      return `Vez de ${turnName ?? 'jogador'}`;
+    }
     if (winner) return winner === myColor ? 'Você venceu!' : 'Você perdeu.';
     if (sendingMove) return 'Enviando...';
     if (pendingCaptureId) return 'Captura múltipla!';
@@ -291,6 +317,10 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
   );
 
   // ── Win overlay ─────────────────────────────────────────────────────────────
+  const winnerName = liveGame.winnerId === liveGame.playerBlackId
+    ? liveGame.playerBlackUsername
+    : liveGame.playerWhiteUsername;
+
   const winOverlay = winner ? (
     <div
       style={{
@@ -305,15 +335,29 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
       }}
     >
       <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, maxWidth: 400 }}>
-        <span style={{ fontSize: 72 }}>{winner === myColor ? '🏆' : '💔'}</span>
-        <h2 style={{ fontSize: 40, fontWeight: 800, color: winner === myColor ? '#ffffff' : '#888888', letterSpacing: 0.5 }}>
-          {winner === myColor ? 'Vitória!' : 'Derrota'}
-        </h2>
-        <p style={{ fontSize: 16, color: '#888888' }}>
-          {winner === myColor
-            ? 'Parabéns! Você venceu a partida.'
-            : `${opponentUsername ?? 'Adversário'} venceu a partida.`}
-        </p>
+        {spectator ? (
+          <>
+            <span style={{ fontSize: 72 }}>🏆</span>
+            <h2 style={{ fontSize: 40, fontWeight: 800, color: '#ffffff', letterSpacing: 0.5 }}>
+              Partida encerrada!
+            </h2>
+            <p style={{ fontSize: 16, color: '#888888' }}>
+              {winnerName ?? 'Jogador'} venceu a partida.
+            </p>
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize: 72 }}>{winner === myColor ? '🏆' : '💔'}</span>
+            <h2 style={{ fontSize: 40, fontWeight: 800, color: winner === myColor ? '#ffffff' : '#888888', letterSpacing: 0.5 }}>
+              {winner === myColor ? 'Vitória!' : 'Derrota'}
+            </h2>
+            <p style={{ fontSize: 16, color: '#888888' }}>
+              {winner === myColor
+                ? 'Parabéns! Você venceu a partida.'
+                : `${opponentUsername ?? 'Adversário'} venceu a partida.`}
+            </p>
+          </>
+        )}
         <button
           onClick={onBack}
           style={{
@@ -360,13 +404,13 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button
-            onClick={winner ? onBack : undefined}
-            title={winner ? 'Voltar' : undefined}
+            onClick={winner || spectator ? onBack : undefined}
+            title={winner || spectator ? 'Voltar' : undefined}
             style={{
               background: 'none',
               border: 'none',
-              color: winner ? 'var(--text)' : 'var(--text-faint)',
-              cursor: winner ? 'pointer' : 'default',
+              color: winner || spectator ? 'var(--text)' : 'var(--text-faint)',
+              cursor: winner || spectator ? 'pointer' : 'default',
               fontSize: 20,
               lineHeight: 1,
               padding: 4,
@@ -406,19 +450,19 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
           style={{ flexDirection: 'column', gap: 16, width: 200, flexShrink: 0 }}
         >
           <PlayerChip
-            username={opponentUsername}
-            avatarUrl={opponentAvatarUrl}
-            pieceCount={oppCount}
-            label="Adversário"
-            active={!isMyTurn && !winner}
+            username={rightUsername}
+            avatarUrl={rightAvatarUrl}
+            pieceCount={rightCount}
+            label={rightLabel}
+            active={rightActive}
           />
           <div style={{ flex: 1 }} />
           <PlayerChip
-            username={myUsername}
-            avatarUrl={myAvatarUrl}
-            pieceCount={myCount}
-            label="Você"
-            active={isMyTurn && !winner}
+            username={leftUsername}
+            avatarUrl={leftAvatarUrl}
+            pieceCount={leftCount}
+            label={leftLabel}
+            active={leftActive}
           />
         </div>
 
@@ -428,21 +472,21 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
           <div className="flex md:hidden" style={{ gap: 8, width: '100%', maxWidth: boardSize + 20 }}>
             <div style={{ flex: 1 }}>
               <PlayerChip
-                username={myUsername}
-                avatarUrl={myAvatarUrl}
-                pieceCount={myCount}
-                label="Você"
-                active={isMyTurn && !winner}
+                username={leftUsername}
+                avatarUrl={leftAvatarUrl}
+                pieceCount={leftCount}
+                label={leftLabel}
+                active={leftActive}
               />
             </div>
             <span style={{ color: 'var(--text-faint)', alignSelf: 'center', fontSize: 14 }}>×</span>
             <div style={{ flex: 1 }}>
               <PlayerChip
-                username={opponentUsername}
-                avatarUrl={opponentAvatarUrl}
-                pieceCount={oppCount}
-                label="Adversário"
-                active={!isMyTurn && !winner}
+                username={rightUsername}
+                avatarUrl={rightAvatarUrl}
+                pieceCount={rightCount}
+                label={rightLabel}
+                active={rightActive}
               />
             </div>
           </div>
@@ -469,8 +513,8 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
             )}
           </div>
 
-          {/* Resign: mobile only */}
-          {liveGame.status === 'InProgress' && !winner && (
+          {/* Resign or leave: mobile only */}
+          {liveGame.status === 'InProgress' && !winner && !spectator && (
             <button
               className="flex md:hidden"
               onClick={confirmResign}
@@ -488,6 +532,24 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
               }}
             >
               Desistir
+            </button>
+          )}
+          {spectator && liveGame.status === 'InProgress' && (
+            <button
+              className="flex md:hidden"
+              onClick={onBack}
+              style={{
+                background: 'transparent',
+                color: 'var(--text-muted)',
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                padding: '8px 24px',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Sair
             </button>
           )}
         </div>
@@ -525,8 +587,8 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
 
           <div style={{ flex: 1 }} />
 
-          {/* Resign button */}
-          {liveGame.status === 'InProgress' && !winner && (
+          {/* Resign or leave button — desktop */}
+          {liveGame.status === 'InProgress' && !winner && !spectator && (
             <button
               onClick={confirmResign}
               disabled={sendingMove}
@@ -546,6 +608,26 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
             >
               Desistir da partida
+            </button>
+          )}
+          {spectator && liveGame.status === 'InProgress' && (
+            <button
+              onClick={onBack}
+              style={{
+                background: 'transparent',
+                color: 'var(--text-muted)',
+                border: '1px solid var(--border)',
+                borderRadius: 12,
+                padding: '10px 16px',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'background 0.15s',
+              }}
+              onMouseOver={e => (e.currentTarget.style.background = 'var(--surface2)')}
+              onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              Sair da partida
             </button>
           )}
         </div>

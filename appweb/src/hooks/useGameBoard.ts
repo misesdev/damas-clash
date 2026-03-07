@@ -12,7 +12,7 @@ import { showMessage } from '../components/MessageBox';
 import type { Piece, PieceColor } from '../game/checkers';
 import { BOARD_SIZE, findAt } from '../game/checkers';
 import { GameEngine } from '../game/GameEngine';
-import { boardStateToEngine, getMyColor, parseApiColor } from '../utils/boardStateUtils';
+import { boardStateToEngine, getMyColor, isSpectator, parseApiColor } from '../utils/boardStateUtils';
 import type { LoginResponse } from '../types/auth';
 import type { GameResponse } from '../types/game';
 
@@ -57,7 +57,8 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   useEffect(() => { gameRef.current = game; }, [game]);
 
   const myColor: PieceColor = getMyColor(initialGame, session.playerId);
-  const isFlipped = myColor === 'dark';
+  const spectator = isSpectator(initialGame, session.playerId);
+  const isFlipped = !spectator && myColor === 'dark';
 
   const syncPositionsFromEngine = useCallback((eng: GameEngine) => {
     setPiecePositions(prev => {
@@ -162,7 +163,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     (row: number, col: number) => {
       const current = engineRef.current;
       const currentGame = gameRef.current;
-      const isMyTurn = parseApiColor(currentGame.currentTurn) === myColor;
+      const isMyTurn = !spectator && parseApiColor(currentGame.currentTurn) === myColor;
 
       if (
         currentGame.status === 'Completed' ||
@@ -237,7 +238,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
 
   // ── Turn timer ──────────────────────────────────────────────────────────────
 
-  const isMyTurnDerived = parseApiColor(game.currentTurn) === myColor;
+  const isMyTurnDerived = !spectator && parseApiColor(game.currentTurn) === myColor;
 
   useEffect(() => {
     if (!isMyTurnDerived || game.status === 'Completed') {
@@ -319,6 +320,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     myAvatarUrl,
     opponentAvatarUrl,
     isMyTurn,
+    spectator,
     timeLeft,
     isTimerActive,
     isUrgent,

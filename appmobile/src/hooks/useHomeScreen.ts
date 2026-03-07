@@ -20,6 +20,7 @@ export function useHomeScreen(
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<FilterTab>('WaitingForPlayers');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchGames = useCallback(async () => {
     try {
@@ -103,12 +104,20 @@ export function useHomeScreen(
   // Use live games when available, otherwise fall back to fetched
   const games = liveGames ?? fetchedGames;
   const filteredFromServer = games.filter(g => g.status === activeTab);
-  const filtered =
+  const tabFiltered =
     pendingGame &&
     pendingGame.status === activeTab &&
     !filteredFromServer.some(g => g.id === pendingGame.id)
       ? [pendingGame, ...filteredFromServer]
       : filteredFromServer;
+
+  const q = searchQuery.trim().toLowerCase();
+  const filtered = q
+    ? tabFiltered.filter(g =>
+        g.playerBlackUsername?.toLowerCase().includes(q) ||
+        g.playerWhiteUsername?.toLowerCase().includes(q),
+      )
+    : tabFiltered;
 
   return {
     loading,
@@ -118,6 +127,8 @@ export function useHomeScreen(
     error,
     activeTab,
     setActiveTab,
+    searchQuery,
+    setSearchQuery,
     filtered,
     handleRefresh,
     handleGamePress,

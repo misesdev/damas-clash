@@ -62,6 +62,7 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
     myAvatarUrl,
     opponentAvatarUrl,
     isMyTurn,
+    spectator,
     timeLeft,
     winner,
     watchersCount,
@@ -96,7 +97,31 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
   const displayColor = (gameColor: 'dark' | 'light') =>
     isFlipped ? (gameColor === 'dark' ? 'light' : 'dark') : gameColor;
 
+  // Spectator: show black player on left, white on right with turn-based highlighting
+  // Participant: show "me" on left, "opponent" on right
+  const isDarkTurn = liveGame.currentTurn === 'Black';
+  const leftUsername = spectator ? liveGame.playerBlackUsername : myUsername;
+  const rightUsername = spectator ? liveGame.playerWhiteUsername : opponentUsername;
+  const leftAvatarUrl = spectator ? liveGame.playerBlackAvatarUrl : myAvatarUrl;
+  const rightAvatarUrl = spectator ? liveGame.playerWhiteAvatarUrl : opponentAvatarUrl;
+  const leftLabel = spectator ? 'PRETO' : 'VOCÊ';
+  const rightLabel = spectator ? 'BRANCO' : 'ADVERSÁRIO';
+  const leftCount = spectator ? darkCount : myCount;
+  const rightCount = spectator ? lightCount : oppCount;
+  const leftActive = spectator ? (isDarkTurn && !winner) : (isMyTurn && !winner);
+  const rightActive = spectator ? (!isDarkTurn && !winner) : (!isMyTurn && !winner);
+
   const statusText = () => {
+    if (spectator) {
+      if (winner) {
+        const winnerName = liveGame.winnerId === liveGame.playerBlackId
+          ? liveGame.playerBlackUsername
+          : liveGame.playerWhiteUsername;
+        return `${winnerName ?? 'Jogador'} venceu!`;
+      }
+      const turnName = isDarkTurn ? liveGame.playerBlackUsername : liveGame.playerWhiteUsername;
+      return `Vez de ${turnName ?? 'jogador'}`;
+    }
     if (winner) {
       return winner === myColor ? 'Você venceu! 🏆' : 'Você perdeu.';
     }
@@ -133,24 +158,24 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
 
       {/* Player chips */}
       <View style={styles.scoreRow}>
-        <View style={[styles.playerChip, isMyTurn && !winner && styles.activeChip]}>
-          <PlayerAvatar avatarUrl={myAvatarUrl} username={myUsername} />
+        <View style={[styles.playerChip, leftActive && styles.activeChip]}>
+          <PlayerAvatar avatarUrl={leftAvatarUrl} username={leftUsername} />
           <View style={styles.chipInfo}>
-            <Text style={styles.chipLabel}>VOCÊ</Text>
-            <Text style={styles.chipName} numberOfLines={1}>{myUsername}</Text>
+            <Text style={styles.chipLabel}>{leftLabel}</Text>
+            <Text style={styles.chipName} numberOfLines={1}>{leftUsername}</Text>
           </View>
-          <Text style={styles.chipCount}>{myCount}</Text>
+          <Text style={styles.chipCount}>{leftCount}</Text>
         </View>
 
         <Text style={styles.vs}>×</Text>
 
-        <View style={[styles.playerChip, !isMyTurn && !winner && styles.activeChip]}>
-          <PlayerAvatar avatarUrl={opponentAvatarUrl} username={opponentUsername} />
+        <View style={[styles.playerChip, rightActive && styles.activeChip]}>
+          <PlayerAvatar avatarUrl={rightAvatarUrl} username={rightUsername} />
           <View style={styles.chipInfo}>
-            <Text style={styles.chipLabel}>ADVERSÁRIO</Text>
-            <Text style={styles.chipName} numberOfLines={1}>{opponentUsername}</Text>
+            <Text style={styles.chipLabel}>{rightLabel}</Text>
+            <Text style={styles.chipName} numberOfLines={1}>{rightUsername}</Text>
           </View>
-          <Text style={styles.chipCount}>{oppCount}</Text>
+          <Text style={styles.chipCount}>{rightCount}</Text>
         </View>
       </View>
 
@@ -281,8 +306,8 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
         )}
       </View>
 
-      {/* Resign button — only during active game */}
-      {liveGame.status === 'InProgress' && !winner && (
+      {/* Resign button — only during active game for participants */}
+      {liveGame.status === 'InProgress' && !winner && !spectator && (
         <Button
           label="Desistir"
           variant="ghost"
@@ -291,21 +316,45 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
         />
       )}
 
+      {/* Leave button — spectators can exit anytime */}
+      {spectator && liveGame.status === 'InProgress' && (
+        <Button
+          label="Sair"
+          variant="ghost"
+          onPress={onBack}
+          testID="leave-button"
+        />
+      )}
+
       {/* Win / loss overlay */}
       {winner && (
         <View style={styles.overlay}>
           <View style={styles.overlayContent}>
-            <Text style={styles.overlayEmoji}>
-              {winner === myColor ? '🏆' : '💔'}
-            </Text>
-            <Text style={[styles.overlayHeading, winner === myColor ? styles.winColor : styles.lossColor]}>
-              {winner === myColor ? 'Vitória!' : 'Derrota'}
-            </Text>
-            <Text style={styles.overlaySubtitle}>
-              {winner === myColor
-                ? 'Parabéns! Você venceu a partida.'
-                : `${opponentUsername ?? 'Adversário'} venceu a partida.`}
-            </Text>
+            {spectator ? (
+              <>
+                <Text style={styles.overlayEmoji}>🏆</Text>
+                <Text style={[styles.overlayHeading, styles.winColor]}>Partida encerrada!</Text>
+                <Text style={styles.overlaySubtitle}>
+                  {(liveGame.winnerId === liveGame.playerBlackId
+                    ? liveGame.playerBlackUsername
+                    : liveGame.playerWhiteUsername) ?? 'Jogador'} venceu a partida.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.overlayEmoji}>
+                  {winner === myColor ? '🏆' : '💔'}
+                </Text>
+                <Text style={[styles.overlayHeading, winner === myColor ? styles.winColor : styles.lossColor]}>
+                  {winner === myColor ? 'Vitória!' : 'Derrota'}
+                </Text>
+                <Text style={styles.overlaySubtitle}>
+                  {winner === myColor
+                    ? 'Parabéns! Você venceu a partida.'
+                    : `${opponentUsername ?? 'Adversário'} venceu a partida.`}
+                </Text>
+              </>
+            )}
             <View style={styles.overlayActions}>
               <Button label="Voltar ao início" onPress={onBack} testID="overlay-back-button" />
             </View>
