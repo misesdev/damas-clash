@@ -18,26 +18,12 @@ builder.Services.AddSignalR()
 builder.UseAppSettings();
 builder.UseDBSettings();
 
-var allowedOrigins = builder.Configuration
-    .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>() ?? [];
-
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        if (allowedOrigins.Length > 0)
-            policy.WithOrigins(allowedOrigins);
-        else
-            policy.AllowAnyOrigin();
-
-        policy
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-
-        // WithOrigins + AllowCredentials needed for SignalR cookies/auth headers
-        if (allowedOrigins.Length > 0)
-            policy.AllowCredentials();
+        policy.AllowAnyOrigin();
+        policy.AllowAnyHeader().AllowAnyMethod();
     });
 });
 
