@@ -6,13 +6,13 @@ export const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.75)',
-    justifyContent: 'flex-end',
+    //justifyContent: 'flex-end',
   },
   sheet: {
     backgroundColor: colors.bg,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '85%',
+    //maxHeight: '85%',
     borderTopWidth: 1,
     borderColor: colors.border,
   },
