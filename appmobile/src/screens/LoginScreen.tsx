@@ -1,12 +1,14 @@
 import React from 'react';
 import {
   KeyboardAvoidingView,
+  Linking,
   Platform,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import {WEB_URL} from '@env';
 import {BoardMark} from '../components/BoardMark';
 import {Button} from '../components/Button';
 import {Input} from '../components/Input';
@@ -72,6 +74,15 @@ export function LoginScreen({onCodeSent, onNavigateToRegister}: LoginScreenProps
               <Text style={styles.footerLink}>Criar conta</Text>
             </Text>
           </TouchableOpacity>
+          <View style={styles.legalRow}>
+            <TouchableOpacity onPress={() => Linking.openURL(`${WEB_URL}/termos`)}>
+              <Text style={styles.legalLink}>Termos de Uso</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalSep}>·</Text>
+            <TouchableOpacity onPress={() => Linking.openURL(`${WEB_URL}/privacidade`)}>
+              <Text style={styles.legalLink}>Privacidade</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
       </ScrollView>

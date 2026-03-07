@@ -41,22 +41,29 @@ public class AuthService(
             new RegisterResponse(player.Id, player.Username, player.Email, player.CreatedAt));
     }
 
-    public async Task<ServiceResult<string>> ConfirmEmailAsync(ConfirmEmailRequest req, CancellationToken ct = default)
+    public async Task<ServiceResult<LoginResponse>> ConfirmEmailAsync(ConfirmEmailRequest req, CancellationToken ct = default)
     {
         var player = await db.Players.FirstOrDefaultAsync(p => p.Email == req.Email, ct);
 
         if (player is null ||
             player.EmailConfirmationCode != req.Code ||
             player.EmailConfirmationCodeExpiry < DateTimeOffset.UtcNow)
-            return ServiceResult<string>.Fail("invalid_or_expired_code");
+            return ServiceResult<LoginResponse>.Fail("invalid_or_expired_code");
 
         player.IsEmailConfirmed = true;
         player.EmailConfirmationCode = null;
         player.EmailConfirmationCodeExpiry = null;
 
+        var refreshToken = tokenService.GenerateRefreshToken();
+        player.RefreshToken = refreshToken;
+        player.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(30);
+
         await db.SaveChangesAsync(ct);
 
-        return ServiceResult<string>.Ok("confirmed");
+        var tokenResult = tokenService.Generate(player);
+        return ServiceResult<LoginResponse>.Ok(
+            new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
+                player.Id, player.Username, player.Email, player.AvatarUrl));
     }
 
     public async Task<ServiceResult<SendLoginCodeResponse>> LoginAsync(LoginRequest req, CancellationToken ct = default)
@@ -178,6 +185,19 @@ public class AuthService(
         await db.SaveChangesAsync(ct);
 
         return ServiceResult<string>.Ok("changed");
+    }
+
+    public async Task<ServiceResult<string>> DeleteAccountAsync(Guid playerId, CancellationToken ct = default)
+    {
+        var player = await db.Players.FindAsync([playerId], ct);
+
+        if (player is null)
+            return ServiceResult<string>.NotFound("player_not_found");
+
+        db.Players.Remove(player);
+        await db.SaveChangesAsync(ct);
+
+        return ServiceResult<string>.Ok("deleted");
     }
 
     private static string GenerateCode() =>

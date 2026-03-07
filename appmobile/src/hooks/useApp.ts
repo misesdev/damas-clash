@@ -112,6 +112,7 @@ export function useApp() {
           .withUrl(`${BASE_URL}/hubs/game`, {
             transport: HttpTransportType.WebSockets,
             skipNegotiation: true,
+            accessTokenFactory: () => session.token,
           })
           .withAutomaticReconnect()
           .build();

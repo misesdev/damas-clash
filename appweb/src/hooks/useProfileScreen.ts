@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { showMessage } from '../components/MessageBox';
+import { deleteAccount } from '../api/auth';
 import { updateAvatar } from '../api/players';
 import { getPlayerStats } from '../api/games';
 import type { LoginResponse } from '../types/auth';
@@ -34,6 +35,34 @@ export function useProfileScreen(
     });
   };
 
+  const handleDeleteAccount = () => {
+    showMessage({
+      title: 'Excluir conta',
+      message:
+        'Todos os seus dados serão permanentemente excluídos do banco de dados, incluindo histórico de partidas e perfil. Esta ação não pode ser desfeita.',
+      type: 'confirm',
+      actions: [
+        { label: 'Cancelar' },
+        {
+          label: 'Excluir',
+          danger: true,
+          onPress: async () => {
+            try {
+              await deleteAccount(user.token);
+              onLogout();
+            } catch {
+              showMessage({
+                title: 'Erro',
+                message: 'Não foi possível excluir a conta. Tente novamente.',
+                type: 'error',
+              });
+            }
+          },
+        },
+      ],
+    });
+  };
+
   const handleAvatarPress = () => {
     fileInputRef.current?.click();
   };
@@ -57,5 +86,5 @@ export function useProfileScreen(
     }
   };
 
-  return { uploading, stats, fileInputRef, handleLogout, handleAvatarPress, handleFileChange };
+  return { uploading, stats, fileInputRef, handleLogout, handleDeleteAccount, handleAvatarPress, handleFileChange };
 }

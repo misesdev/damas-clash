@@ -11,10 +11,11 @@ import {Button} from '../components/Button';
 import {OtpInput} from '../components/OtpInput';
 import {useConfirmEmail} from '../hooks/useConfirmEmail';
 import {styles} from '../styles/confirmEmailStyles';
+import type {LoginResponse} from '../types/auth';
 
 interface ConfirmEmailScreenProps {
   email: string;
-  onConfirmed: () => void;
+  onConfirmed: (data?: LoginResponse) => void;
   onNavigateToLogin: () => void;
   onSubmitCode?: (code: string) => Promise<void>;
   onResendCode?: () => Promise<void>;

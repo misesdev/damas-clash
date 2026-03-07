@@ -16,7 +16,7 @@ export function register(data: RegisterRequest): Promise<RegisterResponse> {
   });
 }
 
-export function confirmEmail(data: ConfirmEmailRequest): Promise<void> {
+export function confirmEmail(data: ConfirmEmailRequest): Promise<LoginResponse> {
   return request('/api/auth/confirm-email', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -48,5 +48,12 @@ export function refreshAccessToken(refreshToken: string): Promise<LoginResponse>
   return request('/api/auth/refresh', {
     method: 'POST',
     body: JSON.stringify({ refreshToken }),
+  });
+}
+
+export function deleteAccount(token: string): Promise<void> {
+  return request('/api/auth/account', {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
   });
 }

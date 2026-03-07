@@ -30,4 +30,8 @@ export const styles = StyleSheet.create({
   divider: {width: 32, height: 1, backgroundColor: colors.border},
   footerText: {color: colors.textMuted, fontSize: 14},
   footerLink: {color: colors.textSecondary, fontWeight: '600'},
+
+  legalRow: {flexDirection: 'row', alignItems: 'center', gap: 8},
+  legalLink: {color: colors.textMuted, fontSize: 12},
+  legalSep: {color: colors.textMuted, fontSize: 12},
 });

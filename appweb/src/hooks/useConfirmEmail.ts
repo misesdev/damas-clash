@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { confirmEmail } from '../api/auth';
 import { ApiError } from '../api/client';
+import type { LoginResponse } from '../types/auth';
 
 const RESEND_COOLDOWN = 60;
 
 interface Options {
   email: string;
-  onConfirmed: () => void;
+  onConfirmed: (data?: LoginResponse) => void;
   onSubmitCode?: (code: string) => Promise<void>;
   onResendCode?: () => Promise<void>;
 }
@@ -64,8 +65,8 @@ export function useConfirmEmail({ email, onConfirmed, onSubmitCode, onResendCode
       if (onSubmitCode) {
         await onSubmitCode(code);
       } else {
-        await confirmEmail({ email, code });
-        onConfirmed();
+        const data = await confirmEmail({ email, code });
+        onConfirmed(data);
       }
     } catch (e) {
       if (e instanceof ApiError) {

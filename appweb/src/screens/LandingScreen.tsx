@@ -154,9 +154,15 @@ export function LandingScreen({ onPlay }: Props) {
           fontSize: 12,
           color: 'var(--text-faint)',
           flexShrink: 0,
+          display: 'flex',
+          gap: 20,
+          justifyContent: 'center',
+          flexWrap: 'wrap',
         }}
       >
-        © {new Date().getFullYear()} Damas Brasileiras
+        <span>© {new Date().getFullYear()} Damas Clash</span>
+        <a href="/privacidade" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Privacidade</a>
+        <a href="/termos" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Termos de Uso</a>
       </footer>
     </div>
   );

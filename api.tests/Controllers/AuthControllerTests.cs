@@ -60,7 +60,7 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
     // ── Confirm Email ─────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task ConfirmEmail_ValidCode_Returns200()
+    public async Task ConfirmEmail_ValidCode_Returns200WithToken()
     {
         var req = ValidRegister("_conf1");
         await _client.PostAsJsonAsync("/api/auth/register", req);
@@ -72,6 +72,12 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
             new ConfirmEmailRequest(req.Email, code));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts);
+        Assert.NotNull(body);
+        Assert.False(string.IsNullOrEmpty(body.Token));
+        Assert.False(string.IsNullOrEmpty(body.RefreshToken));
+        Assert.Equal(req.Email, body.Email);
+        Assert.Equal(req.Username, body.Username);
     }
 
     [Fact]
@@ -247,5 +253,75 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
             new VerifyLoginRequest(req.Email, loginCode));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    // ── Delete Account ────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteAccount_Authenticated_Returns204()
+    {
+        var token = await RegisterAndLogin("_del1");
+
+        _client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var response = await _client.DeleteAsync("/api/auth/account");
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteAccount_PlayerNoLongerExists()
+    {
+        var token = await RegisterAndLogin("_del2");
+
+        _client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        await _client.DeleteAsync("/api/auth/account");
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        // Attempt to login after deletion should return 404
+        var response = await _client.PostAsJsonAsync("/api/auth/login",
+            new LoginRequest("user_del2@test.com"));
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteAccount_Unauthenticated_Returns401()
+    {
+        var response = await _client.DeleteAsync("/api/auth/account");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteAccount_TokenStillValidAfterDeletion_Returns401()
+    {
+        // After account deletion the old token should no longer grant access
+        var token = await RegisterAndLogin("_del3");
+
+        _client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        await _client.DeleteAsync("/api/auth/account");
+
+        // Trying to delete again with the same token — account is gone
+        var response = await _client.DeleteAsync("/api/auth/account");
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        // Player no longer exists → service returns NotFound → 404
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private async Task<string> RegisterAndLogin(string suffix)
+    {
+        var req = ValidRegister(suffix);
+        await _client.PostAsJsonAsync("/api/auth/register", req);
+
+        var confirmCode = _email.GetCode(req.Email)!;
+        var confirmResp = await _client.PostAsJsonAsync("/api/auth/confirm-email",
+            new ConfirmEmailRequest(req.Email, confirmCode));
+        var loginBody = (await confirmResp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts))!;
+        return loginBody.Token;
     }
 }

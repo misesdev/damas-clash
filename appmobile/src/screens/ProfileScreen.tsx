@@ -2,12 +2,14 @@ import React from 'react';
 import {
   ActivityIndicator,
   Image,
+  Linking,
   SafeAreaView,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import {WEB_URL} from '@env';
 import {useProfileScreen} from '../hooks/useProfileScreen';
 import {styles} from '../styles/profileStyles';
 import type {LoginResponse} from '../types/auth';
@@ -102,7 +104,7 @@ export function ProfileScreen({
   onAvatarChanged,
   onOpenHistory,
 }: Props) {
-  const {uploading, stats, handleLogout, handleAvatarPress} = useProfileScreen(
+  const {uploading, stats, handleLogout, handleDeleteAccount, handleAvatarPress} = useProfileScreen(
     user,
     onLogout,
     onAvatarChanged,
@@ -162,8 +164,21 @@ export function ProfileScreen({
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Jurídico</Text>
           <View style={styles.card}>
+            <MenuItem label="Termos de Uso" onPress={() => Linking.openURL(`${WEB_URL}/termos`)} />
+            <View style={styles.separator} />
+            <MenuItem label="Política de Privacidade" onPress={() => Linking.openURL(`${WEB_URL}/privacidade`)} />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.card}>
+            <MenuItem label="Excluir Conta" danger onPress={handleDeleteAccount} testID="delete-account-button" />
+            <View style={styles.separator} />
             <MenuItem label="Sair" danger onPress={handleLogout} testID="logout-button" />
+            {/* <View style={styles.separator} /> */}
+            {/* <MenuItem label="Excluir Conta" danger onPress={handleDeleteAccount} testID="delete-account-button" /> */}
           </View>
         </View>
 

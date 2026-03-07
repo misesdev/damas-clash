@@ -191,7 +191,7 @@ export default function App() {
         {screen === 'confirmEmail' && (
           <ConfirmEmailScreen
             email={pendingEmail}
-            onConfirmed={() => setScreen('login')}
+            onConfirmed={data => { if (data) { handleLogin(data); } else { setScreen('login'); } }}
             onNavigateToLogin={() => setScreen('login')}
             onResendCode={() => resendConfirmation({email: pendingEmail})}
           />

@@ -45,7 +45,7 @@ public class DamasDbContext(DbContextOptions<DamasDbContext> options) : DbContex
             e.HasOne(m => m.Player)
                 .WithMany()
                 .HasForeignKey(m => m.PlayerId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

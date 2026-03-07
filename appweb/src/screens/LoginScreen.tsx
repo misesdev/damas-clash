@@ -107,6 +107,15 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister }: LoginScreenPro
             Não tem conta?{' '}
             <span style={{ fontWeight: 700, color: 'var(--text)' }}>Criar conta</span>
           </button>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <a href="/termos" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--text-faint)', textDecoration: 'none' }}>
+              Termos de Uso
+            </a>
+            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>·</span>
+            <a href="/privacidade" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--text-faint)', textDecoration: 'none' }}>
+              Privacidade
+            </a>
+          </div>
         </div>
       </div>
     </div>

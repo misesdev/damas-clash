@@ -19,7 +19,7 @@ export interface GameResponse {
 
 export interface MoveResponse {
   id: string;
-  playerId: string;
+  playerId: string | null;
   fromRow: number;
   fromCol: number;
   toRow: number;

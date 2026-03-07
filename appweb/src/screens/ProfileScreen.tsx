@@ -108,7 +108,7 @@ export function ProfileScreen({
   onAvatarChanged,
   onOpenHistory,
 }: Props) {
-  const { uploading, stats, fileInputRef, handleLogout, handleAvatarPress, handleFileChange } =
+  const { uploading, stats, fileInputRef, handleLogout, handleDeleteAccount, handleAvatarPress, handleFileChange } =
     useProfileScreen(user, onLogout, onAvatarChanged);
 
   const initials = user.username.slice(0, 2).toUpperCase();
@@ -264,8 +264,23 @@ export function ProfileScreen({
           <MenuItem label="Partidas jogadas" onClick={onOpenHistory} />
         </Section>
 
+        {/* ── Legal section ── */}
+        <Section label="Jurídico">
+          <MenuItem
+            label="Termos de Uso"
+            onClick={() => window.open('/termos', '_blank', 'noopener,noreferrer')}
+          />
+          <Divider />
+          <MenuItem
+            label="Política de Privacidade"
+            onClick={() => window.open('/privacidade', '_blank', 'noopener,noreferrer')}
+          />
+        </Section>
+
         {/* ── Session section ── */}
         <Section>
+          <MenuItem label="Excluir Conta" danger onClick={handleDeleteAccount} />
+          <Divider />
           <MenuItem label="Sair" danger onClick={handleLogout} />
         </Section>
 

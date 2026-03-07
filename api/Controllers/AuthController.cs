@@ -34,7 +34,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         if (!result.IsSuccess)
             return BadRequest(new { error = result.Error });
 
-        return Ok();
+        return Ok(result.Value);
     }
 
     // Step 1: sends a login code to the player's email
@@ -118,6 +118,21 @@ public class AuthController(IAuthService authService) : ControllerBase
             return BadRequest(new { error = result.Error });
 
         return Ok();
+    }
+
+    [Authorize]
+    [HttpDelete("account")]
+    public async Task<IActionResult> DeleteAccount(CancellationToken ct)
+    {
+        var playerId = GetCallerId();
+        if (playerId is null) return Forbid();
+
+        var result = await authService.DeleteAccountAsync(playerId.Value, ct);
+
+        if (!result.IsSuccess)
+            return result.IsNotFound ? NotFound() : BadRequest(new { error = result.Error });
+
+        return NoContent();
     }
 
     private Guid? GetCallerId()
