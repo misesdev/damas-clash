@@ -1,4 +1,4 @@
-package com.appmobile
+package com.damasclash
 
 import android.app.Application
 import com.facebook.react.PackageList
