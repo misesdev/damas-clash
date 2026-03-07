@@ -16,7 +16,7 @@ public class PlayerService(DamasDbContext db, ICloudinaryService cloudinary) : I
     public async Task<IEnumerable<PlayerResponse>> GetAllAsync(CancellationToken ct = default)
     {
         return await db.Players
-            .Select(p => new PlayerResponse(p.Id, p.Username, p.CreatedAt))
+            .Select(p => new PlayerResponse(p.Id, p.Username, p.AvatarUrl, p.CreatedAt))
             .ToListAsync(ct);
     }
 
@@ -49,5 +49,5 @@ public class PlayerService(DamasDbContext db, ICloudinaryService cloudinary) : I
     }
 
     private static PlayerResponse ToResponse(Player p) =>
-        new(p.Id, p.Username, p.CreatedAt);
+        new(p.Id, p.Username, p.AvatarUrl, p.CreatedAt);
 }

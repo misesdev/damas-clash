@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace api.Services;
 
-public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCacheService cache) : IGameService
+public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCacheService cache, IOnlinePlayerTracker tracker) : IGameService
 {
     public async Task<ServiceResult<GameResponse>> CreateAsync(Guid playerId, CancellationToken ct = default)
     {
@@ -76,6 +76,11 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
             .SendAsync("GameStarted", response, ct);
 
         await BroadcastGameListAsync(ct);
+
+        // Mark both players as InGame in presence tracker
+        tracker.SetInGame(game.PlayerBlackId!.Value, gameId);
+        tracker.SetInGame(playerId, gameId);
+        await BroadcastOnlinePlayersAsync(ct);
 
         return ServiceResult<GameResponse>.Ok(response);
     }
@@ -150,7 +155,12 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
             .SendAsync("MoveMade", response, ct);
 
         if (result.GameOver)
+        {
             await BroadcastGameListAsync(ct);
+            tracker.SetOnline(game.PlayerBlackId!.Value);
+            if (game.PlayerWhiteId.HasValue) tracker.SetOnline(game.PlayerWhiteId.Value);
+            await BroadcastOnlinePlayersAsync(ct);
+        }
 
         return ServiceResult<GameResponse>.Ok(response);
     }
@@ -219,6 +229,10 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         await hub.Clients.Group(gameId.ToString()).SendAsync("MoveMade", response, ct);
         await BroadcastGameListAsync(ct);
 
+        tracker.SetOnline(game.PlayerBlackId!.Value);
+        if (game.PlayerWhiteId.HasValue) tracker.SetOnline(game.PlayerWhiteId.Value);
+        await BroadcastOnlinePlayersAsync(ct);
+
         return ServiceResult<GameResponse>.Ok(response);
     }
 
@@ -282,6 +296,9 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         await cache.SetGameListAsync(games, ct);
         await hub.Clients.Group("lobby").SendAsync("GameListUpdated", games, ct);
     }
+
+    private async Task BroadcastOnlinePlayersAsync(CancellationToken ct = default) =>
+        await hub.Clients.Group("lobby").SendAsync("OnlinePlayersUpdated", tracker.GetAll(), ct);
 
     public async Task<ServiceResult<bool>> CancelAsync(Guid gameId, Guid playerId, CancellationToken ct = default)
     {
