@@ -16,6 +16,7 @@ import { RegisterScreen } from '../screens/RegisterScreen';
 import { ReplayScreen } from '../screens/ReplayScreen';
 import { WaitingRoomScreen } from '../screens/WaitingRoomScreen';
 import { useApp } from '../hooks/useApp';
+import { OnlinePlayersModal } from './OnlinePlayersModal';
 
 type TabName = 'home' | 'profile';
 
@@ -277,7 +278,14 @@ export function AppShell() {
     setPendingGameId,
     creatingGame,
     liveGames,
+    onlinePlayers,
     onlineCount,
+    showOnlinePlayers,
+    setShowOnlinePlayers,
+    pendingChallengeId,
+    handleChallengePlayer,
+    handleCancelChallenge,
+    handleWatchOnlineGame,
     handleNewGame,
     handleCancelWaitingRoom,
     handleWaitingRoomBack,
@@ -399,6 +407,7 @@ export function AppShell() {
                 onGameCancelled={gameId => {
                   if (pendingGameId === gameId) setPendingGameId(null);
                 }}
+                onOpenOnlinePlayers={() => setShowOnlinePlayers(true)}
               />
             ) : (
               <ProfileScreen
@@ -471,6 +480,17 @@ export function AppShell() {
 
   return (
     <MessageBoxProvider>
+      {session && showOnlinePlayers && (
+        <OnlinePlayersModal
+          players={onlinePlayers}
+          currentPlayerId={session.playerId}
+          pendingChallengeId={pendingChallengeId}
+          onClose={() => setShowOnlinePlayers(false)}
+          onChallenge={handleChallengePlayer}
+          onCancelChallenge={handleCancelChallenge}
+          onWatch={handleWatchOnlineGame}
+        />
+      )}
       <div
         style={{
           height: isLanding ? 'auto' : '100dvh',

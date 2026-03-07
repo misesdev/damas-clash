@@ -48,7 +48,7 @@ export function OtpInput({value, onChange, error, testID}: OtpInputProps) {
 }
 
 const styles = StyleSheet.create({
-  row: {flexDirection: 'row', gap: 8},
+  row: {flexDirection: 'row', gap: 10},
   hidden: {
     position: 'absolute',
     opacity: 0,
@@ -58,28 +58,34 @@ const styles = StyleSheet.create({
   },
   box: {
     flex: 1,
-    height: 62,
-    backgroundColor: '#181818',
+    height: 64,
+    backgroundColor: colors.surface,
     borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   boxCursor: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#1A1A1A',
+    borderColor: colors.text,
   },
   boxFilled: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#1A1A1A',
+    borderColor: '#3A3A3A',
   },
   boxError: {
     backgroundColor: 'rgba(255, 69, 58, 0.07)',
+    borderColor: colors.error,
   },
   digit: {
     color: colors.text,
     fontSize: 22,
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: 0,
   },
   digitEmpty: {
-    color: colors.textMuted,
-    fontSize: 14,
+    color: '#2A2A2A',
+    fontSize: 18,
   },
 });

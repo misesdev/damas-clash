@@ -14,6 +14,7 @@ import {clearActiveGameId, loadActiveGameId, saveActiveGameId} from '../storage/
 import type {TabName} from '../components/BottomTabBar';
 import type {LoginResponse} from '../types/auth';
 import type {GameResponse} from '../types/game';
+import type {OnlinePlayerInfo} from '../types/player';
 
 type Screen = 'login' | 'register' | 'confirmEmail' | 'verifyLogin';
 type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay';
@@ -32,7 +33,9 @@ export function useApp() {
   const [loading, setLoading] = useState(true);
   const [creatingGame, setCreatingGame] = useState(false);
   const [liveGames, setLiveGames] = useState<GameResponse[] | null>(null);
-  const [onlineCount, setOnlineCount] = useState<number | null>(null);
+  const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayerInfo[]>([]);
+  const [showOnlinePlayers, setShowOnlinePlayers] = useState(false);
+  const [pendingChallengeId, setPendingChallengeId] = useState<string | null>(null);
 
   // Refs to avoid stale closures in async callbacks
   const authScreenRef = useRef<AuthScreen>('tabs');
@@ -122,14 +125,73 @@ export function useApp() {
           setLiveGames(games);
         });
 
-        hub.on('OnlinePlayersUpdated', (count: number) => {
+        hub.on('OnlinePlayersUpdated', (players: OnlinePlayerInfo[]) => {
+          if (!active || !Array.isArray(players)) {return;}
+          setOnlinePlayers(players);
+        });
+
+        hub.on('ChallengeReceived', (fromId: string, fromUsername: string) => {
           if (!active) {return;}
-          setOnlineCount(count);
+          showMessage({
+            title: `${fromUsername} te desafiou!`,
+            message: 'Aceite ou recuse o desafio. Expira em 60 segundos.',
+            type: 'confirm',
+            actions: [
+              {
+                label: 'Recusar',
+                onPress: () => hub.invoke('DeclineChallenge', fromId).catch(() => {}),
+              },
+              {
+                label: 'Aceitar',
+                primary: true,
+                onPress: () => hub.invoke('AcceptChallenge', fromId).catch(() => {}),
+              },
+            ],
+          });
+        });
+
+        hub.on('ChallengeDeclined', (byUsername: string) => {
+          if (!active) {return;}
+          setPendingChallengeId(null);
+          showMessage({
+            title: 'Desafio recusado',
+            message: `${byUsername} recusou seu desafio.`,
+            type: 'info',
+            actions: [{label: 'OK'}],
+          });
+        });
+
+        hub.on('ChallengeCancelled', () => {
+          if (!active) {return;}
+          showMessage({
+            title: 'Desafio cancelado',
+            message: 'O adversário cancelou o desafio.',
+            type: 'info',
+            actions: [{label: 'OK'}],
+          });
+        });
+
+        hub.on('ChallengeError', (reason: string) => {
+          if (!active) {return;}
+          setPendingChallengeId(null);
+          const messages: Record<string, string> = {
+            player_offline: 'O jogador ficou offline.',
+            challenge_expired: 'O desafio expirou.',
+            create_failed: 'Não foi possível criar a partida.',
+          };
+          showMessage({
+            title: 'Erro no desafio',
+            message: messages[reason] ?? 'Tente novamente.',
+            type: 'info',
+            actions: [{label: 'OK'}],
+          });
         });
 
         hub.on('GameStarted', (game: GameResponse) => {
           if (!active) {return;}
           setPendingGameId(null);
+          setPendingChallengeId(null);
+          setShowOnlinePlayers(false);
           saveActiveGameId(game.id);
 
           if (authScreenRef.current === 'waitingRoom') {
@@ -205,7 +267,32 @@ export function useApp() {
     setAuthScreen('tabs');
     setPendingGameId(null);
     setLiveGames(null);
-    setOnlineCount(null);
+    setOnlinePlayers([]);
+    setShowOnlinePlayers(false);
+    setPendingChallengeId(null);
+  };
+
+  const handleChallengePlayer = (targetPlayerId: string) => {
+    setPendingChallengeId(targetPlayerId);
+    hubRef.current?.invoke('ChallengePlayer', targetPlayerId).catch(() => {
+      setPendingChallengeId(null);
+    });
+  };
+
+  const handleCancelChallenge = (targetPlayerId: string) => {
+    setPendingChallengeId(null);
+    hubRef.current?.invoke('CancelChallenge', targetPlayerId).catch(() => {});
+  };
+
+  const handleWatchOnlineGame = async (gameId: string) => {
+    if (!session) {return;}
+    setShowOnlinePlayers(false);
+    try {
+      const game = await getGame(session.token, gameId);
+      handleGameSelect(game);
+    } catch {
+      // silently ignore
+    }
   };
 
   const handleNewGame = async () => {
@@ -308,7 +395,11 @@ export function useApp() {
     setPendingGameId,
     creatingGame,
     liveGames,
-    onlineCount,
+    onlinePlayers,
+    onlineCount: onlinePlayers.length || null,
+    showOnlinePlayers,
+    setShowOnlinePlayers,
+    pendingChallengeId,
     handleNewGame,
     handleCancelWaitingRoom,
     handleWaitingRoomBack,
@@ -322,5 +413,8 @@ export function useApp() {
     handleBackFromHistory,
     handleOpenReplay,
     handleBackFromReplay,
+    handleChallengePlayer,
+    handleCancelChallenge,
+    handleWatchOnlineGame,
   };
 }

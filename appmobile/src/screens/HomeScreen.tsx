@@ -26,6 +26,7 @@ interface Props {
   onlineCount?: number | null;
   onGameSelect: (game: GameResponse) => void;
   onGameCancelled?: (gameId: string) => void;
+  onOpenOnlinePlayers?: () => void;
 }
 
 type FilterTab = Exclude<GameStatus, 'Completed'>;
@@ -42,7 +43,7 @@ const EMPTY_MESSAGES: Record<FilterTab, string> = {
   //Completed: 'Nenhuma partida finalizada.',
 };
 
-export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSelect, onGameCancelled}: Props) {
+export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSelect, onGameCancelled, onOpenOnlinePlayers}: Props) {
   const {
     loading,
     refreshing,
@@ -70,10 +71,13 @@ export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSel
           <Text style={styles.topBarTitle}>DAMAS CLASH</Text>
         </View>
         {onlineCount != null && (
-          <View style={styles.onlinePill}>
+          <TouchableOpacity
+            style={styles.onlinePill}
+            onPress={onOpenOnlinePlayers}
+            testID="online-pill">
             <View style={styles.onlineDot} />
             <Text style={styles.onlineText}>{onlineCount} online</Text>
-          </View>
+          </TouchableOpacity>
         )}
         <View style={styles.topBarAvatar}>
           {user.avatarUrl ? (

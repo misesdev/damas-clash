@@ -128,7 +128,10 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
     activeId,
     selectedPiece,
     validMoveMap,
+    capturingPieceIds,
   } = engine;
+
+  const capturingSet = new Set(capturingPieceIds);
 
   const pieceSize = Math.round(cellSize * 0.78);
 
@@ -244,6 +247,7 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
           const displayCol = pos?.col ?? piece.col;
           const opacity = pos?.opacity ?? 1;
           const isSelected = piece.id === activeId;
+          const isMandatory = !isSelected && capturingSet.has(piece.id);
 
           return (
             <div
@@ -272,6 +276,17 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
                       width: pieceSize + 10,
                       height: pieceSize + 10,
                       border: '2.5px solid rgba(212,168,67,0.9)',
+                      borderRadius: '50%',
+                    }}
+                  />
+                )}
+                {isMandatory && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      width: pieceSize + 10,
+                      height: pieceSize + 10,
+                      border: '2.5px solid rgba(220,70,70,0.85)',
                       borderRadius: '50%',
                     }}
                   />

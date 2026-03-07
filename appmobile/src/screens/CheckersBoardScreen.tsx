@@ -85,7 +85,10 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
     activeId,
     selectedPiece,
     validMoveMap,
+    capturingPieceIds,
   } = engine;
+
+  const capturingSet = new Set(capturingPieceIds);
 
   const pieceSize = Math.round(cellSize * 0.78);
   const pieceOffset = (cellSize - pieceSize) / 2;
@@ -229,6 +232,7 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
             {pieces.map(piece => {
               const anim = getAnim(piece);
               const isSelected = piece.id === activeId;
+              const isMandatory = !isSelected && capturingSet.has(piece.id);
               const visColor = displayColor(piece.color);
               return (
                 <Animated.View
@@ -277,6 +281,20 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
                     <View
                       style={[
                         styles.selectionRing,
+                        {
+                          width: pieceSize + 8,
+                          height: pieceSize + 8,
+                          borderRadius: (pieceSize + 8) / 2,
+                          top: pieceOffset - 4,
+                          left: pieceOffset - 4,
+                        },
+                      ]}
+                    />
+                  )}
+                  {isMandatory && (
+                    <View
+                      style={[
+                        styles.mandatoryRing,
                         {
                           width: pieceSize + 8,
                           height: pieceSize + 8,

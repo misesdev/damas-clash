@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
-import {ActivityIndicator, SafeAreaView, Text, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, Text, TouchableOpacity, View} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {showMessage} from '../components/MessageBox';
 import AnimatedLoader from '../components/AnimatedLoader';
 import {ScreenHeader} from '../components/ScreenHeader';

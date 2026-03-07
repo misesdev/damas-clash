@@ -168,6 +168,9 @@ export const styles = StyleSheet.create({
   // Selection glow ring (rendered in pieces layer, position: absolute)
   selectionRing: {position: 'absolute', borderWidth: 2.5, borderColor: '#D4A843'},
 
+  // Mandatory-capture ring for pieces that must capture (when multiple pieces can)
+  mandatoryRing: {position: 'absolute', borderWidth: 2.5, borderColor: '#E05050'},
+
   // Win / loss overlay
   overlay: {
     position: 'absolute',

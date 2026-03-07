@@ -1,5 +1,6 @@
 import React from 'react';
-import {KeyboardAvoidingView, Platform, SafeAreaView, Text, View} from 'react-native';
+import {KeyboardAvoidingView, Platform, Text, View} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {Button} from '../components/Button';
 import {Input} from '../components/Input';
 import {ScreenHeader} from '../components/ScreenHeader';

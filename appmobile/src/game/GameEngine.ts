@@ -29,8 +29,16 @@ export class GameEngine {
   ) {
     this.pieces = pieces;
     this.currentTurn = currentTurn;
-    this.selectedId = selectedId;
     this.pendingCaptureId = pendingCaptureId;
+    // Auto-select the only capturing piece so the user sees it immediately
+    if (selectedId === null && pendingCaptureId === null) {
+      const capturingPieces = pieces.filter(
+        p => p.color === currentTurn && getCaptureMoves(p, pieces).length > 0,
+      );
+      this.selectedId = capturingPieces.length === 1 ? capturingPieces[0].id : null;
+    } else {
+      this.selectedId = selectedId;
+    }
   }
 
   static initial(): GameEngine {
@@ -53,6 +61,13 @@ export class GameEngine {
 
   get mustCapture(): boolean {
     return hasMandatoryCapture(this.currentTurn, this.pieces);
+  }
+
+  get capturingPieceIds(): string[] {
+    if (!this.mustCapture) {return [];}
+    return this.pieces
+      .filter(p => p.color === this.currentTurn && getCaptureMoves(p, this.pieces).length > 0)
+      .map(p => p.id);
   }
 
   get selectedPiece(): Piece | undefined {

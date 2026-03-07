@@ -12,6 +12,7 @@ interface Props {
   onlineCount?: number | null;
   onGameSelect: (game: GameResponse) => void;
   onGameCancelled?: (gameId: string) => void;
+  onOpenOnlinePlayers?: () => void;
 }
 
 type FilterTab = Exclude<GameStatus, 'Completed'>;
@@ -33,6 +34,7 @@ export function HomeScreen({
   onlineCount,
   onGameSelect,
   onGameCancelled,
+  onOpenOnlinePlayers,
 }: Props) {
   const {
     loading,
@@ -180,7 +182,9 @@ export function HomeScreen({
         </button>
 
         {onlineCount != null && (
-          <div
+          <button
+            onClick={onOpenOnlinePlayers}
+            title="Ver jogadores online"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -190,7 +194,11 @@ export function HomeScreen({
               border: '1px solid var(--border)',
               background: 'var(--surface2)',
               flexShrink: 0,
+              cursor: 'pointer',
+              transition: 'border-color 0.15s',
             }}
+            onMouseOver={e => (e.currentTarget.style.borderColor = 'var(--text-muted)')}
+            onMouseOut={e => (e.currentTarget.style.borderColor = 'var(--border)')}
           >
             <span
               style={{
@@ -204,7 +212,7 @@ export function HomeScreen({
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
               {onlineCount} online
             </span>
-          </div>
+          </button>
         )}
       </div>
 

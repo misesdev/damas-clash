@@ -15,6 +15,7 @@ import {ProfileScreen} from './src/screens/ProfileScreen';
 import {RegisterScreen} from './src/screens/RegisterScreen';
 import {ReplayScreen} from './src/screens/ReplayScreen';
 import {WaitingRoomScreen} from './src/screens/WaitingRoomScreen';
+import {OnlinePlayersScreen} from './src/screens/OnlinePlayersScreen';
 import {useApp} from './src/hooks/useApp';
 import {colors} from './src/theme/colors';
 
@@ -37,8 +38,15 @@ export default function App() {
     setPendingGameId,
     creatingGame,
     liveGames,
+    onlinePlayers,
     onlineCount,
+    showOnlinePlayers,
+    setShowOnlinePlayers,
+    pendingChallengeId,
     handleNewGame,
+    handleChallengePlayer,
+    handleCancelChallenge,
+    handleWatchOnlineGame,
     handleCancelWaitingRoom,
     handleWaitingRoomBack,
     handleGameSelect,
@@ -143,6 +151,7 @@ export default function App() {
                 onGameCancelled={gameId => {
                   if (pendingGameId === gameId) {setPendingGameId(null);}
                 }}
+                onOpenOnlinePlayers={() => setShowOnlinePlayers(true)}
               />
             ) : (
               <ProfileScreen
@@ -200,7 +209,7 @@ export default function App() {
         {screen === 'verifyLogin' && (
           <ConfirmEmailScreen
             email={pendingEmail}
-            heading={'Confirme\nseu acesso'}
+            heading={'Confirme seu acesso'}
             onConfirmed={() => setScreen('login')}
             onNavigateToLogin={() => setScreen('login')}
             onResendCode={async () => {
@@ -222,6 +231,19 @@ export default function App() {
       {renderContent()}
       {/* MessageBox is always mounted so showMessage() works from any hook */}
       <MessageBox />
+      {/* Online players modal — always mounted while logged in */}
+      {session && (
+        <OnlinePlayersScreen
+          visible={showOnlinePlayers}
+          onClose={() => setShowOnlinePlayers(false)}
+          players={onlinePlayers}
+          currentPlayerId={session.playerId}
+          pendingChallengeId={pendingChallengeId}
+          onChallenge={handleChallengePlayer}
+          onCancelChallenge={handleCancelChallenge}
+          onWatch={handleWatchOnlineGame}
+        />
+      )}
     </SafeAreaProvider>
   );
 }
