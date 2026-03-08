@@ -1,20 +1,40 @@
 'use client';
 
+import { GoogleLogin } from '@react-oauth/google';
+import { useState } from 'react';
+import { googleAuth } from '../api/auth';
 import { BoardMark } from '../components/BoardMark';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { useLogin } from '../hooks/useLogin';
+import type { LoginResponse } from '../types/auth';
 
 interface LoginScreenProps {
   onCodeSent: (email: string) => void;
   onNavigateToRegister: () => void;
+  onGoogleLogin: (data: LoginResponse) => void;
 }
 
-export function LoginScreen({ onCodeSent, onNavigateToRegister }: LoginScreenProps) {
+export function LoginScreen({ onCodeSent, onNavigateToRegister, onGoogleLogin }: LoginScreenProps) {
   const { identifier, setIdentifier, error, loading, handleLogin } = useLogin(onCodeSent);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState('');
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && identifier.trim()) handleLogin();
+  };
+
+  const handleGoogleSuccess = async (credential: string) => {
+    setGoogleLoading(true);
+    setGoogleError('');
+    try {
+      const data = await googleAuth(credential);
+      onGoogleLogin(data);
+    } catch {
+      setGoogleError('Erro ao autenticar com Google. Tente novamente.');
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -91,8 +111,32 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister }: LoginScreenPro
           />
         </div>
 
+        {/* Google login */}
+        <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>ou</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          </div>
+          <div style={{ opacity: googleLoading ? 0.6 : 1, pointerEvents: googleLoading ? 'none' : 'auto' }}>
+            <GoogleLogin
+              onSuccess={credentialResponse => {
+                if (credentialResponse.credential) handleGoogleSuccess(credentialResponse.credential);
+              }}
+              onError={() => setGoogleError('Erro ao autenticar com Google. Tente novamente.')}
+              theme="filled_black"
+              size="large"
+              text="continue_with"
+              locale="pt-BR"
+            />
+          </div>
+          {googleError && (
+            <div style={{ fontSize: 12, color: 'var(--danger)', textAlign: 'center' }}>{googleError}</div>
+          )}
+        </div>
+
         {/* Divider + switch */}
-        <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+        <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
           <div style={{ width: '100%', height: 1, background: 'var(--border)' }} />
           <button
             onClick={onNavigateToRegister}

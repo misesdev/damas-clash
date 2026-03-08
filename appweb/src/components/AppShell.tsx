@@ -1,5 +1,6 @@
 'use client';
 
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { login, resendConfirmation, verifyLogin } from '../api/auth';
 import { BoardMark } from './BoardMark';
 import { MessageBoxProvider } from './MessageBox';
@@ -443,12 +444,14 @@ export function AppShell() {
           <LoginScreen
             onCodeSent={email => { setPendingEmail(email); setScreen('verifyLogin'); }}
             onNavigateToRegister={() => setScreen('register')}
+            onGoogleLogin={handleLogin}
           />
         )}
         {screen === 'register' && (
           <RegisterScreen
             onRegistered={email => { setPendingEmail(email); setScreen('confirmEmail'); }}
             onNavigateToLogin={() => setScreen('login')}
+            onGoogleLogin={handleLogin}
           />
         )}
         {screen === 'confirmEmail' && (
@@ -478,7 +481,10 @@ export function AppShell() {
 
   const isLanding = !session && screen === 'landing';
 
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? '';
+
   return (
+    <GoogleOAuthProvider clientId={googleClientId}>
     <MessageBoxProvider>
       {session && showOnlinePlayers && (
         <OnlinePlayersModal
@@ -513,5 +519,6 @@ export function AppShell() {
         )}
       </div>
     </MessageBoxProvider>
+    </GoogleOAuthProvider>
   );
 }

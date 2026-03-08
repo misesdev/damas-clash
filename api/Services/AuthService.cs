@@ -1,15 +1,19 @@
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using api.Data;
 using api.DTOs.Auth;
 using api.Models;
+using Google.Apis.Auth;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace api.Services;
 
 public class AuthService(
     DamasDbContext db,
     IEmailService emailService,
-    ITokenService tokenService) : IAuthService
+    ITokenService tokenService,
+    IConfiguration configuration) : IAuthService
 {
     public async Task<ServiceResult<RegisterResponse>> RegisterAsync(RegisterRequest req, CancellationToken ct = default)
     {
@@ -198,6 +202,82 @@ public class AuthService(
         await db.SaveChangesAsync(ct);
 
         return ServiceResult<string>.Ok("deleted");
+    }
+
+    public async Task<ServiceResult<LoginResponse>> GoogleAuthAsync(string idToken, CancellationToken ct = default)
+    {
+        GoogleJsonWebSignature.Payload payload;
+        try
+        {
+            var clientId = configuration["Google:ClientId"];
+            var settings = string.IsNullOrEmpty(clientId)
+                ? new GoogleJsonWebSignature.ValidationSettings()
+                : new GoogleJsonWebSignature.ValidationSettings { Audience = [clientId] };
+            payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
+        }
+        catch
+        {
+            return ServiceResult<LoginResponse>.Fail("invalid_google_token");
+        }
+
+        var googleId = payload.Subject;
+        var email = payload.Email;
+
+        // Find existing player by GoogleId or by email
+        var player = await db.Players.FirstOrDefaultAsync(
+            p => p.GoogleId == googleId || p.Email == email, ct);
+
+        if (player is null)
+        {
+            // Create a new player
+            var username = await GenerateUniqueUsernameAsync(payload.Name, ct);
+            player = new Player
+            {
+                Id = Guid.NewGuid(),
+                Username = username,
+                Email = email,
+                GoogleId = googleId,
+                IsEmailConfirmed = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+            };
+            db.Players.Add(player);
+        }
+        else
+        {
+            // Link Google account if not already linked
+            if (player.GoogleId != googleId)
+                player.GoogleId = googleId;
+
+            player.IsEmailConfirmed = true;
+        }
+
+        var refreshToken = tokenService.GenerateRefreshToken();
+        player.RefreshToken = refreshToken;
+        player.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(30);
+
+        await db.SaveChangesAsync(ct);
+
+        var tokenResult = tokenService.Generate(player);
+        return ServiceResult<LoginResponse>.Ok(
+            new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
+                player.Id, player.Username, player.Email, player.AvatarUrl));
+    }
+
+    private async Task<string> GenerateUniqueUsernameAsync(string? displayName, CancellationToken ct)
+    {
+        var base_ = string.IsNullOrWhiteSpace(displayName)
+            ? "player"
+            : Regex.Replace(Regex.Replace(displayName.ToLowerInvariant(), @"[^a-z0-9]", "_"), @"_+", "_").Trim('_');
+
+        if (base_.Length < 3) base_ = "player_" + base_;
+        if (base_.Length > 47) base_ = base_[..47];
+
+        var candidate = base_;
+        var counter = 1;
+        while (await db.Players.AnyAsync(p => p.Username == candidate, ct))
+            candidate = $"{base_}_{counter++}";
+
+        return candidate;
     }
 
     private static string GenerateCode() =>

@@ -13,6 +13,7 @@ public class Player
     public string? PendingEmail { get; set; }
     public string? EmailChangeCode { get; set; }
     public DateTimeOffset? EmailChangeCodeExpiry { get; set; }
+    public string? GoogleId { get; set; }
     public string? AvatarUrl { get; set; }
     public string? RefreshToken { get; set; }
     public DateTimeOffset? RefreshTokenExpiry { get; set; }

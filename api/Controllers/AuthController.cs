@@ -135,6 +135,19 @@ public class AuthController(IAuthService authService) : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("google")]
+    public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthRequest request, CancellationToken ct)
+    {
+        var result = await authService.GoogleAuthAsync(request.IdToken, ct);
+
+        if (!result.IsSuccess)
+            return result.Error == "invalid_google_token"
+                ? Unauthorized(new { error = result.Error })
+                : BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
     private Guid? GetCallerId()
     {
         var value = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;

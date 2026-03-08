@@ -1,5 +1,6 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -7,21 +8,48 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {GoogleSignin, statusCodes} from '@react-native-google-signin/google-signin';
+import {googleAuth} from '../api/auth';
 import {Button} from '../components/Button';
 import {Input} from '../components/Input';
 import {useRegister} from '../hooks/useRegister';
 import {styles} from '../styles/registerStyles';
 import { BoardMark } from '../components/BoardMark';
 import { Icon } from '../components/Icon';
+import type {LoginResponse} from '../types/auth';
 
 interface RegisterScreenProps {
   onRegistered: (email: string) => void;
   onNavigateToLogin: () => void;
+  onGoogleLogin: (data: LoginResponse) => void;
 }
 
-export function RegisterScreen({onRegistered, onNavigateToLogin}: RegisterScreenProps) {
+export function RegisterScreen({onRegistered, onNavigateToLogin, onGoogleLogin}: RegisterScreenProps) {
   const {username, setUsername, email, setEmail, errors, loading, handleRegister} =
     useRegister(onRegistered);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState('');
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    setGoogleError('');
+    try {
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      const idToken = response.data?.idToken;
+      if (!idToken) throw new Error('no_id_token');
+      const data = await googleAuth(idToken);
+      onGoogleLogin(data);
+    } catch (e: any) {
+      if (e.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled — do nothing
+      } else {
+        setGoogleError('Erro ao entrar com Google. Tente novamente.');
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -85,6 +113,37 @@ export function RegisterScreen({onRegistered, onNavigateToLogin}: RegisterScreen
             style={styles.submitButton}
             testID="register-button"
           />
+        </View>
+
+        <View style={{marginBottom: 8}}>
+          <View style={styles.divider} />
+          <TouchableOpacity
+            onPress={handleGoogleSignIn}
+            disabled={googleLoading}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              padding: 14,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#444',
+              backgroundColor: '#1a1a1a',
+            }}>
+            {googleLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={{fontSize: 15, fontWeight: '600', color: '#fff'}}>
+                Continuar com Google
+              </Text>
+            )}
+          </TouchableOpacity>
+          {googleError ? (
+            <Text style={{color: '#ff453a', fontSize: 12, textAlign: 'center', marginTop: 6}}>
+              {googleError}
+            </Text>
+          ) : null}
         </View>
 
         <View style={styles.footer}>

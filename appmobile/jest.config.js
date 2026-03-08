@@ -5,5 +5,6 @@ module.exports = {
     '^react-native-keychain$': '<rootDir>/__mocks__/react-native-keychain.ts',
     '^react-native-image-picker$': '<rootDir>/__mocks__/react-native-image-picker.ts',
     '^react-native-vector-icons/(.*)$': '<rootDir>/__mocks__/react-native-vector-icons.ts',
+    '^@react-native-google-signin/google-signin$': '<rootDir>/__mocks__/@react-native-google-signin/google-signin.ts',
   },
 };

@@ -14,4 +14,5 @@ public interface IAuthService
     Task<ServiceResult<string>> ConfirmEmailChangeAsync(Guid playerId, string newEmail, string code, CancellationToken ct = default);
     Task<ServiceResult<LoginResponse>> RefreshAsync(string refreshToken, CancellationToken ct = default);
     Task<ServiceResult<string>> DeleteAccountAsync(Guid playerId, CancellationToken ct = default);
+    Task<ServiceResult<LoginResponse>> GoogleAuthAsync(string idToken, CancellationToken ct = default);
 }

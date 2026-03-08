@@ -16,6 +16,7 @@ public class DamasDbContext(DbContextOptions<DamasDbContext> options) : DbContex
             e.HasKey(p => p.Id);
             e.HasIndex(p => p.Username).IsUnique();
             e.HasIndex(p => p.Email).IsUnique();
+            e.HasIndex(p => p.GoogleId).IsUnique().HasFilter("\"GoogleId\" IS NOT NULL");
             e.Property(p => p.Username).IsRequired().HasMaxLength(50);
             e.Property(p => p.Email).IsRequired().HasMaxLength(256);
             e.Property(p => p.IsEmailConfirmed).HasDefaultValue(false);

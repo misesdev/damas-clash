@@ -14,7 +14,9 @@ export function useEditEmail(
   const [error, setError] = useState('');
 
   const emailValid =
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail.trim()) && newEmail.trim() !== user.email;
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail.trim()) &&
+    newEmail.trim().length <= 100 &&
+    newEmail.trim() !== user.email;
 
   const setNewEmail = (t: string) => {
     setNewEmailRaw(t);

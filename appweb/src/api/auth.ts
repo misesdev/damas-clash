@@ -57,3 +57,10 @@ export function deleteAccount(token: string): Promise<void> {
     headers: { Authorization: `Bearer ${token}` },
   });
 }
+
+export function googleAuth(idToken: string): Promise<LoginResponse> {
+  return request('/api/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
+  });
+}

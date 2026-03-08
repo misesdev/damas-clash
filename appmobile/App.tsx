@@ -184,6 +184,7 @@ export default function App() {
               setScreen('verifyLogin');
             }}
             onNavigateToRegister={() => setScreen('register')}
+            onGoogleLogin={handleLogin}
           />
         )}
 
@@ -194,6 +195,7 @@ export default function App() {
               setScreen('confirmEmail');
             }}
             onNavigateToLogin={() => setScreen('login')}
+            onGoogleLogin={handleLogin}
           />
         )}
 

@@ -9,7 +9,7 @@ export function useEditUsername(user: LoginResponse, onSaved: (newUsername: stri
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const valid = username.trim().length >= 3 && username.trim() !== user.username;
+  const valid = username.trim().length >= 3 && username.trim().length <= 50 && username.trim() !== user.username;
 
   const handleSave = async () => {
     setLoading(true);

@@ -9,7 +9,9 @@ type FormErrors = Partial<Record<'username' | 'email' | 'general', string>>;
 function validate(username: string, email: string): FormErrors {
   const errors: FormErrors = {};
   if (username.length < 3) errors.username = 'Mínimo 3 caracteres.';
+  else if (username.length > 50) errors.username = 'Máximo 50 caracteres.';
   if (!email.includes('@')) errors.email = 'E-mail inválido.';
+  else if (email.length > 100) errors.email = 'Máximo 100 caracteres.';
   return errors;
 }
 
