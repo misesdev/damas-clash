@@ -68,6 +68,9 @@ public static class AppSettings
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer();
 
+        var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_API_CLIENT_ID");
+        builder.Configuration["Google:ClientId"] = googleClientId;
+
         builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
             .Configure<IOptions<JwtSettings>>((options, settings) =>
             {
