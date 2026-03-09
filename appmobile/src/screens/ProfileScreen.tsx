@@ -182,7 +182,7 @@ export function ProfileScreen({
           </View>
         </View>
 
-        <Text style={styles.version}>Damas Clash · v0.1</Text>
+        <Text style={styles.version}>Damas Clash · v1.2</Text>
       </ScrollView>
     </SafeAreaView>
   );

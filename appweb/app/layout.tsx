@@ -4,6 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Damas Clash",
   description: "Damas Clash — jogue online",
+  
 };
 
 export default function RootLayout({

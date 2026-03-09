@@ -1,6 +1,5 @@
 import React, {useState} from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -10,17 +9,18 @@ import {
   View,
 } from 'react-native';
 import {GoogleSignin, statusCodes} from '@react-native-google-signin/google-signin';
-import {WEB_URL} from '@env';
+import {WEB_URL, GOOGLE_WEB_CLIENT_ID} from '@env';
 import {googleAuth} from '../api/auth';
 import {BoardMark} from '../components/BoardMark';
 import {Button} from '../components/Button';
+import {GoogleButton} from '../components/GoogleButton';
 import {Input} from '../components/Input';
 import {useLogin} from '../hooks/useLogin';
 import {styles} from '../styles/loginStyles';
 import type {LoginResponse} from '../types/auth';
 
 GoogleSignin.configure({
-  webClientId: process.env.GOOGLE_WEB_CLIENT_ID,
+  webClientId: GOOGLE_WEB_CLIENT_ID,
 });
 
 interface LoginScreenProps {
@@ -98,34 +98,14 @@ export function LoginScreen({onCodeSent, onNavigateToRegister, onGoogleLogin}: L
           />
         </View>
 
-        <View style={{marginBottom: 8}}>
+        <View style={styles.googleSection}>
           <View style={styles.divider} />
-          <TouchableOpacity
+          <GoogleButton
             onPress={handleGoogleSignIn}
-            disabled={googleLoading}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              padding: 14,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: '#444',
-              backgroundColor: '#1a1a1a',
-            }}>
-            {googleLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={{fontSize: 15, fontWeight: '600', color: '#fff'}}>
-                Continuar com Google
-              </Text>
-            )}
-          </TouchableOpacity>
+            loading={googleLoading}
+          />
           {googleError ? (
-            <Text style={{color: '#ff453a', fontSize: 12, textAlign: 'center', marginTop: 6}}>
-              {googleError}
-            </Text>
+            <Text style={styles.googleError}>{googleError}</Text>
           ) : null}
         </View>
 

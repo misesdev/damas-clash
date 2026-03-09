@@ -1,6 +1,5 @@
 import React, {useState} from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,6 +10,7 @@ import {
 import {GoogleSignin, statusCodes} from '@react-native-google-signin/google-signin';
 import {googleAuth} from '../api/auth';
 import {Button} from '../components/Button';
+import {GoogleButton} from '../components/GoogleButton';
 import {Input} from '../components/Input';
 import {useRegister} from '../hooks/useRegister';
 import {styles} from '../styles/registerStyles';
@@ -115,34 +115,14 @@ export function RegisterScreen({onRegistered, onNavigateToLogin, onGoogleLogin}:
           />
         </View>
 
-        <View style={{marginBottom: 8}}>
+        <View style={styles.googleSection}>
           <View style={styles.divider} />
-          <TouchableOpacity
+          <GoogleButton
             onPress={handleGoogleSignIn}
-            disabled={googleLoading}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              padding: 14,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: '#444',
-              backgroundColor: '#1a1a1a',
-            }}>
-            {googleLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={{fontSize: 15, fontWeight: '600', color: '#fff'}}>
-                Continuar com Google
-              </Text>
-            )}
-          </TouchableOpacity>
+            loading={googleLoading}
+          />
           {googleError ? (
-            <Text style={{color: '#ff453a', fontSize: 12, textAlign: 'center', marginTop: 6}}>
-              {googleError}
-            </Text>
+            <Text style={styles.googleError}>{googleError}</Text>
           ) : null}
         </View>
 
