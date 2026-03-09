@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Image,
   Linking,
-  SafeAreaView,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -13,6 +12,7 @@ import {WEB_URL} from '@env';
 import {useProfileScreen} from '../hooks/useProfileScreen';
 import {styles} from '../styles/profileStyles';
 import type {LoginResponse} from '../types/auth';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 interface Props {
   user: LoginResponse;
@@ -182,7 +182,7 @@ export function ProfileScreen({
           </View>
         </View>
 
-        <Text style={styles.version}>Damas Clash · v1.2</Text>
+        <Text style={styles.version}>Damas Clash · v1.3</Text>
       </ScrollView>
     </SafeAreaView>
   );

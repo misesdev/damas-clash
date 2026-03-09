@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
-  SafeAreaView,
   Text,
   TouchableOpacity,
   View,
@@ -12,6 +11,7 @@ import {getPlayerGames} from '../api/games';
 import type {LoginResponse} from '../types/auth';
 import type {GameResponse} from '../types/game';
 import { ScreenHeader } from '../components/ScreenHeader';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 interface Props {
   user: LoginResponse;
@@ -51,7 +51,7 @@ export function GameHistoryScreen({user, onReplay, onBack}: Props) {
   const losses = games.filter(g => g.winnerId !== null && g.winnerId !== user.playerId).length;
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#0c0c0c'}}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#0c0c0c' }}>
       <FlatList
         data={games}
         keyExtractor={item => item.id}

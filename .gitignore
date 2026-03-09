@@ -36,6 +36,7 @@ appmobile/coverage/
 appmobile/.metro-health-check*
 appmobile/npm-debug.log*
 appmobile/yarn-error.log*
+appmobile/android/app/google-services.json
 
 # ----- .NET -----
 [Bb]in/

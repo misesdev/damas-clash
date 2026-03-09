@@ -229,7 +229,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.bg} />
+      <StatusBar backgroundColor={colors.bg} /> 
       {renderContent()}
       {/* MessageBox is always mounted so showMessage() works from any hook */}
       <MessageBox />

@@ -4,12 +4,12 @@ import {
   FlatList,
   Image,
   RefreshControl,
-  SafeAreaView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {BoardMark} from '../components/BoardMark';
 import {GameCard} from '../components/GameCard';
 import {useHomeScreen} from '../hooks/useHomeScreen';
@@ -17,7 +17,6 @@ import {styles} from '../styles/homeStyles';
 import type {LoginResponse} from '../types/auth';
 import type {GameResponse, GameStatus} from '../types/game';
 import {colors} from '../theme/colors';
-import { Icon } from '../components/Icon';
 
 interface Props {
   user: LoginResponse;
@@ -34,13 +33,11 @@ type FilterTab = Exclude<GameStatus, 'Completed'>;
 const TABS: {key: FilterTab; label: string}[] = [
   {key: 'WaitingForPlayers', label: 'Aguardando'},
   {key: 'InProgress', label: 'Em andamento'},
-  //{key: 'Completed', label: 'Finalizadas'},
 ];
 
 const EMPTY_MESSAGES: Record<FilterTab, string> = {
   WaitingForPlayers: 'Nenhuma partida aguardando jogadores.',
   InProgress: 'Nenhuma partida em andamento.',
-  //Completed: 'Nenhuma partida finalizada.',
 };
 
 export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSelect, onGameCancelled, onOpenOnlinePlayers}: Props) {
@@ -65,6 +62,7 @@ export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSel
   return (
     <SafeAreaView style={styles.container}>
       {/* Top bar */}
+      <View style={{ height: 25 }}></View>
       <View style={styles.topBar}>
         <View style={styles.topBarLogo}>
           <BoardMark size={26} />
