@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {showMessage} from '../components/MessageBox';
 import {cancelGame, joinGame, listGames} from '../api/games';
 import type {LoginResponse} from '../types/auth';
@@ -13,6 +14,7 @@ export function useHomeScreen(
   onGameSelect: (game: GameResponse) => void,
   onGameCancelled?: (gameId: string) => void,
 ) {
+  const {t} = useTranslation();
   const [fetchedGames, setFetchedGames] = useState<GameResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -28,7 +30,7 @@ export function useHomeScreen(
       setFetchedGames(data);
       setError('');
     } catch {
-      setError('Não foi possível carregar as partidas.');
+      setError(t('home.errors.loadGames'));
     }
   }, [user.token]);
 
@@ -66,7 +68,7 @@ export function useHomeScreen(
         const updated = await joinGame(user.token, game.id);
         onGameSelect(updated);
       } catch {
-        setError('Não foi possível entrar na partida.');
+        setError(t('home.errors.joinGame'));
         setJoiningId(null);
       }
     } else {
@@ -76,13 +78,13 @@ export function useHomeScreen(
 
   const handleCancelGame = (game: GameResponse) => {
     showMessage({
-      title: 'Cancelar partida',
-      message: 'Tem certeza que deseja cancelar esta partida?',
+      title: t('home.cancelConfirm.title'),
+      message: t('home.cancelConfirm.message'),
       type: 'confirm',
       actions: [
-        {label: 'Não'},
+        {label: t('home.cancelConfirm.no')},
         {
-          label: 'Cancelar',
+          label: t('home.cancelConfirm.cancel'),
           danger: true,
           onPress: async () => {
             setCancellingId(game.id);
@@ -91,7 +93,7 @@ export function useHomeScreen(
               setFetchedGames(prev => prev.filter(g => g.id !== game.id));
               onGameCancelled?.(game.id);
             } catch {
-              setError('Não foi possível cancelar a partida.');
+              setError(t('home.errors.cancelGame'));
             } finally {
               setCancellingId(null);
             }

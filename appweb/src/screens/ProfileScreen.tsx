@@ -1,7 +1,10 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useProfileScreen } from '../hooks/useProfileScreen';
 import type { LoginResponse } from '../types/auth';
+import '../i18n';
 
 interface Props {
   user: LoginResponse;
@@ -108,6 +111,7 @@ export function ProfileScreen({
   onAvatarChanged,
   onOpenHistory,
 }: Props) {
+  const { t } = useTranslation();
   const { uploading, stats, fileInputRef, handleLogout, handleDeleteAccount, handleAvatarPress, handleFileChange } =
     useProfileScreen(user, onLogout, onAvatarChanged);
 
@@ -228,9 +232,9 @@ export function ProfileScreen({
           }}
         >
           {[
-            { label: 'Partidas', value: stats?.total ?? '—' },
-            { label: 'Vitórias', value: stats?.wins ?? '—' },
-            { label: 'Derrotas', value: stats?.losses ?? '—' },
+            { label: t('profile_statGames'), value: stats?.total ?? '—' },
+            { label: t('profile_statWins'), value: stats?.wins ?? '—' },
+            { label: t('profile_statLosses'), value: stats?.losses ?? '—' },
           ].map(stat => (
             <div
               key={stat.label}
@@ -253,39 +257,46 @@ export function ProfileScreen({
         </div>
 
         {/* ── Account section ── */}
-        <Section label="Conta">
-          <MenuItem label="Nome de usuário" value={user.username} onClick={onEditUsername} />
+        <Section label={t('profile_sectionAccount')}>
+          <MenuItem label={t('profile_username')} value={user.username} onClick={onEditUsername} />
           <Divider />
-          <MenuItem label="E-mail" value={user.email} onClick={onEditEmail} />
+          <MenuItem label={t('profile_email')} value={user.email} onClick={onEditEmail} />
         </Section>
 
         {/* ── History section ── */}
-        <Section label="Histórico">
-          <MenuItem label="Partidas jogadas" onClick={onOpenHistory} />
+        <Section label={t('profile_sectionHistory')}>
+          <MenuItem label={t('profile_gamesPlayed')} onClick={onOpenHistory} />
+        </Section>
+
+        {/* ── Language section ── */}
+        <Section label={t('profile_sectionLanguage')}>
+          <div style={{ padding: '12px 20px' }}>
+            <LanguageSwitcher />
+          </div>
         </Section>
 
         {/* ── Legal section ── */}
-        <Section label="Jurídico">
+        <Section label={t('profile_sectionLegal')}>
           <MenuItem
-            label="Termos de Uso"
+            label={t('profile_terms')}
             onClick={() => window.open('/termos', '_blank', 'noopener,noreferrer')}
           />
           <Divider />
           <MenuItem
-            label="Política de Privacidade"
+            label={t('profile_privacy')}
             onClick={() => window.open('/privacidade', '_blank', 'noopener,noreferrer')}
           />
         </Section>
 
         {/* ── Session section ── */}
         <Section>
-          <MenuItem label="Excluir Conta" danger onClick={handleDeleteAccount} />
+          <MenuItem label={t('profile_deleteAccount')} danger onClick={handleDeleteAccount} />
           <Divider />
-          <MenuItem label="Sair" danger onClick={handleLogout} />
+          <MenuItem label={t('profile_signOut')} danger onClick={handleLogout} />
         </Section>
 
         <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-faint)' }}>
-          Damas · v0.1
+          {t('profile_version')}
         </p>
       </div>
     </div>

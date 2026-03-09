@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {GoogleSignin, statusCodes} from '@react-native-google-signin/google-signin';
 import {googleAuth} from '../api/auth';
 import {Button} from '../components/Button';
@@ -25,6 +26,7 @@ interface RegisterScreenProps {
 }
 
 export function RegisterScreen({onRegistered, onNavigateToLogin, onGoogleLogin}: RegisterScreenProps) {
+  const {t} = useTranslation();
   const {username, setUsername, email, setEmail, errors, loading, handleRegister} =
     useRegister(onRegistered);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -44,7 +46,7 @@ export function RegisterScreen({onRegistered, onNavigateToLogin, onGoogleLogin}:
       if (e.code === statusCodes.SIGN_IN_CANCELLED) {
         // user cancelled — do nothing
       } else {
-        setGoogleError('Erro ao entrar com Google. Tente novamente.');
+        setGoogleError(t('register.googleError'));
       }
     } finally {
       setGoogleLoading(false);
@@ -67,8 +69,8 @@ export function RegisterScreen({onRegistered, onNavigateToLogin, onGoogleLogin}:
 
         <View style={{alignItems: 'center', marginBottom: 56}}>
           <BoardMark size={85} />
-          <Text style={styles.title}>Criar conta</Text>
-          <Text style={styles.subtitle}>Preencha seus dados para começar</Text>
+          <Text style={styles.title}>{t('register.title')}</Text>
+          <Text style={styles.subtitle}>{t('register.subtitle')}</Text>
         </View>
         {/* <View style={styles.header}> */}
         {/*   <Text style={styles.title}>Criar conta</Text> */}
@@ -77,23 +79,23 @@ export function RegisterScreen({onRegistered, onNavigateToLogin, onGoogleLogin}:
 
         <View style={styles.form}>
           <Input
-            label="Nome de usuário"
+            label={t('register.usernameLabel')}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
             autoComplete="username"
-            placeholder="seu_usuario"
+            placeholder={t('register.usernamePlaceholder')}
             error={errors.username}
             testID="username-input"
           />
           <Input
-            label="E-mail"
+            label={t('register.emailLabel')}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
-            placeholder="seu@email.com"
+            placeholder={t('register.emailPlaceholder')}
             error={errors.email}
             testID="email-input"
           />
@@ -107,7 +109,7 @@ export function RegisterScreen({onRegistered, onNavigateToLogin, onGoogleLogin}:
           ) : null}
 
           <Button
-            label="Criar conta"
+            label={t('register.submitButton')}
             onPress={handleRegister}
             loading={loading}
             style={styles.submitButton}
@@ -130,7 +132,7 @@ export function RegisterScreen({onRegistered, onNavigateToLogin, onGoogleLogin}:
           <View style={styles.divider} />
           <TouchableOpacity onPress={onNavigateToLogin} testID="login-link">
             <Text style={styles.footerText}>
-              Já tem conta? <Text style={styles.footerLink}>Entrar</Text>
+              {t('register.hasAccount')} <Text style={styles.footerLink}>{t('register.loginLink')}</Text>
             </Text>
           </TouchableOpacity>
         </View>

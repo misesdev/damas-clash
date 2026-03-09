@@ -1,8 +1,10 @@
 'use client';
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { useTranslation } from 'react-i18next';
 import { login, resendConfirmation, verifyLogin } from '../api/auth';
 import { BoardMark } from './BoardMark';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { MessageBoxProvider } from './MessageBox';
 import { CheckersBoardScreen } from '../screens/CheckersBoardScreen';
 import { ConfirmEmailScreen } from '../screens/ConfirmEmailScreen';
@@ -18,6 +20,7 @@ import { ReplayScreen } from '../screens/ReplayScreen';
 import { WaitingRoomScreen } from '../screens/WaitingRoomScreen';
 import { useApp } from '../hooks/useApp';
 import { OnlinePlayersModal } from './OnlinePlayersModal';
+import '../i18n';
 
 type TabName = 'home' | 'profile';
 
@@ -36,6 +39,7 @@ function TopNav({
   username?: string;
   avatarUrl?: string | null;
 }) {
+  const { t } = useTranslation();
   const initials = username ? username.slice(0, 2).toUpperCase() : '?';
 
   return (
@@ -62,12 +66,14 @@ function TopNav({
 
       {/* Nav tabs */}
       <nav style={{ display: 'flex', gap: 4, flex: 1, justifyContent: 'center' }}>
-        <NavTab label="Partidas" active={active === 'home'} onClick={() => onPress('home')} />
-        <NavTab label="Perfil" active={active === 'profile'} onClick={() => onPress('profile')} />
+        <NavTab label={t('nav_games')} active={active === 'home'} onClick={() => onPress('home')} />
+        <NavTab label={t('nav_profile')} active={active === 'profile'} onClick={() => onPress('profile')} />
       </nav>
 
-      {/* Right side: user + new game */}
+      {/* Right side: language switcher + user + new game */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <LanguageSwitcher />
+
         {username && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {avatarUrl ? (
@@ -145,7 +151,7 @@ function TopNav({
           ) : (
             <>
               <span style={{ fontSize: 16, fontWeight: 900, lineHeight: 1 }}>+</span>
-              <span className="hidden sm:inline">Nova Partida</span>
+              <span className="hidden sm:inline">{t('nav_newGame')}</span>
             </>
           )}
         </button>
@@ -194,6 +200,8 @@ function MobileTabBar({
   onNewGame: () => void;
   creating?: boolean;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div
       className="flex md:hidden items-center justify-around px-2 py-2"
@@ -209,7 +217,7 @@ function MobileTabBar({
         style={{ color: active === 'home' ? 'var(--text)' : 'var(--text-muted)', border: 'none', background: 'transparent', cursor: 'pointer' }}
       >
         <span style={{ fontSize: 20 }}>⊞</span>
-        <span style={{ fontSize: 10, fontWeight: 600 }}>Partidas</span>
+        <span style={{ fontSize: 10, fontWeight: 600 }}>{t('nav_games')}</span>
       </button>
 
       <div className="flex flex-1 justify-center">
@@ -254,13 +262,14 @@ function MobileTabBar({
         style={{ color: active === 'profile' ? 'var(--text)' : 'var(--text-muted)', border: 'none', background: 'transparent', cursor: 'pointer' }}
       >
         <span style={{ fontSize: 20 }}>◉</span>
-        <span style={{ fontSize: 10, fontWeight: 600 }}>Perfil</span>
+        <span style={{ fontSize: 10, fontWeight: 600 }}>{t('nav_profile')}</span>
       </button>
     </div>
   );
 }
 
 export function AppShell() {
+  const { t } = useTranslation();
   const {
     screen,
     setScreen,
@@ -465,7 +474,7 @@ export function AppShell() {
         {screen === 'verifyLogin' && (
           <ConfirmEmailScreen
             email={pendingEmail}
-            heading={'Confirme\nseu acesso'}
+            heading={t('confirm_verifyLogin')}
             onConfirmed={() => setScreen('login')}
             onNavigateToLogin={() => setScreen('login')}
             onResendCode={async () => { await login({ identifier: pendingEmail }); }}

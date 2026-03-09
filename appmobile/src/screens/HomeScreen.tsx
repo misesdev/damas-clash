@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {BoardMark} from '../components/BoardMark';
 import {GameCard} from '../components/GameCard';
@@ -30,17 +31,19 @@ interface Props {
 
 type FilterTab = Exclude<GameStatus, 'Completed'>;
 
-const TABS: {key: FilterTab; label: string}[] = [
-  {key: 'WaitingForPlayers', label: 'Aguardando'},
-  {key: 'InProgress', label: 'Em andamento'},
-];
-
-const EMPTY_MESSAGES: Record<FilterTab, string> = {
-  WaitingForPlayers: 'Nenhuma partida aguardando jogadores.',
-  InProgress: 'Nenhuma partida em andamento.',
-};
-
 export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSelect, onGameCancelled, onOpenOnlinePlayers}: Props) {
+  const {t} = useTranslation();
+
+  const TABS: {key: FilterTab; label: string}[] = [
+    {key: 'WaitingForPlayers', label: t('home.waitingTab')},
+    {key: 'InProgress', label: t('home.inProgressTab')},
+  ];
+
+  const EMPTY_MESSAGES: Record<FilterTab, string> = {
+    WaitingForPlayers: t('home.emptyWaiting'),
+    InProgress: t('home.emptyInProgress'),
+  };
+
   const {
     loading,
     refreshing,
@@ -74,7 +77,7 @@ export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSel
             onPress={onOpenOnlinePlayers}
             testID="online-pill">
             <View style={styles.onlineDot} />
-            <Text style={styles.onlineText}>{onlineCount} online</Text>
+            <Text style={styles.onlineText}>{t('home.onlineCount', {count: onlineCount})}</Text>
           </TouchableOpacity>
         )}
         <View style={styles.topBarAvatar}>
@@ -113,7 +116,7 @@ export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSel
         <Text style={styles.searchIcon}>⌕</Text>
         <TextInput
           style={styles.searchInput}
-          placeholder="Buscar jogador..."
+          placeholder={t('home.searchPlaceholder')}
           placeholderTextColor="#4E4E4E"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -150,7 +153,7 @@ export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSel
           ListEmptyComponent={
             <Text style={styles.empty}>
               {searchQuery.trim()
-                ? 'Nenhuma partida encontrada para esta busca.'
+                ? t('home.emptySearch')
                 : EMPTY_MESSAGES[activeTab]}
             </Text>
           }

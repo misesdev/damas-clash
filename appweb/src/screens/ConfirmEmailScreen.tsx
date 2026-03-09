@@ -1,9 +1,11 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '../components/Button';
 import { OtpInput } from '../components/OtpInput';
 import { useConfirmEmail } from '../hooks/useConfirmEmail';
 import type { LoginResponse } from '../types/auth';
+import '../i18n';
 
 interface ConfirmEmailScreenProps {
   email: string;
@@ -20,8 +22,9 @@ export function ConfirmEmailScreen({
   onNavigateToLogin,
   onSubmitCode,
   onResendCode,
-  heading = 'Verifique\nseu e-mail',
+  heading,
 }: ConfirmEmailScreenProps) {
+  const { t } = useTranslation();
   const {
     code,
     setCode,
@@ -32,6 +35,8 @@ export function ConfirmEmailScreen({
     handleResend,
     handleConfirm,
   } = useConfirmEmail({ email, onConfirmed, onSubmitCode, onResendCode });
+
+  const displayHeading = heading ?? t('confirm_heading');
 
   return (
     <div
@@ -86,10 +91,10 @@ export function ConfirmEmailScreen({
               whiteSpace: 'pre-line',
             }}
           >
-            {heading}
+            {displayHeading}
           </h1>
           <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
-            Enviamos um código de 6 dígitos para{' '}
+            {t('confirm_sentTo')}{' '}
             <span style={{ fontWeight: 600, color: 'var(--text)' }}>{email}</span>
           </p>
         </div>
@@ -115,7 +120,7 @@ export function ConfirmEmailScreen({
           )}
 
           <Button
-            label="Confirmar"
+            label={t('confirm_button')}
             onClick={handleConfirm}
             loading={loading}
             disabled={code.length !== 6}
@@ -124,7 +129,7 @@ export function ConfirmEmailScreen({
           {onResendCode && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, paddingTop: 4 }}>
               {resendSuccess && resendCooldown > 0 && (
-                <p style={{ fontSize: 12, color: '#4ade80' }}>Código reenviado ✓</p>
+                <p style={{ fontSize: 12, color: '#4ade80' }}>{t('confirm_resendSuccess')}</p>
               )}
               <button
                 onClick={handleResend}
@@ -139,8 +144,8 @@ export function ConfirmEmailScreen({
                 }}
               >
                 {resendCooldown > 0
-                  ? `Reenviar código em ${resendCooldown}s`
-                  : 'Não recebeu? Reenviar código'}
+                  ? t('confirm_resendCooldown', { seconds: resendCooldown })
+                  : t('confirm_resend')}
               </button>
             </div>
           )}
@@ -159,8 +164,8 @@ export function ConfirmEmailScreen({
               color: 'var(--text-muted)',
             }}
           >
-            Voltar para o{' '}
-            <span style={{ fontWeight: 700, color: 'var(--text)' }}>Login</span>
+            {t('confirm_backTo')}{' '}
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>{t('confirm_login')}</span>
           </button>
         </div>
       </div>

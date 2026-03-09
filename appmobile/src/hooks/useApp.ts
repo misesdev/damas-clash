@@ -5,12 +5,15 @@ import {
 } from '@microsoft/signalr';
 import type {HubConnection} from '@microsoft/signalr';
 import {useEffect, useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {showMessage} from '../components/MessageBox';
 import {cancelGame, createGame, getGame} from '../api/games';
 import {refreshAccessToken} from '../api/auth';
 import {BASE_URL} from '../api/client';
 import {clearSession, loadSession, saveSession} from '../storage/auth';
 import {clearActiveGameId, loadActiveGameId, saveActiveGameId} from '../storage/game';
+import {loadLanguage} from '../storage/language';
+import i18n from '../i18n';
 import type {TabName} from '../components/BottomTabBar';
 import type {LoginResponse} from '../types/auth';
 import type {GameResponse} from '../types/game';
@@ -22,6 +25,7 @@ type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'e
 const REFRESH_BUFFER_MS = 2 * 60 * 1000; // refresh 2 min before expiry
 
 export function useApp() {
+  const {t} = useTranslation();
   const [screen, setScreen] = useState<Screen>('login');
   const [authScreen, setAuthScreen] = useState<AuthScreen>('tabs');
   const [tab, setTab] = useState<TabName>('home');
@@ -50,6 +54,12 @@ export function useApp() {
     let cancelled = false;
     (async () => {
       try {
+        // Restore saved language preference
+        const savedLang = await loadLanguage();
+        if (savedLang && !cancelled) {
+          i18n.changeLanguage(savedLang);
+        }
+
         const saved = await loadSession();
         if (cancelled) {return;}
         if (saved) {
@@ -133,16 +143,16 @@ export function useApp() {
         hub.on('ChallengeReceived', (fromId: string, fromUsername: string) => {
           if (!active) {return;}
           showMessage({
-            title: `${fromUsername} te desafiou!`,
-            message: 'Aceite ou recuse o desafio. Expira em 60 segundos.',
+            title: t('challenges.receivedTitle', {username: fromUsername}),
+            message: t('challenges.receivedMessage'),
             type: 'confirm',
             actions: [
               {
-                label: 'Recusar',
+                label: t('challenges.decline'),
                 onPress: () => hub.invoke('DeclineChallenge', fromId).catch(() => {}),
               },
               {
-                label: 'Aceitar',
+                label: t('challenges.accept'),
                 primary: true,
                 onPress: () => hub.invoke('AcceptChallenge', fromId).catch(() => {}),
               },
@@ -154,20 +164,20 @@ export function useApp() {
           if (!active) {return;}
           setPendingChallengeId(null);
           showMessage({
-            title: 'Desafio recusado',
-            message: `${byUsername} recusou seu desafio.`,
+            title: t('challenges.declinedTitle'),
+            message: t('challenges.declinedMessage', {username: byUsername}),
             type: 'info',
-            actions: [{label: 'OK'}],
+            actions: [{label: t('common.ok')}],
           });
         });
 
         hub.on('ChallengeCancelled', () => {
           if (!active) {return;}
           showMessage({
-            title: 'Desafio cancelado',
-            message: 'O adversário cancelou o desafio.',
+            title: t('challenges.cancelledTitle'),
+            message: t('challenges.cancelledMessage'),
             type: 'info',
-            actions: [{label: 'OK'}],
+            actions: [{label: t('common.ok')}],
           });
         });
 
@@ -175,15 +185,15 @@ export function useApp() {
           if (!active) {return;}
           setPendingChallengeId(null);
           const messages: Record<string, string> = {
-            player_offline: 'O jogador ficou offline.',
-            challenge_expired: 'O desafio expirou.',
-            create_failed: 'Não foi possível criar a partida.',
+            player_offline: t('challenges.errors.player_offline'),
+            challenge_expired: t('challenges.errors.challenge_expired'),
+            create_failed: t('challenges.errors.create_failed'),
           };
           showMessage({
-            title: 'Erro no desafio',
-            message: messages[reason] ?? 'Tente novamente.',
+            title: t('challenges.errorTitle'),
+            message: messages[reason] ?? t('challenges.errorDefault'),
             type: 'info',
-            actions: [{label: 'OK'}],
+            actions: [{label: t('common.ok')}],
           });
         });
 
@@ -199,13 +209,13 @@ export function useApp() {
             setAuthScreen('checkersBoard');
           } else {
             showMessage({
-              title: 'Oponente encontrado!',
-              message: 'Alguém entrou na sua partida. Deseja jogar agora?',
+              title: t('gameStarted.title'),
+              message: t('gameStarted.message'),
               type: 'confirm',
               actions: [
-                {label: 'Depois'},
+                {label: t('gameStarted.later')},
                 {
-                  label: 'Jogar',
+                  label: t('gameStarted.play'),
                   primary: true,
                   onPress: () => {
                     setSelectedGame(game);

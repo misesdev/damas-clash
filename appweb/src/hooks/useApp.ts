@@ -15,6 +15,7 @@ import { clearActiveGameId, clearSession, loadActiveGameId, loadSession, saveAct
 import type { LoginResponse } from '../types/auth';
 import type { GameResponse } from '../types/game';
 import type { OnlinePlayerInfo } from '../types/player';
+import i18n from '../i18n';
 
 type Screen = 'landing' | 'login' | 'register' | 'confirmEmail' | 'verifyLogin';
 type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay';
@@ -117,16 +118,16 @@ export function useApp() {
         hub.on('ChallengeReceived', (fromId: string, fromUsername: string) => {
           if (!active) return;
           showMessage({
-            title: `${fromUsername} te desafiou!`,
-            message: 'Aceite ou recuse o desafio. Expira em 60 segundos.',
+            title: i18n.t('app_challengeTitle', { name: fromUsername }),
+            message: i18n.t('app_challengeMessage'),
             type: 'confirm',
             actions: [
               {
-                label: 'Recusar',
+                label: i18n.t('app_challengeDecline'),
                 onPress: () => hub.invoke('DeclineChallenge', fromId).catch(() => {}),
               },
               {
-                label: 'Aceitar',
+                label: i18n.t('app_challengeAccept'),
                 primary: true,
                 onPress: () => hub.invoke('AcceptChallenge', fromId).catch(() => {}),
               },
@@ -138,20 +139,20 @@ export function useApp() {
           if (!active) return;
           setPendingChallengeId(null);
           showMessage({
-            title: 'Desafio recusado',
-            message: `${byUsername} recusou seu desafio.`,
+            title: i18n.t('app_challengeDeclinedTitle'),
+            message: i18n.t('app_challengeDeclinedMsg', { name: byUsername }),
             type: 'info',
-            actions: [{ label: 'OK' }],
+            actions: [{ label: i18n.t('app_ok') }],
           });
         });
 
         hub.on('ChallengeCancelled', () => {
           if (!active) return;
           showMessage({
-            title: 'Desafio cancelado',
-            message: 'O adversário cancelou o desafio.',
+            title: i18n.t('app_challengeCancelledTitle'),
+            message: i18n.t('app_challengeCancelledMsg'),
             type: 'info',
-            actions: [{ label: 'OK' }],
+            actions: [{ label: i18n.t('app_ok') }],
           });
         });
 
@@ -159,15 +160,15 @@ export function useApp() {
           if (!active) return;
           setPendingChallengeId(null);
           const messages: Record<string, string> = {
-            player_offline: 'O jogador ficou offline.',
-            challenge_expired: 'O desafio expirou.',
-            create_failed: 'Não foi possível criar a partida.',
+            player_offline: i18n.t('app_challengeError_offline'),
+            challenge_expired: i18n.t('app_challengeError_expired'),
+            create_failed: i18n.t('app_challengeError_createFailed'),
           };
           showMessage({
-            title: 'Erro no desafio',
-            message: messages[reason] ?? 'Tente novamente.',
+            title: i18n.t('app_challengeErrorTitle'),
+            message: messages[reason] ?? i18n.t('app_challengeError_default'),
             type: 'info',
-            actions: [{ label: 'OK' }],
+            actions: [{ label: i18n.t('app_ok') }],
           });
         });
 
@@ -183,13 +184,13 @@ export function useApp() {
             setAuthScreen('checkersBoard');
           } else {
             showMessage({
-              title: 'Oponente encontrado!',
-              message: 'Alguém entrou na sua partida. Deseja jogar agora?',
+              title: i18n.t('app_opponentFoundTitle'),
+              message: i18n.t('app_opponentFoundMsg'),
               type: 'confirm',
               actions: [
-                { label: 'Depois' },
+                { label: i18n.t('app_playLater') },
                 {
-                  label: 'Jogar',
+                  label: i18n.t('app_playNow'),
                   primary: true,
                   onPress: () => {
                     setSelectedGame(game);

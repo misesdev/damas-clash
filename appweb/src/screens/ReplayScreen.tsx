@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getGameMoves } from '../api/games';
-import { BOARD_SIZE, createInitialPieces, findAt, isDarkSquare } from '../game/checkers';
+import { BOARD_SIZE, createInitialPieces, isDarkSquare } from '../game/checkers';
 import { GameEngine } from '../game/GameEngine';
 import type { LoginResponse } from '../types/auth';
 import type { GameResponse, MoveResponse } from '../types/game';
+import '../i18n';
 
 interface Props {
   game: GameResponse;
@@ -30,6 +32,7 @@ function PlayerAvatar({ username, avatarUrl, size = 36 }: { username?: string | 
 }
 
 export function ReplayScreen({ game, session, onBack }: Props) {
+  const { t } = useTranslation();
   const [engines, setEngines] = useState<GameEngine[]>([GameEngine.initial()]);
   const [moves, setMoves] = useState<MoveResponse[]>([]);
   const [step, setStep] = useState(0);
@@ -110,7 +113,7 @@ export function ReplayScreen({ game, session, onBack }: Props) {
         {/* Back */}
         <div style={{ width: '100%' }}>
           <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--text-muted)', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 16 }}>←</span> Voltar
+            <span style={{ fontSize: 16 }}>←</span> {t('replay_back')}
           </button>
         </div>
 
@@ -129,7 +132,7 @@ export function ReplayScreen({ game, session, onBack }: Props) {
 
         {/* Move counter */}
         <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
-          {loading ? 'Carregando...' : `Jogada ${step} de ${moves.length}`}
+          {loading ? t('replay_loading') : t('replay_move', { step, total: moves.length })}
         </p>
 
         {/* Winner banner */}
@@ -139,7 +142,7 @@ export function ReplayScreen({ game, session, onBack }: Props) {
             background: 'rgba(46,204,113,0.1)', border: '1px solid rgba(46,204,113,0.3)',
             color: '#2ecc71', fontSize: 14, fontWeight: 700,
           }}>
-            🏆 {winner} venceu!
+            {t('replay_won', { name: winner })}
           </div>
         )}
 

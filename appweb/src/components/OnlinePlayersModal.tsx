@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useOnlinePlayers } from '../hooks/useOnlinePlayers';
 import type { OnlinePlayerInfo } from '../types/player';
+import '../i18n';
 
 interface Props {
   players: OnlinePlayerInfo[];
@@ -59,6 +61,7 @@ function PlayerRow({
   onCancelChallenge: () => void;
   onWatch: () => void;
 }) {
+  const { t } = useTranslation();
   const isInGame = player.status === 'InGame';
 
   const actionBtn = isInGame ? (
@@ -77,7 +80,7 @@ function PlayerRow({
         whiteSpace: 'nowrap',
       }}
     >
-      Assistir
+      {t('online_watch')}
     </button>
   ) : isPending ? (
     <button
@@ -94,9 +97,9 @@ function PlayerRow({
         flexShrink: 0,
         whiteSpace: 'nowrap',
       }}
-      title="Clique para cancelar"
+      title={t('online_cancelHint')}
     >
-      Aguardando...
+      {t('online_waiting')}
     </button>
   ) : (
     <button
@@ -114,7 +117,7 @@ function PlayerRow({
         whiteSpace: 'nowrap',
       }}
     >
-      Desafiar
+      {t('online_challenge')}
     </button>
   );
 
@@ -150,7 +153,7 @@ function PlayerRow({
               color: isInGame ? '#FF9800' : '#4CAF50',
             }}
           >
-            {isInGame ? 'Em partida' : 'Online'}
+            {isInGame ? t('online_inGame') : t('online_online')}
           </span>
         </div>
       </div>
@@ -168,13 +171,14 @@ export function OnlinePlayersModal({
   onCancelChallenge,
   onWatch,
 }: Props) {
+  const { t } = useTranslation();
   const { searchQuery, setSearchQuery, filtered } = useOnlinePlayers(players, currentPlayerId);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Focus search on open
   useEffect(() => {
-    const t = setTimeout(() => inputRef.current?.focus(), 60);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => inputRef.current?.focus(), 60);
+    return () => clearTimeout(timer);
   }, []);
 
   const othersCount = players.filter(p => p.playerId !== currentPlayerId).length;
@@ -221,10 +225,12 @@ export function OnlinePlayersModal({
         >
           <div>
             <h2 style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>
-              Jogadores Online
+              {t('online_title')}
             </h2>
             <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>
-              {othersCount} {othersCount === 1 ? 'jogador' : 'jogadores'}
+              {othersCount === 1
+                ? t('online_count_singular', { count: othersCount })
+                : t('online_count_plural', { count: othersCount })}
             </p>
           </div>
           <button
@@ -267,7 +273,7 @@ export function OnlinePlayersModal({
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Buscar jogador..."
+              placeholder={t('online_search')}
               style={{
                 flex: 1,
                 background: 'none',
@@ -299,9 +305,7 @@ export function OnlinePlayersModal({
                 marginTop: 40,
               }}
             >
-              {searchQuery.trim()
-                ? 'Nenhum jogador encontrado.'
-                : 'Nenhum outro jogador online no momento.'}
+              {searchQuery.trim() ? t('online_emptySearch') : t('online_emptyList')}
             </p>
           ) : (
             filtered.map(player => (

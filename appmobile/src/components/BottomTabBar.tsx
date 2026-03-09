@@ -1,5 +1,6 @@
 import React from 'react';
 import {ActivityIndicator, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {colors} from '../theme/colors';
 
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function BottomTabBar({active, onPress, onNewGame, creating}: Props) {
+  const {t} = useTranslation();
   const insets = useSafeAreaInsets();
 
   return (
@@ -29,7 +31,7 @@ export function BottomTabBar({active, onPress, onNewGame, creating}: Props) {
           testID="tab-home">
           <BoardIcon active={active === 'home'} />
           <Text style={[styles.label, active === 'home' && styles.labelActive]}>
-            Partidas
+            {t('bottomTab.games')}
           </Text>
         </TouchableOpacity>
 
@@ -46,7 +48,7 @@ export function BottomTabBar({active, onPress, onNewGame, creating}: Props) {
             ) : (
               <>
                 <Text style={styles.centerPlus}>+</Text>
-                <Text style={styles.centerLabel}>Nova partida</Text>
+                <Text style={styles.centerLabel}>{t('bottomTab.newGame')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -60,7 +62,7 @@ export function BottomTabBar({active, onPress, onNewGame, creating}: Props) {
           testID="tab-profile">
           <ProfileIcon active={active === 'profile'} />
           <Text style={[styles.label, active === 'profile' && styles.labelActive]}>
-            Perfil
+            {t('bottomTab.profile')}
           </Text>
         </TouchableOpacity>
       </View>

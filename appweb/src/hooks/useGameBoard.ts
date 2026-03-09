@@ -6,6 +6,7 @@ import {
 } from '@microsoft/signalr';
 import type { HubConnection } from '@microsoft/signalr';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { makeMove, resign, skipTurn } from '../api/games';
 import { BASE_URL } from '../api/client';
 import { showMessage } from '../components/MessageBox';
@@ -15,6 +16,7 @@ import { GameEngine } from '../game/GameEngine';
 import { boardStateToEngine, getMyColor, isSpectator, parseApiColor } from '../utils/boardStateUtils';
 import type { LoginResponse } from '../types/auth';
 import type { GameResponse } from '../types/game';
+import '../i18n';
 
 export interface PiecePos {
   row: number;
@@ -25,6 +27,8 @@ export interface PiecePos {
 const TURN_TIMEOUT_SEC = 60;
 
 export function useGameBoard(initialGame: GameResponse, session: LoginResponse) {
+  const { t } = useTranslation();
+
   const boardSize = Math.min(
     typeof window !== 'undefined' ? Math.min(window.innerWidth - 48, window.innerHeight - 280) : 400,
     560,
@@ -216,12 +220,12 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
         pendingMovesRef.current = Math.max(0, pendingMovesRef.current - 1);
         syncPositionsFromEngine(engineBefore);
         setEngine(engineBefore);
-        setError('Movimento inválido.');
+        setError(t('board_invalidMove'));
       } finally {
         setSendingMove(false);
       }
     },
-    [session.token, initialGame.id, syncPositionsFromEngine],
+    [session.token, initialGame.id, syncPositionsFromEngine, t],
   );
 
   // ── Skip turn API ───────────────────────────────────────────────────────────
@@ -269,23 +273,23 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
       setGame(updated);
       setError('');
     } catch {
-      setError('Não foi possível desistir.');
+      setError(t('board_resignError'));
     } finally {
       setSendingMove(false);
     }
-  }, [session.token, initialGame.id]);
+  }, [session.token, initialGame.id, t]);
 
   const confirmResign = useCallback(() => {
     showMessage({
-      title: 'Desistir da partida?',
-      message: 'Você cederá a vitória ao adversário. Esta ação não pode ser desfeita.',
+      title: t('board_resignTitle'),
+      message: t('board_resignMessage'),
       type: 'confirm',
       actions: [
-        { label: 'Cancelar' },
-        { label: 'Desistir', danger: true, onPress: handleResign },
+        { label: t('board_resignCancel') },
+        { label: t('board_resignConfirm'), danger: true, onPress: handleResign },
       ],
     });
-  }, [handleResign]);
+  }, [handleResign, t]);
 
   // ── Derived ─────────────────────────────────────────────────────────────────
 

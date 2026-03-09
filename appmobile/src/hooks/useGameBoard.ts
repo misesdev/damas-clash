@@ -4,6 +4,7 @@ import {
 } from '@microsoft/signalr';
 import type {HubConnection} from '@microsoft/signalr';
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {Animated, BackHandler, useWindowDimensions} from 'react-native';
 import {makeMove, resign, skipTurn} from '../api/games';
 import {BASE_URL} from '../api/client';
@@ -42,6 +43,7 @@ function initAnimsFromEngine(
 }
 
 export function useGameBoard(initialGame: GameResponse, session: LoginResponse) {
+  const {t} = useTranslation();
   const {width} = useWindowDimensions();
   const boardSize = Math.min(width - 32 - 24, 360);
   const cellSize = boardSize / BOARD_SIZE;
@@ -260,13 +262,21 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
         pendingMovesRef.current = Math.max(0, pendingMovesRef.current - 1);
         animsRef.current = initAnimsFromEngine(engineBefore, cellSizeRef.current);
         setEngine(engineBefore);
-        setError('Movimento inválido.');
+        setError(t('checkersBoard.errors.invalidMove'));
       } finally {
         setSendingMove(false);
       }
     },
     [session.token, initialGame.id],
   );
+
+  // ── Derived: winner (needed before BackHandler) ───────────────────────────
+
+  const winner: PieceColor | null = game.winnerId
+    ? game.winnerId === game.playerBlackId
+      ? 'dark'
+      : 'light'
+    : null;
 
   // ── Block hardware back during active game ────────────────────────────────
 
@@ -321,12 +331,6 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   const opponentColor: PieceColor = myColor === 'dark' ? 'light' : 'dark';
   const isFlipped = myColor === 'dark';
 
-  const winner: PieceColor | null = game.winnerId
-    ? game.winnerId === game.playerBlackId
-      ? 'dark'
-      : 'light'
-    : null;
-
   const myUsername =
     myColor === 'dark' ? game.playerBlackUsername : game.playerWhiteUsername;
   const opponentUsername =
@@ -348,7 +352,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
       setGame(updated);
       setError('');
     } catch {
-      setError('Não foi possível desistir.');
+      setError(t('checkersBoard.errors.resignFailed'));
     } finally {
       setSendingMove(false);
     }

@@ -2,12 +2,14 @@
 
 import { GoogleLogin } from '@react-oauth/google';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { googleAuth } from '../api/auth';
 import { BoardMark } from '../components/BoardMark';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { useLogin } from '../hooks/useLogin';
 import type { LoginResponse } from '../types/auth';
+import '../i18n';
 
 interface LoginScreenProps {
   onCodeSent: (email: string) => void;
@@ -16,6 +18,7 @@ interface LoginScreenProps {
 }
 
 export function LoginScreen({ onCodeSent, onNavigateToRegister, onGoogleLogin }: LoginScreenProps) {
+  const { t, i18n } = useTranslation();
   const { identifier, setIdentifier, error, loading, handleLogin } = useLogin(onCodeSent);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState('');
@@ -31,11 +34,13 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister, onGoogleLogin }:
       const data = await googleAuth(credential);
       onGoogleLogin(data);
     } catch {
-      setGoogleError('Erro ao autenticar com Google. Tente novamente.');
+      setGoogleError(t('login_googleError'));
     } finally {
       setGoogleLoading(false);
     }
   };
+
+  const googleLocale = i18n.language === 'pt' ? 'pt-BR' : 'en';
 
   return (
     <div
@@ -64,27 +69,27 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister, onGoogleLogin }:
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 36 }}>
           <BoardMark size={40} />
           <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 4, color: 'var(--text)' }}>
-           DAMAS CLASH 
+            DAMAS CLASH
           </span>
         </div>
 
         {/* Heading */}
         <div style={{ marginBottom: 28 }}>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
-            Entrar
+            {t('login_title')}
           </h1>
           <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
-            Use seu usuário ou e-mail para continuar.
+            {t('login_subtitle')}
           </p>
         </div>
 
         {/* Form */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }} onKeyDown={handleKeyDown}>
           <Input
-            label="Usuário ou e-mail"
+            label={t('login_label')}
             value={identifier}
             onChange={setIdentifier}
-            placeholder="seu_usuario ou seu@email.com"
+            placeholder={t('login_placeholder')}
             autoComplete="email"
           />
 
@@ -104,7 +109,7 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister, onGoogleLogin }:
           )}
 
           <Button
-            label="Continuar"
+            label={t('login_continue')}
             onClick={handleLogin}
             loading={loading}
             disabled={!identifier.trim()}
@@ -115,7 +120,7 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister, onGoogleLogin }:
         <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
             <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>ou</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('login_or')}</span>
             <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
           </div>
           <div style={{ opacity: googleLoading ? 0.6 : 1, pointerEvents: googleLoading ? 'none' : 'auto' }}>
@@ -123,11 +128,11 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister, onGoogleLogin }:
               onSuccess={credentialResponse => {
                 if (credentialResponse.credential) handleGoogleSuccess(credentialResponse.credential);
               }}
-              onError={() => setGoogleError('Erro ao autenticar com Google. Tente novamente.')}
+              onError={() => setGoogleError(t('login_googleError'))}
               theme="filled_black"
               size="large"
               text="continue_with"
-              locale="pt-BR"
+              locale={googleLocale}
             />
           </div>
           {googleError && (
@@ -148,16 +153,16 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister, onGoogleLogin }:
               color: 'var(--text-muted)',
             }}
           >
-            Não tem conta?{' '}
-            <span style={{ fontWeight: 700, color: 'var(--text)' }}>Criar conta</span>
+            {t('login_noAccount')}{' '}
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>{t('login_createAccount')}</span>
           </button>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <a href="/termos" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--text-faint)', textDecoration: 'none' }}>
-              Termos de Uso
+              {t('login_terms')}
             </a>
             <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>·</span>
             <a href="/privacidade" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: 'var(--text-faint)', textDecoration: 'none' }}>
-              Privacidade
+              {t('login_privacy')}
             </a>
           </div>
         </div>

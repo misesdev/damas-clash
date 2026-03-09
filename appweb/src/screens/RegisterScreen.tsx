@@ -2,11 +2,13 @@
 
 import { GoogleLogin } from '@react-oauth/google';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { googleAuth } from '../api/auth';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { useRegister } from '../hooks/useRegister';
 import type { LoginResponse } from '../types/auth';
+import '../i18n';
 
 interface RegisterScreenProps {
   onRegistered: (email: string) => void;
@@ -15,6 +17,7 @@ interface RegisterScreenProps {
 }
 
 export function RegisterScreen({ onRegistered, onNavigateToLogin, onGoogleLogin }: RegisterScreenProps) {
+  const { t, i18n } = useTranslation();
   const { username, setUsername, email, setEmail, errors, loading, handleRegister } =
     useRegister(onRegistered);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -27,11 +30,13 @@ export function RegisterScreen({ onRegistered, onNavigateToLogin, onGoogleLogin 
       const data = await googleAuth(credential);
       onGoogleLogin(data);
     } catch {
-      setGoogleError('Erro ao autenticar com Google. Tente novamente.');
+      setGoogleError(t('register_googleError'));
     } finally {
       setGoogleLoading(false);
     }
   };
+
+  const googleLocale = i18n.language === 'pt' ? 'pt-BR' : 'en';
 
   return (
     <div
@@ -72,23 +77,23 @@ export function RegisterScreen({ onRegistered, onNavigateToLogin, onGoogleLogin 
             gap: 6,
           }}
         >
-          <span style={{ fontSize: 16 }}>←</span> Voltar
+          <span style={{ fontSize: 16 }}>←</span> {t('register_back')}
         </button>
 
         {/* Heading */}
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
-            Criar conta
+            {t('register_title')}
           </h1>
           <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
-            Preencha seus dados para começar.
+            {t('register_subtitle')}
           </p>
         </div>
 
         {/* Form */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <Input
-            label="Nome de usuário"
+            label={t('register_username')}
             value={username}
             onChange={setUsername}
             placeholder="seu_usuario"
@@ -96,7 +101,7 @@ export function RegisterScreen({ onRegistered, onNavigateToLogin, onGoogleLogin 
             error={errors.username}
           />
           <Input
-            label="E-mail"
+            label={t('register_email')}
             value={email}
             onChange={setEmail}
             type="email"
@@ -120,14 +125,14 @@ export function RegisterScreen({ onRegistered, onNavigateToLogin, onGoogleLogin 
             </div>
           )}
 
-          <Button label="Criar conta" onClick={handleRegister} loading={loading} />
+          <Button label={t('register_submit')} onClick={handleRegister} loading={loading} />
         </div>
 
         {/* Google login */}
         <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
             <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>ou</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('register_or')}</span>
             <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
           </div>
           <div style={{ opacity: googleLoading ? 0.6 : 1, pointerEvents: googleLoading ? 'none' : 'auto' }}>
@@ -135,11 +140,11 @@ export function RegisterScreen({ onRegistered, onNavigateToLogin, onGoogleLogin 
               onSuccess={credentialResponse => {
                 if (credentialResponse.credential) handleGoogleSuccess(credentialResponse.credential);
               }}
-              onError={() => setGoogleError('Erro ao autenticar com Google. Tente novamente.')}
+              onError={() => setGoogleError(t('register_googleError'))}
               theme="filled_black"
               size="large"
               text="continue_with"
-              locale="pt-BR"
+              locale={googleLocale}
             />
           </div>
           {googleError && (
@@ -160,8 +165,8 @@ export function RegisterScreen({ onRegistered, onNavigateToLogin, onGoogleLogin 
               color: 'var(--text-muted)',
             }}
           >
-            Já tem conta?{' '}
-            <span style={{ fontWeight: 700, color: 'var(--text)' }}>Entrar</span>
+            {t('register_hasAccount')}{' '}
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>{t('register_signIn')}</span>
           </button>
         </div>
       </div>

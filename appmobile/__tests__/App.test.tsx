@@ -374,7 +374,7 @@ describe('App navigation', () => {
 
     fireWatchersUpdated(3);
 
-    await waitFor(() => expect(getByTestId('watchers-count').props.children).toContain(3));
+    await waitFor(() => expect(getByTestId('watchers-count').props.children).toContain('3'));
   });
 
   it('board updates pieces when opponent makes a move (MoveMade event)', async () => {

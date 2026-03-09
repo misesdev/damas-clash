@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {useOnlinePlayers} from '../hooks/useOnlinePlayers';
 import {styles} from '../styles/onlinePlayersStyles';
 import type {OnlinePlayerInfo} from '../types/player';
@@ -48,19 +49,20 @@ function PlayerRow({
   onCancelChallenge: () => void;
   onWatch: () => void;
 }) {
+  const {t} = useTranslation();
   const isInGame = player.status === 'InGame';
 
   const actionBtn = isInGame ? (
     <TouchableOpacity style={[styles.actionBtn, styles.watchBtn]} onPress={onWatch}>
-      <Text style={styles.watchBtnText}>Assistir</Text>
+      <Text style={styles.watchBtnText}>{t('onlinePlayers.watchButton')}</Text>
     </TouchableOpacity>
   ) : isPending ? (
     <TouchableOpacity style={[styles.actionBtn, styles.waitingBtn]} onPress={onCancelChallenge}>
-      <Text style={styles.waitingBtnText}>Aguardando...</Text>
+      <Text style={styles.waitingBtnText}>{t('onlinePlayers.challengePending')}</Text>
     </TouchableOpacity>
   ) : (
     <TouchableOpacity style={[styles.actionBtn, styles.challengeBtn]} onPress={onChallenge}>
-      <Text style={styles.challengeBtnText}>Desafiar</Text>
+      <Text style={styles.challengeBtnText}>{t('onlinePlayers.challengeButton')}</Text>
     </TouchableOpacity>
   );
 
@@ -72,7 +74,7 @@ function PlayerRow({
         <View style={styles.statusRow}>
           <View style={[styles.statusDot, isInGame ? styles.statusDotInGame : styles.statusDotOnline]} />
           <Text style={[styles.statusText, isInGame ? styles.statusInGame : styles.statusOnline]}>
-            {isInGame ? 'Em partida' : 'Online'}
+            {isInGame ? t('onlinePlayers.inGame') : t('onlinePlayers.online')}
           </Text>
         </View>
       </View>
@@ -91,6 +93,7 @@ export function OnlinePlayersScreen({
   onCancelChallenge,
   onWatch,
 }: Props) {
+  const {t} = useTranslation();
   const {searchQuery, setSearchQuery, filtered} = useOnlinePlayers(players, currentPlayerId);
 
   return (
@@ -105,13 +108,16 @@ export function OnlinePlayersScreen({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Text style={styles.title}>Jogadores Online</Text>
+              <Text style={styles.title}>{t('onlinePlayers.title')}</Text>
               <Text style={styles.subtitle}>
-                {players.filter(p => p.playerId !== currentPlayerId).length} jogadores
+                {(() => {
+                  const count = players.filter(p => p.playerId !== currentPlayerId).length;
+                  return t(count === 1 ? 'onlinePlayers.subtitle_one' : 'onlinePlayers.subtitle_other', {count});
+                })()}
               </Text>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose} testID="close-online-players">
-              <Text style={styles.closeBtnText}>✕</Text>
+              <Text style={styles.closeBtnText}>{t('onlinePlayers.closeButton')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -120,7 +126,7 @@ export function OnlinePlayersScreen({
             <Text style={styles.searchIcon}>⌕</Text>
             <TextInput
               style={styles.searchInput}
-              placeholder="Buscar jogador..."
+              placeholder={t('onlinePlayers.searchPlaceholder')}
               placeholderTextColor="#4E4E4E"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -144,8 +150,8 @@ export function OnlinePlayersScreen({
             ListEmptyComponent={
               <Text style={styles.empty}>
                 {searchQuery.trim()
-                  ? 'Nenhum jogador encontrado.'
-                  : 'Nenhum outro jogador online no momento.'}
+                  ? t('onlinePlayers.emptySearch')
+                  : t('onlinePlayers.empty')}
               </Text>
             }
             renderItem={({item}) => (

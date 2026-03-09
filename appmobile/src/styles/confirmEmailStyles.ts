@@ -10,6 +10,10 @@ export const styles = StyleSheet.create({
     paddingVertical: 48,
   },
 
+  iconBox: {alignItems: 'center', marginBottom: 28},
+  icon: {fontSize: 48},
+  emailText: {color: colors.text, fontWeight: '600'},
+
   header: {marginBottom: 40},
   eyebrow: {
     color: colors.textMuted,

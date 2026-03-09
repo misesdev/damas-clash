@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {GoogleSignin, statusCodes} from '@react-native-google-signin/google-signin';
 import {WEB_URL, GOOGLE_WEB_CLIENT_ID} from '@env';
 import {googleAuth} from '../api/auth';
@@ -30,6 +31,7 @@ interface LoginScreenProps {
 }
 
 export function LoginScreen({onCodeSent, onNavigateToRegister, onGoogleLogin}: LoginScreenProps) {
+  const {t} = useTranslation();
   const {identifier, setIdentifier, error, loading, handleLogin} = useLogin(onCodeSent);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState('');
@@ -48,7 +50,7 @@ export function LoginScreen({onCodeSent, onNavigateToRegister, onGoogleLogin}: L
       if (e.code === statusCodes.SIGN_IN_CANCELLED) {
         // user cancelled — do nothing
       } else {
-        setGoogleError('Erro ao entrar com Google. Tente novamente.');
+        setGoogleError(t('login.googleError'));
       }
     } finally {
       setGoogleLoading(false);
@@ -65,18 +67,18 @@ export function LoginScreen({onCodeSent, onNavigateToRegister, onGoogleLogin}: L
 
         <View style={styles.logoArea}>
           <BoardMark size={85} />
-          <Text style={styles.appName}>DAMAS CLASH</Text>
-          <Text style={styles.subtitle}>Use seu usuário ou e-mail para continuar</Text>
+          <Text style={styles.appName}>{t('app.name')}</Text>
+          <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
         </View>
 
         <View style={styles.form}>
           <Input
-            label="Usuário ou e-mail"
+            label={t('login.inputLabel')}
             value={identifier}
             onChangeText={setIdentifier}
             autoCapitalize="none"
             autoComplete="email"
-            placeholder="seu_usuario ou seu@email.com"
+            placeholder={t('login.inputPlaceholder')}
             testID="identifier-input"
           />
 
@@ -89,7 +91,7 @@ export function LoginScreen({onCodeSent, onNavigateToRegister, onGoogleLogin}: L
           ) : null}
 
           <Button
-            label="Continuar"
+            label={t('login.continueButton')}
             onPress={handleLogin}
             loading={loading}
             disabled={!identifier.trim()}
@@ -113,17 +115,17 @@ export function LoginScreen({onCodeSent, onNavigateToRegister, onGoogleLogin}: L
           <View style={styles.divider} />
           <TouchableOpacity onPress={onNavigateToRegister} testID="register-link">
             <Text style={styles.footerText}>
-              Não tem conta?{' '}
-              <Text style={styles.footerLink}>Criar conta</Text>
+              {t('login.noAccount')}{' '}
+              <Text style={styles.footerLink}>{t('login.createAccount')}</Text>
             </Text>
           </TouchableOpacity>
           <View style={styles.legalRow}>
             <TouchableOpacity onPress={() => Linking.openURL(`${WEB_URL}/termos`)}>
-              <Text style={styles.legalLink}>Termos de Uso</Text>
+              <Text style={styles.legalLink}>{t('login.terms')}</Text>
             </TouchableOpacity>
             <Text style={styles.legalSep}>·</Text>
             <TouchableOpacity onPress={() => Linking.openURL(`${WEB_URL}/privacidade`)}>
-              <Text style={styles.legalLink}>Privacidade</Text>
+              <Text style={styles.legalLink}>{t('login.privacy')}</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -1,9 +1,11 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { useEditUsername } from '../hooks/useEditUsername';
 import type { LoginResponse } from '../types/auth';
+import '../i18n';
 
 interface Props {
   user: LoginResponse;
@@ -12,10 +14,8 @@ interface Props {
 }
 
 export function EditUsernameScreen({ user, onSaved, onBack }: Props) {
-  const { username, setUsername, loading, error, valid, handleSave } = useEditUsername(
-    user,
-    onSaved,
-  );
+  const { t } = useTranslation();
+  const { username, setUsername, loading, error, valid, handleSave } = useEditUsername(user, onSaved);
 
   return (
     <div
@@ -58,30 +58,30 @@ export function EditUsernameScreen({ user, onSaved, onBack }: Props) {
             gap: 6,
           }}
         >
-          <span style={{ fontSize: 16 }}>←</span> Voltar
+          <span style={{ fontSize: 16 }}>←</span> {t('editUsername_back')}
         </button>
 
         <div style={{ marginBottom: 32 }}>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
-            Nome de usuário
+            {t('editUsername_title')}
           </h1>
           <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
-            Escolha como você aparece para outros jogadores.
+            {t('editUsername_subtitle')}
           </p>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <Input
-            label="Nome de usuário"
+            label={t('editUsername_label')}
             value={username}
             onChange={setUsername}
             autoComplete="username"
             error={error}
           />
           <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: -8 }}>
-            Mínimo de 3 caracteres.
+            {t('editUsername_hint')}
           </p>
-          <Button label="Salvar alteração" onClick={handleSave} loading={loading} disabled={!valid} />
+          <Button label={t('editUsername_save')} onClick={handleSave} loading={loading} disabled={!valid} />
         </div>
       </div>
     </div>

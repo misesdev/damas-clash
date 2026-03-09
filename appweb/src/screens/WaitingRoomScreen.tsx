@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { showMessage } from '../components/MessageBox';
 import AnimatedLoader from '../components/AnimatedLoader';
 import type { GameResponse } from '../types/game';
+import '../i18n';
 
 interface Props {
   game: GameResponse;
@@ -12,6 +14,7 @@ interface Props {
 }
 
 export function WaitingRoomScreen({ game, onBack, onCancelGame }: Props) {
+  const { t } = useTranslation();
   const [cancelling, setCancelling] = useState(false);
 
   const shortCode = game.id.slice(0, 8).toUpperCase();
@@ -22,8 +25,8 @@ export function WaitingRoomScreen({ game, onBack, onCancelGame }: Props) {
       await onCancelGame();
     } catch {
       showMessage({
-        title: 'Erro ao cancelar',
-        message: 'Não foi possível cancelar a partida. Tente novamente.',
+        title: t('waiting_errorCancel'),
+        message: t('waiting_errorCancelMsg'),
         type: 'error',
       });
     } finally {
@@ -60,7 +63,7 @@ export function WaitingRoomScreen({ game, onBack, onCancelGame }: Props) {
           >
             ←
           </button>
-          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: 1 }}>AGUARDANDO OPONENTE</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: 1 }}>{t('waiting_title')}</span>
         </div>
       </header>
 
@@ -87,7 +90,7 @@ export function WaitingRoomScreen({ game, onBack, onCancelGame }: Props) {
           <AnimatedLoader />
 
           <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--text-muted)' }}>
-            Sua partida está pronta. Aguardando outro jogador entrar...
+            {t('waiting_text')}
           </p>
 
           {/* Code card */}
@@ -102,13 +105,13 @@ export function WaitingRoomScreen({ game, onBack, onCancelGame }: Props) {
             }}
           >
             <p style={{ marginBottom: 8, fontSize: 12, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Código da partida
+              {t('waiting_codeLabel')}
             </p>
             <p style={{ marginBottom: 12, fontSize: 32, fontWeight: 800, letterSpacing: '0.15em', color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
               {shortCode}
             </p>
             <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              O jogo começa automaticamente quando alguém entrar
+              {t('waiting_codeHint')}
             </p>
           </div>
 
@@ -133,7 +136,7 @@ export function WaitingRoomScreen({ game, onBack, onCancelGame }: Props) {
           >
             {cancelling ? (
               <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-            ) : 'Cancelar partida'}
+            ) : t('waiting_cancel')}
           </button>
         </div>
       </div>

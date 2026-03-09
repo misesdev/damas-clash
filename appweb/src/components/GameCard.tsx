@@ -1,6 +1,8 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import type { GameResponse } from '../types/game';
+import '../i18n';
 
 interface GameCardProps {
   game: GameResponse;
@@ -43,7 +45,7 @@ function Avatar({ username, avatarUrl, size = 36 }: { username: string | null; a
   );
 }
 
-function PlayerSlot({ username, avatarUrl, align }: { username: string | null; avatarUrl: string | null; align: 'left' | 'right' }) {
+function PlayerSlot({ username, avatarUrl, align, waitingLabel }: { username: string | null; avatarUrl: string | null; align: 'left' | 'right'; waitingLabel: string }) {
   const isRight = align === 'right';
   return (
     <div
@@ -68,7 +70,7 @@ function PlayerSlot({ username, avatarUrl, align }: { username: string | null; a
           textAlign: isRight ? 'right' : 'left',
         }}
       >
-        {username ?? 'Aguardando...'}
+        {username ?? waitingLabel}
       </span>
     </div>
   );
@@ -82,6 +84,8 @@ export function GameCard({
   onPress,
   onCancel,
 }: GameCardProps) {
+  const { t } = useTranslation();
+
   const isParticipant =
     game.playerBlackId === currentPlayerId || game.playerWhiteId === currentPlayerId;
   const isOwner = game.playerBlackId === currentPlayerId;
@@ -90,11 +94,11 @@ export function GameCard({
 
   let actionLabel: string | null;
   if (isWaiting && !isParticipant) {
-    actionLabel = 'Entrar';
+    actionLabel = t('gamecard_join');
   } else if (isInProgress && isParticipant) {
-    actionLabel = 'Continuar';
+    actionLabel = t('gamecard_continue');
   } else if (isInProgress && !isParticipant) {
-    actionLabel = 'Assistir';
+    actionLabel = t('gamecard_watch');
   } else {
     // Owner waiting — cancel button handles it, no action button needed
     actionLabel = null;
@@ -114,11 +118,11 @@ export function GameCard({
     >
       {/* Players row */}
       <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <PlayerSlot username={game.playerBlackUsername} avatarUrl={game.playerBlackAvatarUrl} align="left" />
+        <PlayerSlot username={game.playerBlackUsername} avatarUrl={game.playerBlackAvatarUrl} align="left" waitingLabel={t('gamecard_waiting')} />
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', flexShrink: 0, letterSpacing: 1 }}>
           VS
         </span>
-        <PlayerSlot username={game.playerWhiteUsername} avatarUrl={game.playerWhiteAvatarUrl} align="right" />
+        <PlayerSlot username={game.playerWhiteUsername} avatarUrl={game.playerWhiteAvatarUrl} align="right" waitingLabel={t('gamecard_waiting')} />
       </div>
 
       {/* Footer */}
@@ -144,7 +148,7 @@ export function GameCard({
             }}
           />
           <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>
-            {isWaiting ? 'Aguardando' : 'Em andamento'}
+            {isWaiting ? t('gamecard_statusWaiting') : t('gamecard_statusInProgress')}
           </span>
         </div>
 
@@ -166,7 +170,7 @@ export function GameCard({
                 opacity: cancelling ? 0.5 : 1,
               }}
             >
-              {cancelling ? '...' : 'Cancelar'}
+              {cancelling ? '...' : t('gamecard_cancel')}
             </button>
           )}
 

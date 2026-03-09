@@ -1,25 +1,28 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { register } from '../api/auth';
 import { ApiError } from '../api/client';
+import '../i18n';
 
 type FormErrors = Partial<Record<'username' | 'email' | 'general', string>>;
 
-function validate(username: string, email: string): FormErrors {
-  const errors: FormErrors = {};
-  if (username.length < 3) errors.username = 'Mínimo 3 caracteres.';
-  else if (username.length > 50) errors.username = 'Máximo 50 caracteres.';
-  if (!email.includes('@')) errors.email = 'E-mail inválido.';
-  else if (email.length > 100) errors.email = 'Máximo 100 caracteres.';
-  return errors;
-}
-
 export function useRegister(onRegistered: (email: string) => void) {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+
+  const validate = (u: string, e: string): FormErrors => {
+    const errs: FormErrors = {};
+    if (u.length < 3) errs.username = t('register_errorUsernameMin');
+    else if (u.length > 50) errs.username = t('register_errorUsernameMax');
+    if (!e.includes('@')) errs.email = t('register_errorEmailInvalid');
+    else if (e.length > 100) errs.email = t('register_errorEmailMax');
+    return errs;
+  };
 
   const handleRegister = async () => {
     const validationErrors = validate(username, email);
@@ -35,14 +38,14 @@ export function useRegister(onRegistered: (email: string) => void) {
     } catch (e) {
       if (e instanceof ApiError) {
         if (e.message === 'email_taken') {
-          setErrors({ email: 'E-mail já cadastrado.' });
+          setErrors({ email: t('register_errorEmailTaken') });
         } else if (e.message === 'username_taken') {
-          setErrors({ username: 'Nome de usuário já existe.' });
+          setErrors({ username: t('register_errorUsernameTaken') });
         } else {
-          setErrors({ general: 'Erro ao criar conta. Tente novamente.' });
+          setErrors({ general: t('register_errorGeneral') });
         }
       } else {
-        setErrors({ general: 'Erro de conexão. Tente novamente.' });
+        setErrors({ general: t('register_errorConnection') });
       }
     } finally {
       setLoading(false);

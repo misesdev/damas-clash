@@ -1,18 +1,21 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { showMessage } from '../components/MessageBox';
 import { deleteAccount } from '../api/auth';
 import { updateAvatar } from '../api/players';
 import { getPlayerStats } from '../api/games';
 import type { LoginResponse } from '../types/auth';
 import type { PlayerStats } from '../types/game';
+import '../i18n';
 
 export function useProfileScreen(
   user: LoginResponse,
   onLogout: () => void,
   onAvatarChanged: (url: string) => void,
 ) {
+  const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [stats, setStats] = useState<PlayerStats | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -25,26 +28,25 @@ export function useProfileScreen(
 
   const handleLogout = () => {
     showMessage({
-      title: 'Encerrar sessão',
-      message: 'Deseja sair da sua conta?',
+      title: t('profile_logoutTitle'),
+      message: t('profile_logoutMessage'),
       type: 'confirm',
       actions: [
-        { label: 'Cancelar' },
-        { label: 'Sair', danger: true, onPress: onLogout },
+        { label: t('profile_logoutCancel') },
+        { label: t('profile_logoutConfirm'), danger: true, onPress: onLogout },
       ],
     });
   };
 
   const handleDeleteAccount = () => {
     showMessage({
-      title: 'Excluir conta',
-      message:
-        'Todos os seus dados serão permanentemente excluídos do banco de dados, incluindo histórico de partidas e perfil. Esta ação não pode ser desfeita.',
+      title: t('profile_deleteTitle'),
+      message: t('profile_deleteMessage'),
       type: 'confirm',
       actions: [
-        { label: 'Cancelar' },
+        { label: t('profile_deleteCancel') },
         {
-          label: 'Excluir',
+          label: t('profile_deleteConfirm'),
           danger: true,
           onPress: async () => {
             try {
@@ -53,7 +55,7 @@ export function useProfileScreen(
             } catch {
               showMessage({
                 title: 'Erro',
-                message: 'Não foi possível excluir a conta. Tente novamente.',
+                message: t('profile_deleteError'),
                 type: 'error',
               });
             }
@@ -77,7 +79,7 @@ export function useProfileScreen(
     } catch (e: unknown) {
       showMessage({
         title: 'Erro',
-        message: e instanceof Error ? e.message : 'Não foi possível enviar a imagem.',
+        message: e instanceof Error ? e.message : t('profile_avatarError'),
         type: 'error',
       });
     } finally {

@@ -1,9 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { confirmEmail } from '../api/auth';
 import { ApiError } from '../api/client';
 import type { LoginResponse } from '../types/auth';
+import '../i18n';
 
 const RESEND_COOLDOWN = 60;
 
@@ -15,6 +17,7 @@ interface Options {
 }
 
 export function useConfirmEmail({ email, onConfirmed, onSubmitCode, onResendCode }: Options) {
+  const { t } = useTranslation();
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,14 +53,14 @@ export function useConfirmEmail({ email, onConfirmed, onSubmitCode, onResendCode
       setError('');
       startCooldown();
     } catch {
-      setError('Erro ao reenviar o código. Tente novamente.');
+      setError(t('confirm_errorResend'));
     }
   };
 
   const handleConfirm = async () => {
     setError('');
     if (code.length !== 6) {
-      setError('O código deve ter 6 dígitos.');
+      setError(t('confirm_errorLength'));
       return;
     }
     setLoading(true);
@@ -70,9 +73,9 @@ export function useConfirmEmail({ email, onConfirmed, onSubmitCode, onResendCode
       }
     } catch (e) {
       if (e instanceof ApiError) {
-        setError('Código inválido ou expirado. Tente novamente.');
+        setError(t('confirm_errorInvalid'));
       } else {
-        setError('Erro de conexão. Tente novamente.');
+        setError(t('confirm_errorConnection'));
       }
     } finally {
       setLoading(false);

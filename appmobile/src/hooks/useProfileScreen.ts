@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {showMessage} from '../components/MessageBox';
 import {deleteAccount} from '../api/auth';
@@ -12,6 +13,7 @@ export function useProfileScreen(
   onLogout: () => void,
   onAvatarChanged: (url: string) => void,
 ) {
+  const {t} = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [stats, setStats] = useState<PlayerStats | null>(null);
 
@@ -23,26 +25,25 @@ export function useProfileScreen(
 
   const handleLogout = () => {
     showMessage({
-      title: 'Encerrar sessão',
-      message: 'Deseja sair da sua conta?',
+      title: t('profile.logoutConfirm.title'),
+      message: t('profile.logoutConfirm.message'),
       type: 'confirm',
       actions: [
-        {label: 'Cancelar'},
-        {label: 'Sair', danger: true, onPress: onLogout},
+        {label: t('profile.logoutConfirm.cancel')},
+        {label: t('profile.logoutConfirm.confirm'), danger: true, onPress: onLogout},
       ],
     });
   };
 
   const handleDeleteAccount = () => {
     showMessage({
-      title: 'Excluir conta',
-      message:
-        'Todos os seus dados serão permanentemente excluídos do banco de dados, incluindo histórico de partidas e perfil. Esta ação não pode ser desfeita.',
+      title: t('profile.deleteConfirm.title'),
+      message: t('profile.deleteConfirm.message'),
       type: 'confirm',
       actions: [
-        {label: 'Cancelar'},
+        {label: t('profile.deleteConfirm.cancel')},
         {
-          label: 'Excluir',
+          label: t('profile.deleteConfirm.confirm'),
           danger: true,
           onPress: async () => {
             try {
@@ -50,8 +51,8 @@ export function useProfileScreen(
               onLogout();
             } catch {
               showMessage({
-                title: 'Erro',
-                message: 'Não foi possível excluir a conta. Tente novamente.',
+                title: t('profile.errors.deleteTitle'),
+                message: t('profile.errors.deleteMessage'),
                 type: 'error',
               });
             }

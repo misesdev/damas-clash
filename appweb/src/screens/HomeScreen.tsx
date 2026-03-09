@@ -1,9 +1,11 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { GameCard } from '../components/GameCard';
 import { useHomeScreen } from '../hooks/useHomeScreen';
 import type { LoginResponse } from '../types/auth';
 import type { GameResponse, GameStatus } from '../types/game';
+import '../i18n';
 
 interface Props {
   user: LoginResponse;
@@ -17,16 +19,6 @@ interface Props {
 
 type FilterTab = Exclude<GameStatus, 'Completed'>;
 
-const TABS: { key: FilterTab; label: string }[] = [
-  { key: 'WaitingForPlayers', label: 'Aguardando' },
-  { key: 'InProgress', label: 'Em andamento' },
-];
-
-const EMPTY_MESSAGES: Record<FilterTab, string> = {
-  WaitingForPlayers: 'Nenhuma partida aguardando jogadores.',
-  InProgress: 'Nenhuma partida em andamento.',
-};
-
 export function HomeScreen({
   user,
   pendingGame,
@@ -36,6 +28,7 @@ export function HomeScreen({
   onGameCancelled,
   onOpenOnlinePlayers,
 }: Props) {
+  const { t } = useTranslation();
   const {
     loading,
     refreshing,
@@ -51,6 +44,16 @@ export function HomeScreen({
     handleGamePress,
     handleCancelGame,
   } = useHomeScreen(user, pendingGame, liveGames, onGameSelect, onGameCancelled);
+
+  const TABS: { key: FilterTab; label: string }[] = [
+    { key: 'WaitingForPlayers', label: t('home_tabWaiting') },
+    { key: 'InProgress', label: t('home_tabInProgress') },
+  ];
+
+  const EMPTY_MESSAGES: Record<FilterTab, string> = {
+    WaitingForPlayers: t('home_emptyWaiting'),
+    InProgress: t('home_emptyInProgress'),
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: "100%", overflow: 'hidden' }}>
@@ -115,7 +118,7 @@ export function HomeScreen({
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Buscar jogador..."
+            placeholder={t('home_searchPlaceholder')}
             style={{
               flex: 1,
               background: 'none',
@@ -139,7 +142,7 @@ export function HomeScreen({
                 lineHeight: 1,
                 flexShrink: 0,
               }}
-              title="Limpar"
+              title={t('home_clear')}
             >
               ✕
             </button>
@@ -149,7 +152,7 @@ export function HomeScreen({
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          title="Atualizar"
+          title={t('home_refresh')}
           style={{
             width: 34,
             height: 34,
@@ -184,7 +187,7 @@ export function HomeScreen({
         {onlineCount != null && (
           <button
             onClick={onOpenOnlinePlayers}
-            title="Ver jogadores online"
+            title={t('home_viewOnline')}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -210,7 +213,7 @@ export function HomeScreen({
               }}
             />
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-              {onlineCount} online
+              {onlineCount} {t('home_online')}
             </span>
           </button>
         )}
@@ -274,7 +277,7 @@ export function HomeScreen({
                 <span style={{ fontSize: 44, filter: 'grayscale(1)', opacity: 0.4 }}>♟</span>
                 <p style={{ fontSize: 14, color: 'var(--text-faint)', textAlign: 'center' }}>
                   {searchQuery.trim()
-                    ? 'Nenhuma partida encontrada para esta busca.'
+                    ? t('home_emptySearch')
                     : EMPTY_MESSAGES[activeTab]}
                 </p>
               </div>

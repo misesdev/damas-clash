@@ -1,8 +1,10 @@
 import {useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {login} from '../api/auth';
 import {ApiError} from '../api/client';
 
 export function useLogin(onCodeSent: (email: string) => void) {
+  const {t} = useTranslation();
   const [identifier, setIdentifier] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,11 +19,11 @@ export function useLogin(onCodeSent: (email: string) => void) {
       if (e instanceof ApiError) {
         setError(
           e.status === 403
-            ? 'Confirme seu e-mail antes de entrar.'
-            : 'Usuário não encontrado.',
+            ? t('login.errors.emailNotConfirmed')
+            : t('login.errors.notFound'),
         );
       } else {
-        setError('Erro de conexão. Tente novamente.');
+        setError(t('login.errors.connectionError'));
       }
     } finally {
       setLoading(false);

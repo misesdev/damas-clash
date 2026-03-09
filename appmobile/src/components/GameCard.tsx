@@ -1,5 +1,6 @@
 import React from 'react';
 import {ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {colors} from '../theme/colors';
 import type {GameResponse} from '../types/game';
 
@@ -31,16 +32,17 @@ function PlayerAvatar({username, avatarUrl, size = 44}: {username: string | null
 }
 
 export function GameCard({game, currentPlayerId, onPress, onCancel, loading, cancelling}: Props) {
+  const {t} = useTranslation();
   const isCreator = game.playerBlackId === currentPlayerId;
   const isParticipant =
     isCreator || game.playerWhiteId === currentPlayerId;
 
-  const creatorName = game.playerBlackUsername ?? 'Desconhecido';
+  const creatorName = game.playerBlackUsername ?? t('gameCard.unknownCreator');
 
   const statusLabel = {
-    WaitingForPlayers: 'Aguardando oponente',
-    InProgress: 'Em andamento',
-    Completed: 'Encerrada',
+    WaitingForPlayers: t('gameCard.status.waiting'),
+    InProgress: t('gameCard.status.inProgress'),
+    Completed: t('gameCard.status.completed'),
   }[game.status];
 
   const statusColor = {
@@ -53,11 +55,11 @@ export function GameCard({game, currentPlayerId, onPress, onCancel, loading, can
 
   let actionLabel: string | null = null;
   if (game.status === 'WaitingForPlayers' && !isParticipant) {
-    actionLabel = 'Jogar';
+    actionLabel = t('gameCard.actions.play');
   } else if (game.status === 'InProgress' && isParticipant) {
-    actionLabel = 'Jogar';
+    actionLabel = t('gameCard.actions.play');
   } else if (game.status === 'InProgress' && !isParticipant) {
-    actionLabel = 'Assistir';
+    actionLabel = t('gameCard.actions.watch');
   }
 
   return (
@@ -81,7 +83,7 @@ export function GameCard({game, currentPlayerId, onPress, onCancel, loading, can
           {cancelling ? (
             <ActivityIndicator color={colors.error} size="small" />
           ) : (
-            <Text style={styles.cancelText}>Cancelar</Text>
+            <Text style={styles.cancelText}>{t('gameCard.actions.cancel')}</Text>
           )}
         </TouchableOpacity>
       )}

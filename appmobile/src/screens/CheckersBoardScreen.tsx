@@ -1,5 +1,6 @@
 import React from 'react';
 import {Animated, Image, Pressable, StyleSheet, Text, View} from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {showMessage} from '../components/MessageBox';
 import {Button} from '../components/Button';
 import {BOARD_SIZE, findAt, isDarkSquare} from '../game/checkers';
@@ -52,6 +53,7 @@ export interface CheckersBoardScreenProps {
 
 
 export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreenProps) {
+  const {t} = useTranslation();
   const {
     game: liveGame,
     engine,
@@ -107,8 +109,8 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
   const rightUsername = spectator ? liveGame.playerWhiteUsername : opponentUsername;
   const leftAvatarUrl = spectator ? liveGame.playerBlackAvatarUrl : myAvatarUrl;
   const rightAvatarUrl = spectator ? liveGame.playerWhiteAvatarUrl : opponentAvatarUrl;
-  const leftLabel = spectator ? 'PRETO' : 'VOCÊ';
-  const rightLabel = spectator ? 'BRANCO' : 'ADVERSÁRIO';
+  const leftLabel = spectator ? t('checkersBoard.playerBlack') : t('checkersBoard.you');
+  const rightLabel = spectator ? t('checkersBoard.playerWhite') : t('checkersBoard.opponent');
   const leftCount = spectator ? darkCount : myCount;
   const rightCount = spectator ? lightCount : oppCount;
   const leftActive = spectator ? (isDarkTurn && !winner) : (isMyTurn && !winner);
@@ -120,18 +122,18 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
         const winnerName = liveGame.winnerId === liveGame.playerBlackId
           ? liveGame.playerBlackUsername
           : liveGame.playerWhiteUsername;
-        return `${winnerName ?? 'Jogador'} venceu!`;
+        return t('checkersBoard.spectatorWinner', {winner: winnerName ?? 'Jogador'});
       }
       const turnName = isDarkTurn ? liveGame.playerBlackUsername : liveGame.playerWhiteUsername;
-      return `Vez de ${turnName ?? 'jogador'}`;
+      return t('checkersBoard.spectatorTurn', {name: turnName ?? 'jogador'});
     }
     if (winner) {
-      return winner === myColor ? 'Você venceu! 🏆' : 'Você perdeu.';
+      return winner === myColor ? t('checkersBoard.youWon') : t('checkersBoard.youLost');
     }
-    if (sendingMove) {return 'Enviando movimento...';}
-    if (pendingCaptureId) {return 'Captura múltipla!';}
-    if (mustCapture) {return 'Captura obrigatória';}
-    return isMyTurn ? 'Sua vez' : `Vez de ${opponentUsername ?? 'oponente'}`;
+    if (sendingMove) {return t('checkersBoard.sendingMove');}
+    if (pendingCaptureId) {return t('checkersBoard.multiCapture');}
+    if (mustCapture) {return t('checkersBoard.mandatoryCapture');}
+    return isMyTurn ? t('checkersBoard.yourTurn') : t('checkersBoard.opponentTurn', {name: opponentUsername ?? 'oponente'});
   };
 
   const isTimerActive = isMyTurn && !winner && liveGame.status !== 'Completed';
@@ -139,12 +141,12 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
 
   const confirmResign = () => {
     showMessage({
-      title: 'Desistir da partida?',
-      message: 'Você cederá a vitória ao adversário. Esta ação não pode ser desfeita.',
+      title: t('checkersBoard.resignConfirm.title'),
+      message: t('checkersBoard.resignConfirm.message'),
       type: 'confirm',
       actions: [
-        {label: 'Cancelar'},
-        {label: 'Desistir', danger: true, onPress: handleResign},
+        {label: t('checkersBoard.resignConfirm.cancel')},
+        {label: t('checkersBoard.resignConfirm.resign'), danger: true, onPress: handleResign},
       ],
     });
   };
@@ -153,9 +155,9 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
     <View style={styles.container} testID="game-screen">
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Damas</Text>
+        <Text style={styles.title}>{t('checkersBoard.title')}</Text>
         <Text style={styles.watchers} testID="watchers-count">
-          {watchersCount} {watchersCount === 1 ? 'espectador' : 'espectadores'}
+          {t(watchersCount === 1 ? 'checkersBoard.watchers_one' : 'checkersBoard.watchers_other', {count: watchersCount})}
         </Text>
       </View>
 
@@ -327,7 +329,7 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
       {/* Resign button — only during active game for participants */}
       {liveGame.status === 'InProgress' && !winner && !spectator && (
         <Button
-          label="Desistir"
+          label={t('checkersBoard.resignButton')}
           variant="ghost"
           onPress={confirmResign}
           testID="resign-button"
@@ -337,7 +339,7 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
       {/* Leave button — spectators can exit anytime */}
       {spectator && liveGame.status === 'InProgress' && (
         <Button
-          label="Sair"
+          label={t('checkersBoard.leaveButton')}
           variant="ghost"
           onPress={onBack}
           testID="leave-button"
@@ -351,11 +353,11 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
             {spectator ? (
               <>
                 <Text style={styles.overlayEmoji}>🏆</Text>
-                <Text style={[styles.overlayHeading, styles.winColor]}>Partida encerrada!</Text>
+                <Text style={[styles.overlayHeading, styles.winColor]}>{t('checkersBoard.spectatorEnd.title')}</Text>
                 <Text style={styles.overlaySubtitle}>
-                  {(liveGame.winnerId === liveGame.playerBlackId
+                  {t('checkersBoard.spectatorEnd.message', {winner: (liveGame.winnerId === liveGame.playerBlackId
                     ? liveGame.playerBlackUsername
-                    : liveGame.playerWhiteUsername) ?? 'Jogador'} venceu a partida.
+                    : liveGame.playerWhiteUsername) ?? 'Jogador'})}
                 </Text>
               </>
             ) : (
@@ -364,17 +366,17 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
                   {winner === myColor ? '🏆' : '💔'}
                 </Text>
                 <Text style={[styles.overlayHeading, winner === myColor ? styles.winColor : styles.lossColor]}>
-                  {winner === myColor ? 'Vitória!' : 'Derrota'}
+                  {winner === myColor ? t('checkersBoard.participantEnd.winTitle') : t('checkersBoard.participantEnd.lossTitle')}
                 </Text>
                 <Text style={styles.overlaySubtitle}>
                   {winner === myColor
-                    ? 'Parabéns! Você venceu a partida.'
-                    : `${opponentUsername ?? 'Adversário'} venceu a partida.`}
+                    ? t('checkersBoard.participantEnd.winMessage')
+                    : t('checkersBoard.participantEnd.lossMessage', {opponent: opponentUsername ?? 'Adversário'})}
                 </Text>
               </>
             )}
             <View style={styles.overlayActions}>
-              <Button label="Voltar ao início" onPress={onBack} testID="overlay-back-button" />
+              <Button label={t('checkersBoard.backToHome')} onPress={onBack} testID="overlay-back-button" />
             </View>
           </View>
         </View>

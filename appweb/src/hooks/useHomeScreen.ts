@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { showMessage } from '../components/MessageBox';
 import { cancelGame, joinGame, listGames } from '../api/games';
 import type { LoginResponse } from '../types/auth';
 import type { GameResponse, GameStatus } from '../types/game';
+import '../i18n';
 
 export type FilterTab = Exclude<GameStatus, 'Completed'>;
 
@@ -15,6 +17,7 @@ export function useHomeScreen(
   onGameSelect: (game: GameResponse) => void,
   onGameCancelled?: (gameId: string) => void,
 ) {
+  const { t } = useTranslation();
   const [fetchedGames, setFetchedGames] = useState<GameResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -30,9 +33,9 @@ export function useHomeScreen(
       setFetchedGames(data);
       setError('');
     } catch {
-      setError('Não foi possível carregar as partidas.');
+      setError(t('home_errorLoad'));
     }
-  }, [user.token]);
+  }, [user.token, t]);
 
   useEffect(() => {
     if (liveGames !== null && liveGames !== undefined) {
@@ -65,7 +68,7 @@ export function useHomeScreen(
         const updated = await joinGame(user.token, game.id);
         onGameSelect(updated);
       } catch {
-        setError('Não foi possível entrar na partida.');
+        setError(t('home_errorJoin'));
         setJoiningId(null);
       }
     } else {
@@ -75,13 +78,13 @@ export function useHomeScreen(
 
   const handleCancelGame = (game: GameResponse) => {
     showMessage({
-      title: 'Cancelar partida',
-      message: 'Tem certeza que deseja cancelar esta partida?',
+      title: t('home_cancelTitle'),
+      message: t('home_cancelMessage'),
       type: 'confirm',
       actions: [
-        { label: 'Não' },
+        { label: t('home_cancelNo') },
         {
-          label: 'Cancelar',
+          label: t('home_cancelConfirm'),
           danger: true,
           onPress: async () => {
             setCancellingId(game.id);
@@ -90,7 +93,7 @@ export function useHomeScreen(
               setFetchedGames(prev => prev.filter(g => g.id !== game.id));
               onGameCancelled?.(game.id);
             } catch {
-              setError('Não foi possível cancelar a partida.');
+              setError(t('home_cancelError'));
             } finally {
               setCancellingId(null);
             }

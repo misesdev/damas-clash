@@ -1,14 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { confirmEmailChange, requestEmailChange } from '../api/players';
 import type { LoginResponse } from '../types/auth';
+import '../i18n';
 
 export function useEditEmail(
   user: LoginResponse,
   onSaved: (newEmail: string) => void,
   onBack: () => void,
 ) {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<'input' | 'confirm'>('input');
   const [newEmail, setNewEmailRaw] = useState('');
   const [code, setCode] = useState('');
@@ -20,8 +23,8 @@ export function useEditEmail(
     newEmail.trim().length <= 100 &&
     newEmail.trim() !== user.email;
 
-  const setNewEmail = (t: string) => {
-    setNewEmailRaw(t);
+  const setNewEmail = (val: string) => {
+    setNewEmailRaw(val);
     setError('');
   };
 
@@ -32,7 +35,7 @@ export function useEditEmail(
       await requestEmailChange(user.token, newEmail.trim());
       setPhase('confirm');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Erro ao solicitar alteração.');
+      setError(e instanceof Error ? e.message : t('editEmail_errorRequest'));
     } finally {
       setLoading(false);
     }
@@ -45,7 +48,7 @@ export function useEditEmail(
       await confirmEmailChange(user.token, newEmail.trim(), code);
       onSaved(newEmail.trim());
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Código inválido. Tente novamente.');
+      setError(e instanceof Error ? e.message : t('editEmail_errorCode'));
     } finally {
       setLoading(false);
     }

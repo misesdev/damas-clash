@@ -1,9 +1,11 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { BOARD_SIZE, findAt, isDarkSquare } from '../game/checkers';
 import { useGameBoard } from '../hooks/useGameBoard';
 import type { LoginResponse } from '../types/auth';
 import type { GameResponse } from '../types/game';
+import '../i18n';
 
 export interface CheckersBoardScreenProps {
   game: GameResponse;
@@ -91,6 +93,7 @@ function PlayerChip({
 }
 
 export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScreenProps) {
+  const { t } = useTranslation();
   const {
     game: liveGame,
     engine,
@@ -132,17 +135,15 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
   } = engine;
 
   const capturingSet = new Set(capturingPieceIds);
-
   const pieceSize = Math.round(cellSize * 0.78);
 
-  // Spectator: show black player on left, white on right with turn-based highlighting
   const isDarkTurn = liveGame.currentTurn === 'Black';
   const leftUsername = spectator ? liveGame.playerBlackUsername : myUsername;
   const rightUsername = spectator ? liveGame.playerWhiteUsername : opponentUsername;
   const leftAvatarUrl = spectator ? liveGame.playerBlackAvatarUrl : myAvatarUrl;
   const rightAvatarUrl = spectator ? liveGame.playerWhiteAvatarUrl : opponentAvatarUrl;
-  const leftLabel = spectator ? 'Preto' : 'Você';
-  const rightLabel = spectator ? 'Branco' : 'Adversário';
+  const leftLabel = spectator ? t('board_black') : t('board_you');
+  const rightLabel = spectator ? t('board_white') : t('board_opponent');
   const leftCount = spectator ? darkCount : myCount;
   const rightCount = spectator ? lightCount : oppCount;
   const leftActive = spectator ? (isDarkTurn && !winner) : (isMyTurn && !winner);
@@ -154,19 +155,19 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
         const winnerName = liveGame.winnerId === liveGame.playerBlackId
           ? liveGame.playerBlackUsername
           : liveGame.playerWhiteUsername;
-        return `${winnerName ?? 'Jogador'} venceu!`;
+        return t('board_spectatorWonStatus', { name: winnerName ?? t('board_defaultPlayer') });
       }
       const turnName = isDarkTurn ? liveGame.playerBlackUsername : liveGame.playerWhiteUsername;
-      return `Vez de ${turnName ?? 'jogador'}`;
+      return t('board_spectatorTurnOf', { name: turnName ?? t('board_defaultPlayer') });
     }
-    if (winner) return winner === myColor ? 'Você venceu!' : 'Você perdeu.';
-    if (sendingMove) return 'Enviando...';
-    if (pendingCaptureId) return 'Captura múltipla!';
-    if (mustCapture) return 'Captura obrigatória';
-    return isMyTurn ? 'Sua vez' : `Vez de ${opponentUsername ?? 'oponente'}`;
+    if (winner) return winner === myColor ? t('board_youWon') : t('board_youLost');
+    if (sendingMove) return t('board_sending');
+    if (pendingCaptureId) return t('board_multiCapture');
+    if (mustCapture) return t('board_mandatoryCapture');
+    return isMyTurn ? t('board_yourTurn') : t('board_opponentTurn', { opponent: opponentUsername ?? t('board_opponent') });
   };
 
-  // Board DOM (shared between mobile and desktop layouts)
+  // Board DOM
   const boardEl = (
     <div
       style={{
@@ -267,7 +268,6 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
                 zIndex: isSelected ? 10 : 1,
               }}
             >
-              {/* Counter-rotate content when board is flipped */}
               <div style={{ transform: isFlipped ? 'rotate(180deg)' : undefined, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                 {isSelected && (
                   <div
@@ -354,22 +354,22 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
           <>
             <span style={{ fontSize: 72 }}>🏆</span>
             <h2 style={{ fontSize: 40, fontWeight: 800, color: '#ffffff', letterSpacing: 0.5 }}>
-              Partida encerrada!
+              {t('board_gameOver')}
             </h2>
             <p style={{ fontSize: 16, color: '#888888' }}>
-              {winnerName ?? 'Jogador'} venceu a partida.
+              {t('board_spectatorWonDetail', { name: winnerName ?? t('board_defaultPlayer') })}
             </p>
           </>
         ) : (
           <>
             <span style={{ fontSize: 72 }}>{winner === myColor ? '🏆' : '💔'}</span>
             <h2 style={{ fontSize: 40, fontWeight: 800, color: winner === myColor ? '#ffffff' : '#888888', letterSpacing: 0.5 }}>
-              {winner === myColor ? 'Vitória!' : 'Derrota'}
+              {winner === myColor ? t('board_victory') : t('board_defeat')}
             </h2>
             <p style={{ fontSize: 16, color: '#888888' }}>
               {winner === myColor
-                ? 'Parabéns! Você venceu a partida.'
-                : `${opponentUsername ?? 'Adversário'} venceu a partida.`}
+                ? t('board_congratulations')
+                : t('board_opponentWon', { name: opponentUsername ?? t('board_opponent') })}
             </p>
           </>
         )}
@@ -387,13 +387,11 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
             cursor: 'pointer',
           }}
         >
-          Voltar ao início
+          {t('board_backToHome')}
         </button>
       </div>
     </div>
   ) : null;
-
-  // ── Layout ──────────────────────────────────────────────────────────────────
 
   return (
     <div
@@ -420,7 +418,7 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button
             onClick={winner || spectator ? onBack : undefined}
-            title={winner || spectator ? 'Voltar' : undefined}
+            title={winner || spectator ? t('board_backToHome') : undefined}
             style={{
               background: 'none',
               border: 'none',
@@ -437,7 +435,7 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-faint)', fontSize: 12 }}>
           <span>👁</span>
-          <span>{watchersCount} {watchersCount === 1 ? 'espectador' : 'espectadores'}</span>
+          <span>{watchersCount} {watchersCount === 1 ? t('board_spectator_singular') : t('board_spectator_plural')}</span>
         </div>
       </header>
 
@@ -447,7 +445,7 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
         </div>
       )}
 
-      {/* Main area: desktop = 3 columns, mobile = column */}
+      {/* Main area */}
       <div
         style={{
           flex: 1,
@@ -459,7 +457,7 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
           gap: 32,
         }}
       >
-        {/* === DESKTOP: Left panel (opponent top, me bottom) === */}
+        {/* === DESKTOP: Left panel === */}
         <div
           className="hidden md:flex"
           style={{ flexDirection: 'column', gap: 16, width: 200, flexShrink: 0 }}
@@ -546,7 +544,7 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
                 opacity: sendingMove ? 0.5 : 1,
               }}
             >
-              Desistir
+              {t('board_resign')}
             </button>
           )}
           {spectator && liveGame.status === 'InProgress' && (
@@ -564,7 +562,7 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
                 cursor: 'pointer',
               }}
             >
-              Sair
+              {t('board_leave')}
             </button>
           )}
         </div>
@@ -586,7 +584,7 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
               gap: 8,
             }}
           >
-            <p style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</p>
+            <p style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('board_status')}</p>
             <p style={{ fontSize: 14, fontWeight: 700, color: isUrgent ? 'var(--danger)' : 'var(--text)' }}>
               {statusText()}
             </p>
@@ -622,7 +620,7 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
               onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,69,58,0.08)')}
               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
             >
-              Desistir da partida
+              {t('board_resignDesktop')}
             </button>
           )}
           {spectator && liveGame.status === 'InProgress' && (
@@ -642,7 +640,7 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
               onMouseOver={e => (e.currentTarget.style.background = 'var(--surface2)')}
               onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
             >
-              Sair da partida
+              {t('board_leaveDesktop')}
             </button>
           )}
         </div>

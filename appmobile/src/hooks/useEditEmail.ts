@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {confirmEmailChange, requestEmailChange} from '../api/players';
 import type {LoginResponse} from '../types/auth';
 
@@ -7,6 +8,7 @@ export function useEditEmail(
   onSaved: (newEmail: string) => void,
   onBack: () => void,
 ) {
+  const {t} = useTranslation();
   const [phase, setPhase] = useState<'input' | 'confirm'>('input');
   const [newEmail, setNewEmailRaw] = useState('');
   const [code, setCode] = useState('');
@@ -30,7 +32,7 @@ export function useEditEmail(
       await requestEmailChange(user.token, newEmail.trim());
       setPhase('confirm');
     } catch (e: any) {
-      setError(e.message ?? 'Erro ao solicitar alteração.');
+      setError(e.message ?? t('editEmail.errors.requestFailed'));
     } finally {
       setLoading(false);
     }
@@ -43,7 +45,7 @@ export function useEditEmail(
       await confirmEmailChange(user.token, newEmail.trim(), code);
       onSaved(newEmail.trim());
     } catch (e: any) {
-      setError(e.message ?? 'Código inválido. Tente novamente.');
+      setError(e.message ?? t('editEmail.errors.invalidCode'));
     } finally {
       setLoading(false);
     }

@@ -8,8 +8,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {WEB_URL} from '@env';
 import {useProfileScreen} from '../hooks/useProfileScreen';
+import {useLanguage} from '../hooks/useLanguage';
 import {styles} from '../styles/profileStyles';
 import type {LoginResponse} from '../types/auth';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -104,6 +106,8 @@ export function ProfileScreen({
   onAvatarChanged,
   onOpenHistory,
 }: Props) {
+  const {t} = useTranslation();
+  const {currentLanguage, setLanguage, options: langOptions} = useLanguage();
   const {uploading, stats, handleLogout, handleDeleteAccount, handleAvatarPress} = useProfileScreen(
     user,
     onLogout,
@@ -122,9 +126,9 @@ export function ProfileScreen({
         {/* Stats */}
         <View style={{flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginBottom: 14}}>
           {[
-            {label: 'Partidas', value: stats?.total ?? '—'},
-            {label: 'Vitórias', value: stats?.wins ?? '—'},
-            {label: 'Derrotas', value: stats?.losses ?? '—'},
+            {label: t('profile.stats.games'), value: stats?.total ?? '—'},
+            {label: t('profile.stats.wins'), value: stats?.wins ?? '—'},
+            {label: t('profile.stats.losses'), value: stats?.losses ?? '—'},
           ].map(stat => (
             <View
               key={stat.label}
@@ -148,41 +152,72 @@ export function ProfileScreen({
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Conta</Text>
+          <Text style={styles.sectionTitle}>{t('profile.sections.account')}</Text>
           <View style={styles.card}>
-            <MenuItem label="Nome de usuário" value={user.username} onPress={onEditUsername} />
+            <MenuItem label={t('profile.items.username')} value={user.username} onPress={onEditUsername} />
             <View style={styles.separator} />
-            <MenuItem label="E-mail" value={user.email} onPress={onEditEmail} />
+            <MenuItem label={t('profile.items.email')} value={user.email} onPress={onEditEmail} />
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Histórico</Text>
+          <Text style={styles.sectionTitle}>{t('profile.sections.history')}</Text>
           <View style={styles.card}>
-            <MenuItem label="Partidas jogadas" onPress={onOpenHistory} />
+            <MenuItem label={t('profile.items.gameHistory')} onPress={onOpenHistory} />
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Jurídico</Text>
+          <Text style={styles.sectionTitle}>{t('language.label')}</Text>
           <View style={styles.card}>
-            <MenuItem label="Termos de Uso" onPress={() => Linking.openURL(`${WEB_URL}/termos`)} />
+            <View style={[styles.menuItem, {justifyContent: 'flex-start', gap: 10}]}>
+              {langOptions.map((opt, idx) => (
+                <TouchableOpacity
+                  key={opt.value}
+                  onPress={() => setLanguage(opt.value)}
+                  style={{
+                    paddingHorizontal: 18,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    borderWidth: 1.5,
+                    borderColor: currentLanguage === opt.value ? '#fff' : '#333',
+                    backgroundColor: currentLanguage === opt.value ? '#fff' : 'transparent',
+                    marginLeft: idx > 0 ? 0 : 0,
+                  }}>
+                  <Text
+                    style={{
+                      color: currentLanguage === opt.value ? '#000' : '#666',
+                      fontWeight: '600',
+                      fontSize: 13,
+                    }}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('profile.sections.legal')}</Text>
+          <View style={styles.card}>
+            <MenuItem label={t('profile.items.terms')} onPress={() => Linking.openURL(`${WEB_URL}/termos`)} />
             <View style={styles.separator} />
-            <MenuItem label="Política de Privacidade" onPress={() => Linking.openURL(`${WEB_URL}/privacidade`)} />
+            <MenuItem label={t('profile.items.privacy')} onPress={() => Linking.openURL(`${WEB_URL}/privacidade`)} />
           </View>
         </View>
 
         <View style={styles.section}>
           <View style={styles.card}>
-            <MenuItem label="Excluir Conta" danger onPress={handleDeleteAccount} testID="delete-account-button" />
+            <MenuItem label={t('profile.items.deleteAccount')} danger onPress={handleDeleteAccount} testID="delete-account-button" />
             <View style={styles.separator} />
-            <MenuItem label="Sair" danger onPress={handleLogout} testID="logout-button" />
+            <MenuItem label={t('profile.items.logout')} danger onPress={handleLogout} testID="logout-button" />
             {/* <View style={styles.separator} /> */}
             {/* <MenuItem label="Excluir Conta" danger onPress={handleDeleteAccount} testID="delete-account-button" /> */}
           </View>
         </View>
 
-        <Text style={styles.version}>Damas Clash · v1.3</Text>
+        <Text style={styles.version}>{t('profile.version', {version: '1.3'})}</Text>
       </ScrollView>
     </SafeAreaView>
   );

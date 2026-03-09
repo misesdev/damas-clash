@@ -1,5 +1,6 @@
 import React from 'react';
 import {KeyboardAvoidingView, Platform, Text, View} from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Button} from '../components/Button';
 import {Input} from '../components/Input';
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function EditUsernameScreen({user, onSaved, onBack}: Props) {
+  const {t} = useTranslation();
   const {username, setUsername, loading, error, valid, handleSave} = useEditUsername(
     user,
     onSaved,
@@ -22,24 +24,24 @@ export function EditUsernameScreen({user, onSaved, onBack}: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader title="Nome de usuário" onBack={onBack} />
+      <ScreenHeader title={t('editUsername.title')} onBack={onBack} />
 
       <KeyboardAvoidingView
         style={styles.body}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.form}>
           <Input
-            label="Nome de usuário"
+            label={t('editUsername.inputLabel')}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
             autoCorrect={false}
             error={error}
           />
-          <Text style={styles.hint}>Mínimo de 3 caracteres.</Text>
+          <Text style={styles.hint}>{t('editUsername.hint')}</Text>
         </View>
         <View style={styles.footer}>
-          <Button label="Salvar" loading={loading} onPress={handleSave} disabled={!valid} />
+          <Button label={t('editUsername.saveButton')} loading={loading} onPress={handleSave} disabled={!valid} />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

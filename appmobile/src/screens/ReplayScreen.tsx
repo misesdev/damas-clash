@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {getGameMoves} from '../api/games';
 import {BOARD_SIZE, createInitialPieces, isDarkSquare} from '../game/checkers';
 import {GameEngine} from '../game/GameEngine';
@@ -35,6 +36,7 @@ function PlayerAvatar({username, avatarUrl, size = 36}: {username?: string | nul
 }
 
 export function ReplayScreen({game, session, onBack}: Props) {
+  const {t} = useTranslation();
   const {width, height} = useWindowDimensions();
   const boardSize = Math.min(width - 32, height - 340, 380);
   const cellSize = boardSize / BOARD_SIZE;
@@ -104,14 +106,14 @@ export function ReplayScreen({game, session, onBack}: Props) {
     <SafeAreaView style={{flex: 1, backgroundColor: '#0c0c0c'}}>
       <View style={{flex: 1, alignItems: 'center', padding: 16, paddingTop: 5, gap: 16}}>
         {/* Back */}
-        <ScreenHeader title="Voltar" onBack={onBack}/>
+        <ScreenHeader title={t('replay.backButton')} onBack={onBack}/>
         {/* Players */}
         <View style={{flexDirection: 'row', alignItems: 'center', gap: 14}}>
           <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
             <PlayerAvatar username={game.playerBlackUsername} avatarUrl={game.playerBlackAvatarUrl} />
             <Text style={{color: '#fff', fontSize: 13, fontWeight: '600'}}>{game.playerBlackUsername ?? '—'}</Text>
           </View>
-          <Text style={{color: '#4e4e4e', fontSize: 11, fontWeight: '700', letterSpacing: 1}}>VS</Text>
+          <Text style={{color: '#4e4e4e', fontSize: 11, fontWeight: '700', letterSpacing: 1}}>{t('replay.versus')}</Text>
           <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
             <PlayerAvatar username={game.playerWhiteUsername} avatarUrl={game.playerWhiteAvatarUrl} />
             <Text style={{color: '#fff', fontSize: 13, fontWeight: '600'}}>{game.playerWhiteUsername ?? '—'}</Text>
@@ -120,14 +122,14 @@ export function ReplayScreen({game, session, onBack}: Props) {
 
         {/* Move counter */}
         <Text style={{color: '#888', fontSize: 13}}>
-          {loading ? 'Carregando...' : `Jogada ${step} de ${moves.length}`}
+          {loading ? t('replay.loading') : t('replay.moveCounter', {step, total: moves.length})}
         </Text>
 
         {/* Winner */}
         {isAtEnd && winner && (
           <View style={{paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(46,204,113,0.1)', borderWidth: 1, borderColor: 'rgba(46,204,113,0.3)'}}>
             <Text style={{color: '#2ecc71', fontSize: 14, fontWeight: '700', textAlign: 'center'}}>
-              🏆 {winner} venceu!
+              {t('replay.winner', {name: winner})}
             </Text>
           </View>
         )}

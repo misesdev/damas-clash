@@ -1,12 +1,17 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { BoardMark } from '../components/BoardMark';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import '../i18n';
 
 interface Props {
   onPlay: () => void;
 }
 
 export function LandingScreen({ onPlay }: Props) {
+  const { t } = useTranslation();
+
   return (
     <div
       style={{
@@ -33,21 +38,24 @@ export function LandingScreen({ onPlay }: Props) {
           <BoardMark size={24} />
           <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: 3 }}>Damas Clash</span>
         </div>
-        <button
-          onClick={onPlay}
-          style={{
-            padding: '7px 20px',
-            background: 'var(--text)',
-            color: 'var(--bg)',
-            border: 'none',
-            borderRadius: 10,
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          Entrar
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <LanguageSwitcher />
+          <button
+            onClick={onPlay}
+            style={{
+              padding: '7px 20px',
+              background: 'var(--text)',
+              color: 'var(--bg)',
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            {t('landing_signIn')}
+          </button>
+        </div>
       </header>
 
       {/* Hero */}
@@ -86,7 +94,7 @@ export function LandingScreen({ onPlay }: Props) {
             marginBottom: 44,
           }}
         >
-          Damas Brasileiras online. Jogue no navegador ou baixe o aplicativo no seu celular.
+          {t('landing_tagline')}
         </p>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
@@ -104,7 +112,7 @@ export function LandingScreen({ onPlay }: Props) {
               letterSpacing: 0.2,
             }}
           >
-            Jogar agora
+            {t('landing_playNow')}
           </button>
 
           <a
@@ -138,7 +146,7 @@ export function LandingScreen({ onPlay }: Props) {
                   textAlign: 'left',
                 }}
               >
-                Disponível no
+                {t('landing_availableOn')}
               </span>
               Google Play
             </span>
@@ -161,8 +169,8 @@ export function LandingScreen({ onPlay }: Props) {
         }}
       >
         <span>© {new Date().getFullYear()} Damas Clash</span>
-        <a href="/privacidade" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Privacidade</a>
-        <a href="/termos" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Termos de Uso</a>
+        <a href="/privacidade" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>{t('landing_privacy')}</a>
+        <a href="/termos" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>{t('landing_terms')}</a>
       </footer>
     </div>
   );

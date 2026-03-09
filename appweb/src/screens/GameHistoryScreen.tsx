@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getPlayerGames } from '../api/games';
 import type { LoginResponse } from '../types/auth';
 import type { GameResponse } from '../types/game';
+import '../i18n';
 
 interface Props {
   user: LoginResponse;
@@ -27,11 +29,8 @@ function Avatar({ username, avatarUrl, size = 36 }: { username: string | null; a
   );
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
 export function GameHistoryScreen({ user, onReplay, onBack }: Props) {
+  const { t, i18n } = useTranslation();
   const [games, setGames] = useState<GameResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,6 +44,11 @@ export function GameHistoryScreen({ user, onReplay, onBack }: Props) {
   const wins = games.filter(g => g.winnerId === user.playerId).length;
   const losses = games.filter(g => g.winnerId !== null && g.winnerId !== user.playerId).length;
 
+  const formatDate = (iso: string) => {
+    const locale = i18n.language === 'pt' ? 'pt-BR' : 'en-US';
+    return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)', overflowY: 'auto' }}>
       <div style={{ maxWidth: 640, margin: '0 auto', width: '100%', padding: '32px 24px 48px' }}>
@@ -54,24 +58,24 @@ export function GameHistoryScreen({ user, onReplay, onBack }: Props) {
           onClick={onBack}
           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--text-muted)', padding: 0, marginBottom: 28, display: 'flex', alignItems: 'center', gap: 6 }}
         >
-          <span style={{ fontSize: 16 }}>←</span> Voltar ao perfil
+          <span style={{ fontSize: 16 }}>←</span> {t('history_back')}
         </button>
 
         {/* Heading */}
         <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
-          Partidas jogadas
+          {t('history_title')}
         </h1>
         <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 28 }}>
-          Seu histórico de partidas concluídas.
+          {t('history_subtitle')}
         </p>
 
         {/* Stats */}
         {!loading && games.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 28 }}>
             {[
-              { label: 'Partidas', value: games.length },
-              { label: 'Vitórias', value: wins },
-              { label: 'Derrotas', value: losses },
+              { label: t('history_statGames'), value: games.length },
+              { label: t('history_statWins'), value: wins },
+              { label: t('history_statLosses'), value: losses },
             ].map(s => (
               <div key={s.label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 10px', textAlign: 'center' }}>
                 <p style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{s.value}</p>
@@ -89,7 +93,7 @@ export function GameHistoryScreen({ user, onReplay, onBack }: Props) {
         ) : games.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-faint)', fontSize: 14 }}>
             <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.4 }}>♟</div>
-            Nenhuma partida finalizada ainda.
+            {t('history_empty')}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -129,7 +133,7 @@ export function GameHistoryScreen({ user, onReplay, onBack }: Props) {
                   <Avatar username={opponent.username} avatarUrl={opponent.avatarUrl} size={34} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {opponent.username ?? 'Desconhecido'}
+                      {opponent.username ?? t('history_unknown')}
                     </p>
                     <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
                       {formatDate(game.updatedAt)}
@@ -141,7 +145,7 @@ export function GameHistoryScreen({ user, onReplay, onBack }: Props) {
                     fontSize: 12, fontWeight: 700, flexShrink: 0,
                     color: drew ? 'var(--text-muted)' : won ? '#2ecc71' : 'var(--danger)',
                   }}>
-                    {drew ? 'Empate' : won ? 'Vitória' : 'Derrota'}
+                    {drew ? t('history_draw') : won ? t('history_win') : t('history_loss')}
                   </span>
 
                   {/* Replay button */}
@@ -153,7 +157,7 @@ export function GameHistoryScreen({ user, onReplay, onBack }: Props) {
                       color: 'var(--text)', cursor: 'pointer', flexShrink: 0,
                     }}
                   >
-                    ▶ Reassistir
+                    {t('history_replay')}
                   </button>
                 </div>
               );

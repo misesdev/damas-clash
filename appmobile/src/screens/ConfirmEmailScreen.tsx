@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {Button} from '../components/Button';
 import {OtpInput} from '../components/OtpInput';
 import {useConfirmEmail} from '../hooks/useConfirmEmail';
@@ -28,8 +29,10 @@ export function ConfirmEmailScreen({
   onNavigateToLogin,
   onSubmitCode,
   onResendCode,
-  heading = 'Verifique\nseu e-mail',
+  heading,
 }: ConfirmEmailScreenProps) {
+  const {t} = useTranslation();
+  const resolvedHeading = heading ?? t('confirmEmail.defaultHeading');
   const {
     code,
     setCode,
@@ -54,9 +57,9 @@ export function ConfirmEmailScreen({
         </View>
 
         <View style={styles.header}>
-          <Text style={styles.title}>{heading}</Text>
+          <Text style={styles.title}>{resolvedHeading}</Text>
           <Text style={styles.subtitle}>
-            Enviamos um código de 6 dígitos para{'\n'}
+            {t('confirmEmail.codeSentTo')}{'\n'}
             <Text style={styles.emailText} testID="email-display">
               {email}
             </Text>
@@ -78,7 +81,7 @@ export function ConfirmEmailScreen({
           ) : null}
 
           <Button
-            label="Confirmar"
+            label={t('confirmEmail.confirmButton')}
             onPress={handleConfirm}
             loading={loading}
             style={styles.submitButton}
@@ -89,7 +92,7 @@ export function ConfirmEmailScreen({
             <View style={styles.resendArea}>
               {resendSuccess && resendCooldown > 0 ? (
                 <Text style={styles.resendSuccess} testID="resend-success">
-                  Código reenviado ✓
+                  {t('confirmEmail.resendSuccess')}
                 </Text>
               ) : null}
               <TouchableOpacity
@@ -98,8 +101,8 @@ export function ConfirmEmailScreen({
                 testID="resend-button">
                 <Text style={[styles.resendText, resendCooldown > 0 && styles.resendDisabled]}>
                   {resendCooldown > 0
-                    ? `Reenviar código em ${resendCooldown}s`
-                    : 'Não recebeu? Reenviar código'}
+                    ? t('confirmEmail.resendCooldown', {seconds: resendCooldown})
+                    : t('confirmEmail.resendPrompt')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -110,7 +113,7 @@ export function ConfirmEmailScreen({
           <View style={styles.divider} />
           <TouchableOpacity onPress={onNavigateToLogin} testID="login-link">
             <Text style={styles.footerText}>
-              Voltar para o <Text style={styles.footerLink}>Login</Text>
+              {t('confirmEmail.backTo')} <Text style={styles.footerLink}>{t('confirmEmail.loginLink')}</Text>
             </Text>
           </TouchableOpacity>
         </View>

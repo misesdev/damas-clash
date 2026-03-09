@@ -1,5 +1,6 @@
 import React from 'react';
 import {KeyboardAvoidingView, Platform, Text, View} from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Button} from '../components/Button';
 import {Input} from '../components/Input';
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function EditEmailScreen({user, onSaved, onBack}: Props) {
+  const {t} = useTranslation();
   const {
     phase,
     newEmail,
@@ -32,7 +34,7 @@ export function EditEmailScreen({user, onSaved, onBack}: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader title="Alterar e-mail" onBack={handleBack} />
+      <ScreenHeader title={t('editEmail.title')} onBack={handleBack} />
 
       <KeyboardAvoidingView
         style={styles.body}
@@ -40,9 +42,9 @@ export function EditEmailScreen({user, onSaved, onBack}: Props) {
         {phase === 'input' ? (
           <>
             <View style={styles.form}>
-              <Text style={styles.current}>Atual: {user.email}</Text>
+              <Text style={styles.current}>{t('editEmail.currentEmail', {email: user.email})}</Text>
               <Input
-                label="Novo e-mail"
+                label={t('editEmail.newEmailLabel')}
                 value={newEmail}
                 onChangeText={setNewEmail}
                 autoCapitalize="none"
@@ -51,12 +53,12 @@ export function EditEmailScreen({user, onSaved, onBack}: Props) {
                 error={error}
               />
               <Text style={styles.hint}>
-                Um código de confirmação será enviado para o novo endereço.
+                {t('editEmail.hint')}
               </Text>
             </View>
             <View style={styles.footer}>
               <Button
-                label="Continuar"
+                label={t('editEmail.continueButton')}
                 loading={loading}
                 onPress={handleRequestChange}
                 disabled={!emailValid}
@@ -67,7 +69,7 @@ export function EditEmailScreen({user, onSaved, onBack}: Props) {
           <>
             <View style={styles.form}>
               <Text style={styles.instruction}>
-                Insira o código de 6 dígitos enviado para{'\n'}
+                {t('editEmail.codeInstruction')}{'\n'}
                 <Text style={styles.emailHighlight}>{newEmail}</Text>
               </Text>
               <OtpInput value={code} onChange={setCode} error={!!error} testID="code-input" />
@@ -75,7 +77,7 @@ export function EditEmailScreen({user, onSaved, onBack}: Props) {
             </View>
             <View style={styles.footer}>
               <Button
-                label="Confirmar alteração"
+                label={t('editEmail.confirmButton')}
                 loading={loading}
                 onPress={handleConfirmChange}
                 disabled={code.length !== 6}

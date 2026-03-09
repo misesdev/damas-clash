@@ -1,10 +1,12 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { OtpInput } from '../components/OtpInput';
 import { useEditEmail } from '../hooks/useEditEmail';
 import type { LoginResponse } from '../types/auth';
+import '../i18n';
 
 interface Props {
   user: LoginResponse;
@@ -13,6 +15,7 @@ interface Props {
 }
 
 export function EditEmailScreen({ user, onSaved, onBack }: Props) {
+  const { t } = useTranslation();
   const {
     phase,
     newEmail,
@@ -68,35 +71,35 @@ export function EditEmailScreen({ user, onSaved, onBack }: Props) {
             gap: 6,
           }}
         >
-          <span style={{ fontSize: 16 }}>←</span> Voltar
+          <span style={{ fontSize: 16 }}>←</span> {t('editEmail_back')}
         </button>
 
         {phase === 'input' ? (
           <>
             <div style={{ marginBottom: 32 }}>
               <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
-                Alterar e-mail
+                {t('editEmail_title')}
               </h1>
               <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
-                Informe o novo endereço de e-mail.
+                {t('editEmail_subtitle')}
               </p>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <Input
-                label="Novo e-mail"
+                label={t('editEmail_label')}
                 value={newEmail}
                 onChange={setNewEmail}
                 type="email"
-                placeholder="novo@email.com"
+                placeholder={t('editEmail_placeholder')}
                 autoComplete="email"
                 error={error}
               />
               <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: -8 }}>
-                Um código de verificação será enviado para o novo endereço.
+                {t('editEmail_hint')}
               </p>
               <Button
-                label="Enviar código"
+                label={t('editEmail_send')}
                 onClick={handleRequestChange}
                 loading={loading}
                 disabled={!emailValid}
@@ -107,10 +110,10 @@ export function EditEmailScreen({ user, onSaved, onBack }: Props) {
           <>
             <div style={{ marginBottom: 32 }}>
               <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
-                Verifique seu e-mail
+                {t('editEmail_verifyTitle')}
               </h1>
               <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
-                Enviamos um código de 6 dígitos para{' '}
+                {t('editEmail_sentTo')}{' '}
                 <span style={{ fontWeight: 600, color: 'var(--text)' }}>{newEmail}</span>
               </p>
             </div>
@@ -134,7 +137,7 @@ export function EditEmailScreen({ user, onSaved, onBack }: Props) {
               )}
 
               <Button
-                label="Confirmar alteração"
+                label={t('editEmail_confirm')}
                 onClick={handleConfirmChange}
                 loading={loading}
                 disabled={code.length !== 6}
