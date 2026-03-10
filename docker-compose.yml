@@ -6,11 +6,11 @@ services:
       POSTGRES_DB: ${DB_DATABASE:-db_damas}
       POSTGRES_USER: ${DB_USERNAME:-mises}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-mises}
-    ports:
-      - "${DB_PORT:-5432}:${DB_PORT:-5432}"
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-mises} -d ${DB_DATABASE:-db_damas}"]
       interval: 10s
@@ -20,14 +20,63 @@ services:
   redis:
     image: redis:7-alpine
     container_name: damas-redis
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
     restart: unless-stopped
+    networks:
+      - backend
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  lnd:
+    image: lightninglabs/lnd:v0.18.4-beta
+    container_name: damas-lnd
+    restart: unless-stopped
+    command:
+      - "--bitcoin.active"
+      - "--bitcoin.mainnet"        # troque por --bitcoin.testnet ou --bitcoin.signet se necessario
+      - "--bitcoin.node=bitcoind"
+      - "--bitcoind.rpchost=${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT:-8332}"
+      - "--bitcoind.rpcuser=${BITCOIN_RPC_USER}"
+      - "--bitcoind.rpcpass=${BITCOIN_RPC_PASSWORD}"
+      - "--bitcoind.zmqpubrawblock=${BITCOIN_ZMQ_BLOCK}"
+      - "--bitcoind.zmqpubrawtx=${BITCOIN_ZMQ_TX}"
+      - "--rpclisten=0.0.0.0:10009"
+      - "--restlisten=0.0.0.0:8080"
+      - "--listen=0.0.0.0:9735"
+      # security backups to no spend funds
+      #- "--noseedbackup=false"
+      - "--lnddir=/root/.lnd"
+      - "--alias=${LND_ALIAS:-DamasClash}"
+      - "--color=#ffffff"
+      - "--accept-keysend"
+      # auto pruning
+      #- "-db.bolt.auto-compact=true"
+    ports:
+      - "9735:9735"
+    volumes:
+      - lnd_data:/root/.lnd
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "lncli --network=mainnet state 2>/dev/null | grep -qE 'SERVER_ACTIVE|WAITING_TO_START|RPC_ACTIVE|UNLOCKED' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  lnd-backup:
+    image: alpine
+    restart: unless-stopped
+    volumes:
+      - lnd_data:/lnd
+      - ./backup:/backup
+    command: >
+      sh -c "while true; do
+        cp /lnd/data/chain/bitcoin/mainnet/channel.backup /backup/channel.backup;
+        sleep 300;
+      done"
 
   api:
     build:
@@ -39,8 +88,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      lnd:
+        condition: service_started
     environment:
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=${DB_PORT:-5432};Database=${DB_DATABASE:-db_damas};Username=${DB_USERNAME:-mises};Password=${DB_PASSWORD:-mises}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${DB_DATABASE:-db_damas};Username=${DB_USERNAME:-mises};Password=${DB_PASSWORD:-mises}
       Redis__Configuration: redis:6379
       JWT_SECRET: ${JWT_SECRET}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY}
@@ -48,8 +99,16 @@ services:
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
       Google__ClientId: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+      Lightning__GrpcHost: lnd:10009
+      Lightning__RestHost: http://lnd:8080
+      Lightning__MacaroonPath: /lnd/data/chain/bitcoin/mainnet/admin.macaroon
+      Lightning__TlsCertPath: /lnd/tls.cert
+    volumes:
+      - lnd_data:/lnd:ro
     ports:
       - "8080:8080"
+    networks:
+      - backend
     restart: unless-stopped
 
   appweb:
@@ -64,7 +123,14 @@ services:
       - api
     ports:
       - "3000:3000"
+    networks:
+      - backend
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  lnd_data:
+
+networks:
+  backend:
+    driver: bridge
