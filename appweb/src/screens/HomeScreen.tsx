@@ -60,163 +60,164 @@ export function HomeScreen({
       {/* ── Toolbar ── */}
       <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          padding: '16px 24px',
           borderBottom: '1px solid var(--border)',
           flexShrink: 0,
           maxWidth: 960,
           width: '100%',
           margin: '0 auto',
           boxSizing: 'border-box',
+          padding: '12px 16px',
         }}
       >
-        <div style={{ display: 'flex', gap: 6 }}>
-          {TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              style={{
-                padding: '7px 16px',
-                borderRadius: 10,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                border: 'none',
-                background: activeTab === tab.key ? 'var(--text)' : 'var(--surface2)',
-                color: activeTab === tab.key ? 'var(--bg)' : 'var(--text-muted)',
-                transition: 'background 0.15s, color 0.15s',
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* Row 1: filter tabs + online badge */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {TABS.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: 10,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background: activeTab === tab.key ? 'var(--text)' : 'var(--surface2)',
+                  color: activeTab === tab.key ? 'var(--bg)' : 'var(--text-muted)',
+                  transition: 'background 0.15s, color 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-        {/* Search field */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            flex: 1,
-            maxWidth: 280,
-            gap: 8,
-            padding: '0 10px',
-            height: 34,
-            borderRadius: 10,
-            background: 'var(--surface2)',
-            border: '1px solid var(--border)',
-            transition: 'border-color 0.15s',
-          }}
-          onFocusCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--text-muted)'; }}
-          onBlurCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)'; }}
-        >
-          <span style={{ fontSize: 13, color: 'var(--text-faint)', flexShrink: 0, lineHeight: 1 }}>⌕</span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder={t('home_searchPlaceholder')}
-            style={{
-              flex: 1,
-              background: 'none',
-              border: 'none',
-              outline: 'none',
-              color: 'var(--text)',
-              fontSize: 13,
-              minWidth: 0,
-            }}
-          />
-          {searchQuery && (
+          {onlineCount != null && (
             <button
-              onClick={() => setSearchQuery('')}
+              onClick={onOpenOnlinePlayers}
+              title={t('home_viewOnline')}
               style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-faint)',
-                cursor: 'pointer',
-                fontSize: 12,
-                padding: 0,
-                lineHeight: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 10px',
+                borderRadius: 20,
+                border: '1px solid var(--border)',
+                background: 'var(--surface2)',
                 flexShrink: 0,
+                cursor: 'pointer',
+                transition: 'border-color 0.15s',
               }}
-              title={t('home_clear')}
+              onMouseOver={e => (e.currentTarget.style.borderColor = 'var(--text-muted)')}
+              onMouseOut={e => (e.currentTarget.style.borderColor = 'var(--border)')}
             >
-              ✕
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  background: '#4CAF50',
+                  flexShrink: 0,
+                }}
+              />
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                {onlineCount} {t('home_online')}
+              </span>
             </button>
           )}
         </div>
 
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          title={t('home_refresh')}
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 10,
-            background: 'var(--surface2)',
-            border: '1px solid var(--border)',
-            color: 'var(--text-muted)',
-            fontSize: 16,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: refreshing ? 0.4 : 1,
-            flexShrink: 0,
-          }}
-        >
-          {refreshing ? (
-            <span
-              style={{
-                display: 'inline-block',
-                width: 14,
-                height: 14,
-                borderRadius: '50%',
-                border: '2px solid var(--text-muted)',
-                borderTopColor: 'transparent',
-                animation: 'spin 0.7s linear infinite',
-              }}
-            />
-          ) : '↻'}
-        </button>
-
-        {onlineCount != null && (
-          <button
-            onClick={onOpenOnlinePlayers}
-            title={t('home_viewOnline')}
+        {/* Row 2: search + refresh */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              padding: '4px 10px',
-              borderRadius: 20,
-              border: '1px solid var(--border)',
+              flex: 1,
+              gap: 8,
+              padding: '0 10px',
+              height: 34,
+              borderRadius: 10,
               background: 'var(--surface2)',
-              flexShrink: 0,
-              cursor: 'pointer',
+              border: '1px solid var(--border)',
               transition: 'border-color 0.15s',
             }}
-            onMouseOver={e => (e.currentTarget.style.borderColor = 'var(--text-muted)')}
-            onMouseOut={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+            onFocusCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--text-muted)'; }}
+            onBlurCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)'; }}
           >
-            <span
+            <span style={{ fontSize: 13, color: 'var(--text-faint)', flexShrink: 0, lineHeight: 1 }}>⌕</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder={t('home_searchPlaceholder')}
               style={{
-                width: 7,
-                height: 7,
-                borderRadius: '50%',
-                background: '#4CAF50',
-                flexShrink: 0,
+                flex: 1,
+                background: 'none',
+                border: 'none',
+                outline: 'none',
+                color: 'var(--text)',
+                fontSize: 13,
+                minWidth: 0,
               }}
             />
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-              {onlineCount} {t('home_online')}
-            </span>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-faint)',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  padding: 0,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+                title={t('home_clear')}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            title={t('home_refresh')}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              background: 'var(--surface2)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-muted)',
+              fontSize: 16,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: refreshing ? 0.4 : 1,
+              flexShrink: 0,
+            }}
+          >
+            {refreshing ? (
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 14,
+                  height: 14,
+                  borderRadius: '50%',
+                  border: '2px solid var(--text-muted)',
+                  borderTopColor: 'transparent',
+                  animation: 'spin 0.7s linear infinite',
+                }}
+              />
+            ) : '↻'}
           </button>
-        )}
+        </div>
       </div>
 
       {/* ── Error banner ── */}
@@ -260,7 +261,7 @@ export function HomeScreen({
             style={{
               maxWidth: 960,
               margin: '0 auto',
-              padding: '20px 24px 32px',
+              padding: '16px 16px 32px',
             }}
           >
             {filtered.length === 0 ? (
@@ -285,7 +286,7 @@ export function HomeScreen({
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
                   gap: 12,
                 }}
               >

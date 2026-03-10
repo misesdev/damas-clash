@@ -48,18 +48,18 @@ function TopNav({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 24px',
-        height: 60,
+        padding: '0 16px',
+        height: 56,
         borderBottom: '1px solid var(--border)',
         background: 'var(--surface)',
         flexShrink: 0,
-        gap: 16,
+        gap: 8,
       }}
     >
       {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-        <BoardMark size={22} />
-        <span style={{ fontWeight: 800, fontSize: 14, letterSpacing: 3, color: 'var(--text)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <BoardMark size={20} />
+        <span className="hidden lg:inline" style={{ fontWeight: 800, fontSize: 13, letterSpacing: 3, color: 'var(--text)' }}>
           DAMAS CLASH
         </span>
       </div>
@@ -71,16 +71,16 @@ function TopNav({
       </nav>
 
       {/* Right side: language switcher + user + new game */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         <LanguageSwitcher />
 
         {username && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt={username}
-                style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+                style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
               />
             ) : (
               <div
@@ -96,17 +96,19 @@ function TopNav({
                   fontSize: 10,
                   fontWeight: 700,
                   color: 'var(--text)',
+                  flexShrink: 0,
                 }}
               >
                 {initials}
               </div>
             )}
             <span
+              className="hidden lg:inline"
               style={{
                 fontSize: 13,
                 fontWeight: 600,
                 color: 'var(--text-muted)',
-                maxWidth: 120,
+                maxWidth: 110,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -124,7 +126,7 @@ function TopNav({
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            padding: '7px 16px',
+            padding: '7px 14px',
             background: 'var(--text)',
             color: 'var(--bg)',
             border: 'none',
@@ -151,7 +153,7 @@ function TopNav({
           ) : (
             <>
               <span style={{ fontSize: 16, fontWeight: 900, lineHeight: 1 }}>+</span>
-              <span className="hidden sm:inline">{t('nav_newGame')}</span>
+              <span className="hidden lg:inline">{t('nav_newGame')}</span>
             </>
           )}
         </button>
