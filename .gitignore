@@ -63,4 +63,5 @@ AGENTS.md
 
 keystore.properties
 
-
+# Lnd backup
+backup/

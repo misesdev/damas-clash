@@ -51,6 +51,7 @@ services:
       - "--alias=${LND_ALIAS:-DamasClash}"
       - "--color=#ffffff"
       - "--accept-keysend"
+      - "--externalip=187.57.11.21:9735"
       # auto pruning
       #- "-db.bolt.auto-compact=true"
     ports:
