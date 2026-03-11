@@ -56,6 +56,7 @@ services:
       #- "-db.bolt.auto-compact=true"
     ports:
       - "9735:9735"
+      - "5000:8080"
     volumes:
       - lnd_data:/root/.lnd
     networks:
