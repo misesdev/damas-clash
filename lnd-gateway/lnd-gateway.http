@@ -1,0 +1,6 @@
+@lnd_gateway_HostAddress = http://localhost:5108
+
+GET {{lnd_gateway_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

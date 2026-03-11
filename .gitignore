@@ -65,3 +65,5 @@ keystore.properties
 
 # Lnd backup
 backup/
+
+lnd-gateway/tls.cert
