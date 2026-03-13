@@ -1,7 +1,7 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   ActivityIndicator,
-  //Image,
+  FlatList,
   RefreshControl,
   ScrollView,
   Text,
@@ -13,13 +13,17 @@ import {useTranslation} from 'react-i18next';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {BoardMark} from '../components/BoardMark';
 import {GameCard} from '../components/GameCard';
-import {WalletCard} from '../components/WalletCard';
 import {useHomeScreen} from '../hooks/useHomeScreen';
 import {styles} from '../styles/homeStyles';
-import type {LoginResponse} from '../types/auth';
-import type {GameResponse, GameStatus} from '../types/game';
-import type {WalletResponse} from '../types/wallet';
+import {getTransactions} from '../api/wallet';
 import {colors} from '../theme/colors';
+import type {LoginResponse} from '../types/auth';
+import type {GameResponse} from '../types/game';
+import type {LedgerEntryResponse, WalletResponse} from '../types/wallet';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type HomeTab = 'wallet' | 'games';
 
 interface Props {
   user: LoginResponse;
@@ -33,38 +37,190 @@ interface Props {
   onOpenOnlinePlayers?: () => void;
   onDeposit: () => void;
   onWithdraw: () => void;
-  onWalletHistory: () => void;
   onOpenDashboard?: () => void;
 }
 
-type FilterTab = Exclude<GameStatus, 'Completed'>;
+// ─── Transaction row ─────────────────────────────────────────────────────────
 
-export function HomeScreen({
-  user, pendingGame, liveGames, onlineCount,
-  wallet, walletLoading,
-  onGameSelect, onGameCancelled, onOpenOnlinePlayers,
-  onDeposit, onWithdraw, onWalletHistory, onOpenDashboard,
-}: Props) {
+const POSITIVE_TYPES = ['deposit', 'gamewin', 'refund'];
+
+function TxRow({entry}: {entry: LedgerEntryResponse}) {
   const {t} = useTranslation();
 
-  const TABS: {key: FilterTab; label: string}[] = [
-    {key: 'WaitingForPlayers', label: t('home.waitingTab')},
-    {key: 'InProgress', label: t('home.inProgressTab')},
-  ];
-
-  const EMPTY_MESSAGES: Record<FilterTab, string> = {
-    WaitingForPlayers: t('home.emptyWaiting'),
-    InProgress: t('home.emptyInProgress'),
+  const typeKey = entry.type.toLowerCase();
+  const labelMap: Record<string, string> = {
+    deposit: t('walletHistory.types.deposit'),
+    withdraw: t('walletHistory.types.withdraw'),
+    bet: t('walletHistory.types.bet'),
+    win: t('walletHistory.types.win'),
+    refund: t('walletHistory.types.refund'),
   };
+  const label = labelMap[typeKey] ?? entry.type;
+  const isPositive = POSITIVE_TYPES.includes(typeKey);
+  const date = new Date(entry.createdAt).toLocaleDateString();
 
+  return (
+    <View style={styles.txRow}>
+      <View style={[styles.txIcon, isPositive ? styles.txIconPos : styles.txIconNeg]}>
+        <Text style={styles.txIconText}>{isPositive ? '↓' : '↑'}</Text>
+      </View>
+      <View style={styles.txInfo}>
+        <Text style={styles.txLabel}>{label}</Text>
+        <Text style={styles.txDate}>{date}</Text>
+      </View>
+      <Text style={[styles.txAmount, isPositive ? styles.txAmountPos : styles.txAmountNeg]}>
+        {isPositive ? '+' : '-'}{Math.abs(entry.amountSats).toLocaleString()} sats
+      </Text>
+    </View>
+  );
+}
+
+// ─── Segment control ─────────────────────────────────────────────────────────
+
+interface SegmentTabsProps {
+  active: HomeTab;
+  onChange: (tab: HomeTab) => void;
+}
+
+function SegmentTabs({active, onChange}: SegmentTabsProps) {
+  const {t} = useTranslation();
+  return (
+    <View style={styles.segment}>
+      <TouchableOpacity
+        style={[styles.segmentTab, active === 'wallet' && styles.segmentTabActive]}
+        onPress={() => onChange('wallet')}
+        testID="segment-wallet">
+        <Text style={[styles.segmentLabel, active === 'wallet' && styles.segmentLabelActive]}>
+          {t('home.walletTab')}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.segmentTab, active === 'games' && styles.segmentTabActive]}
+        onPress={() => onChange('games')}
+        testID="segment-games">
+        <Text style={[styles.segmentLabel, active === 'games' && styles.segmentLabelActive]}>
+          {t('home.gamesTab')}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ─── Wallet tab ──────────────────────────────────────────────────────────────
+
+interface WalletTabProps {
+  user: LoginResponse;
+  wallet: WalletResponse | null;
+  walletLoading?: boolean;
+  onDeposit: () => void;
+  onWithdraw: () => void;
+}
+
+function WalletTab({user, wallet, walletLoading, onDeposit, onWithdraw}: WalletTabProps) {
+  const {t} = useTranslation();
+  const [transactions, setTransactions] = useState<LedgerEntryResponse[]>([]);
+  const [txLoading, setTxLoading] = useState(true);
+
+  useEffect(() => {
+    getTransactions(user.token)
+      .then(setTransactions)
+      .catch(() => {})
+      .finally(() => setTxLoading(false));
+  }, [user.token]);
+
+  return (
+    <ScrollView
+      style={styles.tabContent}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.walletScroll}>
+
+      {/* Balance card */}
+      <View style={styles.balanceCard}>
+        <Text style={styles.balanceLabel}>{t('wallet.balance')}</Text>
+        {walletLoading ? (
+          <ActivityIndicator color={colors.text} style={styles.balanceLoader} />
+        ) : (
+          <View style={styles.balanceRow}>
+            <Text style={styles.balanceAmount} testID="wallet-balance">
+              {(wallet?.availableBalanceSats ?? 0).toLocaleString()}
+            </Text>
+            <Text style={styles.balanceUnit}>{t('wallet.unit')}</Text>
+          </View>
+        )}
+        {wallet && wallet.lockedBalanceSats > 0 && (
+          <View style={styles.lockedBadge}>
+            <Text style={styles.lockedText}>
+              {t('wallet.lockedLabel', {amount: wallet.lockedBalanceSats.toLocaleString()})}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* Action buttons */}
+      <View style={styles.actionRow}>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={onWithdraw}
+          testID="wallet-withdraw-btn">
+          <Text style={styles.actionIcon}>↑</Text>
+          <Text style={styles.actionLabel}>{t('wallet.withdrawButton')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.actionBtnPrimary]}
+          onPress={onDeposit}
+          testID="wallet-deposit-btn">
+          <Text style={[styles.actionIcon, styles.actionIconPrimary]}>↓</Text>
+          <Text style={[styles.actionLabel, styles.actionLabelPrimary]}>
+            {t('wallet.depositButton')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Transactions section */}
+      <View style={styles.txSectionHeader}>
+        <Text style={styles.txSectionTitle}>{t('home.transactions')}</Text>
+      </View>
+
+      {txLoading ? (
+        <View style={styles.txCenter}>
+          <ActivityIndicator color={colors.textMuted} />
+        </View>
+      ) : transactions.length === 0 ? (
+        <View style={styles.txCenter}>
+          <Text style={styles.txEmpty}>{t('walletHistory.empty')}</Text>
+        </View>
+      ) : (
+        <View style={styles.txList}>
+          {transactions.map((tx, i) => (
+            <React.Fragment key={tx.id}>
+              <TxRow entry={tx} />
+              {i < transactions.length - 1 && <View style={styles.txDivider} />}
+            </React.Fragment>
+          ))}
+        </View>
+      )}
+    </ScrollView>
+  );
+}
+
+// ─── Games tab ───────────────────────────────────────────────────────────────
+
+interface GamesTabProps {
+  user: LoginResponse;
+  pendingGame?: GameResponse | null;
+  liveGames?: GameResponse[] | null;
+  onGameSelect: (game: GameResponse) => void;
+  onGameCancelled?: (gameId: string) => void;
+}
+
+function GamesTab({user, pendingGame, liveGames, onGameSelect, onGameCancelled}: GamesTabProps) {
+  const {t} = useTranslation();
   const {
     loading,
     refreshing,
     joiningId,
     cancellingId,
     error,
-    activeTab,
-    setActiveTab,
     searchQuery,
     setSearchQuery,
     filtered,
@@ -74,20 +230,100 @@ export function HomeScreen({
   } = useHomeScreen(user, pendingGame, liveGames, onGameSelect, onGameCancelled);
 
   return (
+    <View style={styles.tabContent}>
+      {/* Search bar */}
+      <View style={styles.searchWrapper}>
+        <Text style={styles.searchIcon}>⌕</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder={t('home.searchPlaceholder')}
+          placeholderTextColor={colors.textMuted}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          testID="search-input"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} testID="search-clear">
+            <Text style={styles.searchClear}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {error ? <Text style={styles.gamesError}>{error}</Text> : null}
+
+      {loading ? (
+        <View style={styles.gamesCenter}>
+          <ActivityIndicator color={colors.text} />
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={item => item.id}
+          renderItem={({item}) => (
+            <GameCard
+              game={item}
+              currentPlayerId={user.playerId}
+              loading={joiningId === item.id}
+              cancelling={cancellingId === item.id}
+              onPress={() => handleGamePress(item)}
+              onCancel={() => handleCancelGame(item)}
+            />
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.text}
+            />
+          }
+          ListEmptyComponent={
+            <Text style={styles.gamesEmpty}>
+              {searchQuery.trim() ? t('home.emptySearch') : t('home.emptyGames')}
+            </Text>
+          }
+          contentContainerStyle={styles.gamesList}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
+    </View>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
+export function HomeScreen({
+  user,
+  pendingGame,
+  liveGames,
+  onlineCount,
+  wallet,
+  walletLoading,
+  onGameSelect,
+  onGameCancelled,
+  onOpenOnlinePlayers,
+  onDeposit,
+  onWithdraw,
+  onOpenDashboard,
+}: Props) {
+  const [homeTab, setHomeTab] = useState<HomeTab>('wallet');
+  return (
     <SafeAreaView style={styles.container}>
-      {/* Top bar (fixed) */}
+      {/* Top bar */}
       <View style={styles.topBar}>
         <View style={styles.topBarLogo}>
           <BoardMark size={26} />
           <Text style={styles.topBarTitle}>DAMAS CLASH</Text>
         </View>
-        <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
+        <View style={styles.topBarRight}>
           {user.role === 'Admin' && onOpenDashboard && (
             <TouchableOpacity
-              style={styles.dashboardPill}
+              style={styles.adminPill}
               onPress={onOpenDashboard}
               testID="dashboard-btn">
-              <Text style={styles.dashboardText}>⚙ Admin</Text>
+              <Text style={styles.adminText}>⚙ Admin</Text>
             </TouchableOpacity>
           )}
           {onlineCount != null && (
@@ -96,95 +332,34 @@ export function HomeScreen({
               onPress={onOpenOnlinePlayers}
               testID="online-pill">
               <View style={styles.onlineDot} />
-              <Text style={styles.onlineText}>{t('home.onlineCount', {count: onlineCount})}</Text>
+              <Text style={styles.onlineText}>online</Text>
+              <Text style={styles.onlineText}>{onlineCount}</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* Scrollable content */}
-      <ScrollView
-        stickyHeaderIndices={[1]}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.text}
-          />
-        }
-        showsVerticalScrollIndicator={false}>
+      {/* Segment tabs */}
+      <SegmentTabs active={homeTab} onChange={setHomeTab} />
 
-        {/* Index 0: WalletCard — scrolls away */}
-        <WalletCard
+      {/* Content */}
+      {homeTab === 'wallet' ? (
+        <WalletTab
+          user={user}
           wallet={wallet}
-          loading={walletLoading}
+          walletLoading={walletLoading}
           onDeposit={onDeposit}
           onWithdraw={onWithdraw}
-          onHistory={onWalletHistory}
         />
-
-        {/* Index 1: Tabs + Search — becomes sticky */}
-        <View style={styles.stickyHeader}>
-          <View style={styles.tabs}>
-            {TABS.map(tab => (
-              <TouchableOpacity
-                key={tab.key}
-                style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-                onPress={() => setActiveTab(tab.key)}
-                testID={`tab-filter-${tab.key}`}>
-                <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <View style={styles.searchWrapper}>
-            <Text style={styles.searchIcon}>⌕</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder={t('home.searchPlaceholder')}
-              placeholderTextColor="#4E4E4E"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-              testID="search-input"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} testID="search-clear">
-                <Text style={styles.searchClear}>✕</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Index 2: Game list */}
-        <View style={styles.list}>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          {loading ? (
-            <View style={styles.loadingArea}>
-              <ActivityIndicator color={colors.text} />
-            </View>
-          ) : filtered.length === 0 ? (
-            <Text style={styles.empty}>
-              {searchQuery.trim() ? t('home.emptySearch') : EMPTY_MESSAGES[activeTab]}
-            </Text>
-          ) : (
-            filtered.map(item => (
-              <GameCard
-                key={item.id}
-                game={item}
-                currentPlayerId={user.playerId}
-                loading={joiningId === item.id}
-                cancelling={cancellingId === item.id}
-                onPress={() => handleGamePress(item)}
-                onCancel={() => handleCancelGame(item)}
-              />
-            ))
-          )}
-        </View>
-      </ScrollView>
+      ) : (
+        <GamesTab
+          user={user}
+          pendingGame={pendingGame}
+          liveGames={liveGames}
+          onGameSelect={onGameSelect}
+          onGameCancelled={onGameCancelled}
+        />
+      )}
     </SafeAreaView>
   );
 }

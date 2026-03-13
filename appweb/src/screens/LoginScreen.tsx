@@ -124,6 +124,35 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister, onGoogleLogin, o
             <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{t('login_or')}</span>
             <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
           </div>
+
+          {/* Nostr login */}
+          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <button
+              onClick={onNavigateToNostr}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                width: '100%',
+                padding: '10px 40px',
+                borderRadius: 10,
+                border: '1px solid var(--border)',
+                background: 'var(--surface2)',
+                color: 'var(--text)',
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'border-color 0.15s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--text-muted)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; }}
+            >
+              <span style={{ fontSize: 18 }}>⚡</span>
+              {t('nostrLogin_button')}
+            </button>
+          </div>
+
           <div style={{ opacity: googleLoading ? 0.6 : 1, pointerEvents: googleLoading ? 'none' : 'auto' }}>
             <GoogleLogin
               onSuccess={credentialResponse => {
@@ -139,34 +168,6 @@ export function LoginScreen({ onCodeSent, onNavigateToRegister, onGoogleLogin, o
           {googleError && (
             <div style={{ fontSize: 12, color: 'var(--danger)', textAlign: 'center' }}>{googleError}</div>
           )}
-        </div>
-
-        {/* Nostr login */}
-        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <button
-            onClick={onNavigateToNostr}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              width: '100%',
-              padding: '10px 0',
-              borderRadius: 10,
-              border: '1px solid var(--border)',
-              background: 'var(--surface2)',
-              color: 'var(--text)',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'border-color 0.15s',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--text-muted)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; }}
-          >
-            <span style={{ fontSize: 18 }}>⚡</span>
-            {t('nostrLogin_button')}
-          </button>
         </div>
 
         {/* Divider + switch */}

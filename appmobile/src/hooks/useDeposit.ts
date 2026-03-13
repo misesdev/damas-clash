@@ -17,6 +17,8 @@ export function useDeposit(user: LoginResponse, onSuccess: () => void) {
   const [copied, setCopied] = useState(false);
   const [creditedAmount, setCreditedAmount] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Guard: prevents a slow check from stacking up concurrent requests
+  const isCheckingRef = useRef(false);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -29,7 +31,10 @@ export function useDeposit(user: LoginResponse, onSuccess: () => void) {
 
   const startPolling = useCallback((rHash: string) => {
     stopPolling();
+    isCheckingRef.current = false;
     pollRef.current = setInterval(async () => {
+      if (isCheckingRef.current) {return;}
+      isCheckingRef.current = true;
       try {
         const status = await checkDepositStatus(user.token, rHash);
         if (status.credited) {
@@ -40,6 +45,8 @@ export function useDeposit(user: LoginResponse, onSuccess: () => void) {
         }
       } catch {
         // ignore poll errors
+      } finally {
+        isCheckingRef.current = false;
       }
     }, 3000);
   }, [user.token, stopPolling, onSuccess]);

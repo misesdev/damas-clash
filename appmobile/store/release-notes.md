@@ -1,23 +1,23 @@
-# Notas da Versao — Google Play
+# Notas da Versão — Google Play
 
-> Preencher em: Google Play Console -> Producao -> Criar nova versao -> Notas da versao
+> Preencher em: Google Play Console → Produção → Criar nova versão → Notas da versão
 
 ---
 
-## Versao 1.0 (versionCode 1)
+## Versão 1.0 (versionCode 1)
 
-### Portugues (pt-BR)
+### Português (pt-BR)
 
 ```
 Bem-vindo ao Damas Clash!
 
-Primeira versao do jogo com:
+Primeira versão do jogo com:
 - Damas Brasileiras online em tempo real
 - Crie ou entre em partidas com jogadores do mundo todo
-- Sala de espera com notificacao automatica ao encontrar oponente
-- Historico completo de partidas com replay movimento a movimento
-- Perfil personalizavel com foto, nome de usuario e estatisticas
-- Login seguro por codigo enviado ao e-mail, sem senhas
+- Sala de espera com notificação automática ao encontrar oponente
+- Histórico completo de partidas com replay movimento a movimento
+- Perfil personalizável com foto, nome de usuário e estatísticas
+- Login seguro por código enviado ao e-mail, sem senhas
 ```
 
 ---
@@ -38,9 +38,9 @@ First release featuring:
 
 ---
 
-## Versao 1.1 (versionCode 2)
+## Versão 1.1 (versionCode 2)
 
-### Portugues (pt-BR)
+### Português (pt-BR)
 
 ```
 Novidades no Damas Clash:
@@ -49,7 +49,7 @@ Novidades no Damas Clash:
 - Partidas valendo sats: aposte satoshis e ganhe o dobro ao vencer
 - Login com Nostr: autentique com sua chave Nostr
 - Login com Google: entre rapidamente com sua conta Google
-- Melhorias de desempenho e correcoes gerais
+- Melhorias de desempenho e correções gerais
 ```
 
 ---
@@ -68,4 +68,4 @@ What's new in Damas Clash:
 
 ---
 
-> **Limite:** Google Play aceita ate 500 caracteres por idioma nas notas da versao.
+> **Limite:** Google Play aceita até 500 caracteres por idioma nas notas da versão.

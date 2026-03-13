@@ -2,12 +2,13 @@ import React from 'react';
 import {ActivityIndicator, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
-import {ScreenHeader} from '../../components/ScreenHeader';
+import {WalletHeader} from '../../components/WalletHeader';
 import {SatsInput} from '../../components/SatsInput';
 import {useWithdraw} from '../../hooks/useWithdraw';
 import {styles} from '../../styles/withdrawStyles';
 import type {LoginResponse} from '../../types/auth';
 import type {WalletResponse} from '../../types/wallet';
+import { ScreenHeader } from '../../components/ScreenHeader';
 
 interface Props {
   user: LoginResponse;
@@ -34,7 +35,7 @@ export function WithdrawScreen({
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.successContainer}>
-          <Text style={styles.successIcon}>✅</Text>
+          <Text style={styles.successIcon}>⚡</Text>
           <Text style={styles.successTitle}>{t('withdraw.successTitle')}</Text>
           <Text style={styles.successMessage}>
             {t('withdraw.successMessage', {amount: paidAmount.toLocaleString()})}
@@ -48,10 +49,12 @@ export function WithdrawScreen({
     return (
       <SafeAreaView style={styles.container}>
         <ScreenHeader title={t('withdraw.title')} onBack={onBack} />
+        <WalletHeader
+          title={t('withdraw.title')}
+          subtitle={t('withdraw.noAddress.hint')}
+        />
         <View style={styles.noAddressContainer}>
-          <Text style={styles.noAddressIcon}>⚡</Text>
           <Text style={styles.noAddressTitle}>{t('withdraw.noAddress.title')}</Text>
-          <Text style={styles.noAddressHint}>{t('withdraw.noAddress.hint')}</Text>
           <TouchableOpacity
             style={styles.registerBtn}
             onPress={onRegisterLightningAddress}
@@ -66,6 +69,10 @@ export function WithdrawScreen({
   return (
     <SafeAreaView style={styles.container}>
       <ScreenHeader title={t('withdraw.title')} onBack={onBack} />
+      <WalletHeader
+        title={t('withdraw.title')}
+        subtitle={t('withdraw.subtitle')}
+      />
 
       <SatsInput
         value={amountText}

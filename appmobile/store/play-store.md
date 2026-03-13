@@ -2,57 +2,57 @@
 
 ---
 
-## Descricao curta (max. 80 caracteres)
+## Descrição curta (máx. 80 caracteres)
 
 Damas Brasileiras online em tempo real. Jogue, aposte sats e desafie o mundo!
 
 ---
 
-## Descricao completa (max. 4000 caracteres)
+## Descrição completa (máx. 4000 caracteres)
 
-**Damas Clash** e o jeito mais moderno de jogar Damas Brasileiras. Crie sua conta, encontre um adversario em segundos e dispute partidas em tempo real — direto no seu celular.
+**Damas Clash** é o jeito mais moderno de jogar Damas Brasileiras. Crie sua conta, encontre um adversário em segundos e dispute partidas em tempo real — direto no seu celular.
 
 ### Jogo oficial, regras completas
 
-O Damas Clash segue as regras oficiais das **Damas Brasileiras** (tabuleiro 8x8):
+O Damas Clash segue as regras oficiais das **Damas Brasileiras** (tabuleiro 8×8):
 
-- Captura obrigatoria — se houver peca adversaria para capturar, a jogada e forcada
-- Multicaptura — encadeie capturas consecutivas em um unico turno
-- Damas (king) — pecas coroadas se movem livremente em todas as diagonais
-- Promocao — ao atingir a ultima fileira, sua peca vira dama automaticamente
+- Captura obrigatória — se houver peça adversária para capturar, a jogada é forçada
+- Multicaptura — encadeie capturas consecutivas em um único turno
+- Damas (king) — peças coroadas se movem livremente em todas as diagonais
+- Promoção — ao atingir a última fileira, sua peça vira dama automaticamente
 
 ### Tempo real
 
-As partidas acontecem ao vivo. Voce ve cada movimento do adversario no instante em que ele joga, sem precisar atualizar a tela.
+As partidas acontecem ao vivo. Você vê cada movimento do adversário no instante em que ele joga, sem precisar atualizar a tela.
 
 ### Carteira Lightning
 
-Deposite e saque Bitcoin em satoshis diretamente no aplicativo via Lightning Network. Sem intermediarios, sem bancos — apenas voce e sua carteira.
+Deposite e saque Bitcoin em satoshis diretamente no aplicativo via Lightning Network. Sem intermediários, sem bancos — apenas você e sua carteira.
 
 ### Partidas valendo sats
 
-Crie partidas com aposta em satoshis. O vencedor leva o dobro do valor apostado. As partidas amigaveis (sem aposta) continuam disponiveis para quem prefere jogar sem risco.
+Crie partidas com aposta em satoshis. O vencedor leva o dobro do valor apostado. As partidas amigáveis (sem aposta) continuam disponíveis para quem prefere jogar sem risco.
 
 ### Sala de espera
 
-Crie uma partida e aguarde na sala de espera. Quando um oponente entrar, o jogo comeca automaticamente — sem precisar ficar checando.
+Crie uma partida e aguarde na sala de espera. Quando um oponente entrar, o jogo começa automaticamente — sem precisar ficar checando.
 
-### Perfil e historico
+### Perfil e histórico
 
-- Acompanhe suas vitorias, derrotas e empates
+- Acompanhe suas vitórias, derrotas e empates
 - Reveja qualquer partida jogada, movimento por movimento
-- Personalize seu perfil com foto e nome de usuario unicos
+- Personalize seu perfil com foto e nome de usuário únicos
 
 ### Login sem senha
 
-Nada de senhas para lembrar. O acesso ao Damas Clash e feito por **codigo enviado ao seu e-mail**, login com Google ou autenticacao via **Nostr** — simples, rapido e seguro.
+Nada de senhas para lembrar. O acesso ao Damas Clash é feito por **código enviado ao seu e-mail**, login com Google ou autenticação via **Nostr** — simples, rápido e seguro.
 
-### Tambem disponivel no navegador
+### Também disponível no navegador
 
-Prefere jogar no computador? O Damas Clash tambem esta disponivel como aplicativo web. Sua conta e a mesma em todas as plataformas.
+Prefere jogar no computador? O Damas Clash também está disponível como aplicativo web. Sua conta é a mesma em todas as plataformas.
 
 ---
 
-*Damas Clash e gratuito e esta em constante desenvolvimento. Sugestoes e feedbacks sao sempre bem-vindos!*
+*Damas Clash é gratuito e está em constante desenvolvimento. Sugestões e feedbacks são sempre bem-vindos!*
 
 *O uso da carteira e das apostas requer 18 anos ou mais.*

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using api.Data;
 using api.DTOs.Wallet;
 using api.Models;
@@ -12,6 +13,10 @@ public class LightningService(
     IWalletService wallet,
     ILightningAddressValidator lnurlValidator) : ILightningService
 {
+    // Per-payment semaphore ensures that concurrent polls for the same payment
+    // cannot both pass the Status == Pending check simultaneously.
+    // This prevents double-credit within a single API instance.
+    private static readonly ConcurrentDictionary<Guid, SemaphoreSlim> _depositLocks = new();
     public async Task<ServiceResult<DepositInitiatedResponse>> InitiateDepositAsync(
         Guid playerId, long amountSats, string? memo, CancellationToken ct = default)
     {
@@ -68,24 +73,58 @@ public class LightningService(
 
         if (status.Settled)
         {
-            // Credit wallet
-            var creditResult = await wallet.CreditAsync(
-                playerId, status.AmountPaidSats > 0 ? status.AmountPaidSats : payment.AmountSats,
-                LedgerEntryType.Deposit, paymentId: payment.Id, ct: ct);
-
-            if (!creditResult.IsSuccess)
-                return ServiceResult<DepositStatusResponse>.Fail(creditResult.Error!);
-
-            payment.Status = PaymentStatus.Paid;
-            payment.UpdatedAt = DateTimeOffset.UtcNow;
-            await db.SaveChangesAsync(ct);
-
-            return ServiceResult<DepositStatusResponse>.Ok(
-                new DepositStatusResponse("Paid", payment.AmountSats, Credited: true));
+            var amountPaid = status.AmountPaidSats > 0 ? status.AmountPaidSats : payment.AmountSats;
+            return await CreditDepositAtomicAsync(playerId, payment, amountPaid, ct);
         }
 
         return ServiceResult<DepositStatusResponse>.Ok(
             new DepositStatusResponse(status.State, payment.AmountSats, Credited: false));
+    }
+
+    /// <summary>
+    /// Acquires a per-payment in-process lock, reloads the payment to see the latest
+    /// committed state, and credits the wallet only if the payment is still Pending.
+    /// This prevents double-credit from concurrent mobile polls within the same instance.
+    /// </summary>
+    private async Task<ServiceResult<DepositStatusResponse>> CreditDepositAtomicAsync(
+        Guid playerId, LightningPayment payment, long amountPaid, CancellationToken ct)
+    {
+        var sem = _depositLocks.GetOrAdd(payment.Id, _ => new SemaphoreSlim(1, 1));
+        await sem.WaitAsync(ct);
+        try
+        {
+            // Reload so we see any update committed by a concurrent request
+            await db.Entry(payment).ReloadAsync(ct);
+
+            if (payment.Status != PaymentStatus.Pending)
+            {
+                return ServiceResult<DepositStatusResponse>.Ok(
+                    new DepositStatusResponse("Paid", payment.AmountSats, Credited: true));
+            }
+
+            // Mark as Paid before crediting so that a failure in CreditAsync
+            // does not leave a Pending payment that could be re-credited later.
+            payment.Status = PaymentStatus.Paid;
+            payment.AmountSats = amountPaid;
+            payment.UpdatedAt = DateTimeOffset.UtcNow;
+            await db.SaveChangesAsync(ct);
+
+            var creditResult = await wallet.CreditAsync(
+                playerId, amountPaid, LedgerEntryType.Deposit, paymentId: payment.Id, ct: ct);
+
+            if (!creditResult.IsSuccess)
+                return ServiceResult<DepositStatusResponse>.Fail(creditResult.Error!);
+
+            return ServiceResult<DepositStatusResponse>.Ok(
+                new DepositStatusResponse("Paid", amountPaid, Credited: true));
+        }
+        finally
+        {
+            sem.Release();
+            // Remove the semaphore once the payment has left the Pending state
+            if (payment.Status != PaymentStatus.Pending)
+                _depositLocks.TryRemove(payment.Id, out _);
+        }
     }
 
     public async Task<ServiceResult<WithdrawResponse>> WithdrawAsync(

@@ -3,11 +3,12 @@ import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View} from 'react
 import {SafeAreaView} from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import {useTranslation} from 'react-i18next';
-import {ScreenHeader} from '../../components/ScreenHeader';
+import {WalletHeader} from '../../components/WalletHeader';
 import {SatsInput} from '../../components/SatsInput';
 import {useDeposit} from '../../hooks/useDeposit';
 import {styles} from '../../styles/depositStyles';
 import type {LoginResponse} from '../../types/auth';
+import { ScreenHeader } from '../../components/ScreenHeader';
 
 interface Props {
   user: LoginResponse;
@@ -42,16 +43,17 @@ export function DepositScreen({user, onBack, onSuccess}: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <ScreenHeader title={t('deposit.title')} onBack={onBack} />
-        <ScrollView contentContainerStyle={styles.scroll}>
-          <Text style={styles.heading}>{t('deposit.invoiceTitle')}</Text>
-          <Text style={styles.subtitle}>{t('deposit.invoiceHint')}</Text>
-
+        <WalletHeader
+          title={t('deposit.invoiceTitle')}
+          subtitle={t('deposit.invoiceHint')}
+        />
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.qrContainer}>
-            <QRCode value={deposit.invoice} size={200} />
+            <QRCode value={deposit.invoice} size={250} />
           </View>
 
           <View style={styles.invoiceBox}>
-            <Text style={styles.invoiceText} numberOfLines={4}>{deposit.invoice}</Text>
+            <Text style={styles.invoiceText} numberOfLines={2}>{deposit.invoice}</Text>
           </View>
 
           <TouchableOpacity style={styles.copyBtn} onPress={handleCopy} testID="copy-invoice-btn">
@@ -72,6 +74,11 @@ export function DepositScreen({user, onBack, onSuccess}: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <ScreenHeader title={t('deposit.title')} onBack={onBack} />
+
+      <WalletHeader
+        title={t('deposit.title')}
+        subtitle={t('deposit.subtitle')}
+      />
 
       <SatsInput
         value={amountText}

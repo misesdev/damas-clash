@@ -29,7 +29,7 @@ jest.mock('../src/api/wallet', () => ({
   initiateDeposit: jest.fn(),
   checkDepositStatus: jest.fn(),
   withdraw: jest.fn(),
-  getTransactions: jest.fn(),
+  getTransactions: jest.fn().mockResolvedValue([]),
 }));
 jest.mock('../src/storage/auth');
 jest.mock('../src/storage/game');

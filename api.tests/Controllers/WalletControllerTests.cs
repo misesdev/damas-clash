@@ -208,6 +208,93 @@ public class WalletControllerTests(CustomWebApplicationFactory factory)
         Assert.Equal(w1.BalanceSats, w2.BalanceSats);
     }
 
+    [Fact]
+    public async Task DepositStatus_ConcurrentStatusChecks_DoesNotDoubleCredit()
+    {
+        // Simulates multiple simultaneous polls from the mobile app.
+        // Both requests arrive while payment is still Pending in the DB.
+        // Only one should credit the wallet.
+        var (playerId, token) = await CreatePlayer("dep_concurrent");
+        _gateway.RHashToReturn = "hash_concurrent";
+        _gateway.ShouldInvoiceBeSettled = true;
+
+        // Initiate deposit using a dedicated client to avoid header race
+        var setupClient = factory.CreateClient();
+        setupClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+        await setupClient.PostAsJsonAsync("/api/wallet/deposit", new DepositRequest(1000));
+
+        // Fire two concurrent status-check requests
+        var clientA = factory.CreateClient();
+        var clientB = factory.CreateClient();
+        clientA.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        clientB.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var taskA = clientA.GetAsync("/api/wallet/deposit/hash_concurrent/status");
+        var taskB = clientB.GetAsync("/api/wallet/deposit/hash_concurrent/status");
+        var responses = await Task.WhenAll(taskA, taskB);
+
+        // Both responses must succeed
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
+
+        // Both must report Credited = true
+        var results = await Task.WhenAll(
+            responses[0].Content.ReadFromJsonAsync<DepositStatusResponse>(JsonOpts),
+            responses[1].Content.ReadFromJsonAsync<DepositStatusResponse>(JsonOpts));
+        Assert.All(results, r => { Assert.NotNull(r); Assert.True(r!.Credited); });
+
+        // Wallet must be credited exactly once (1000 sats)
+        var walletClient = factory.CreateClient();
+        walletClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var walletResp = await walletClient.GetAsync("/api/wallet");
+        var wallet = (await walletResp.Content.ReadFromJsonAsync<WalletResponse>(JsonOpts))!;
+        Assert.Equal(1000, wallet.BalanceSats);
+    }
+
+    [Fact]
+    public async Task DepositStatus_Settled_WalletBalanceUpdatesCorrectly()
+    {
+        // End-to-end: initiate → status check → wallet balance reflects credit
+        var (playerId, token) = await CreatePlayer("dep_e2e");
+        _gateway.RHashToReturn = "hash_e2e";
+        _gateway.ShouldInvoiceBeSettled = true;
+
+        Auth(token);
+        var depositResp = await _client.PostAsJsonAsync("/api/wallet/deposit",
+            new DepositRequest(2500, "test memo"));
+        depositResp.EnsureSuccessStatusCode();
+
+        var statusResp = await _client.GetAsync("/api/wallet/deposit/hash_e2e/status");
+        Assert.Equal(HttpStatusCode.OK, statusResp.StatusCode);
+        var status = (await statusResp.Content.ReadFromJsonAsync<DepositStatusResponse>(JsonOpts))!;
+        Assert.Equal("Paid", status.Status);
+        Assert.True(status.Credited);
+
+        var walletResp = await _client.GetAsync("/api/wallet");
+        ClearAuth();
+        var wallet = (await walletResp.Content.ReadFromJsonAsync<WalletResponse>(JsonOpts))!;
+        Assert.Equal(1000, wallet.BalanceSats); // gateway returns AmountPaidSats=1000
+    }
+
+    [Fact]
+    public async Task DepositStatus_GatewayUnreachable_ReturnsPendingWithout500()
+    {
+        var (_, token) = await CreatePlayer("dep_gw_err");
+        _gateway.RHashToReturn = "hash_gw_err";
+        _gateway.ShouldGatewayFail = true;
+
+        Auth(token);
+        await _client.PostAsJsonAsync("/api/wallet/deposit", new DepositRequest(500));
+        var response = await _client.GetAsync("/api/wallet/deposit/hash_gw_err/status");
+        ClearAuth();
+
+        _gateway.ShouldGatewayFail = false;
+
+        // Should not be a 5xx — service errors return 400
+        Assert.True((int)response.StatusCode < 500,
+            $"Expected non-5xx but got {response.StatusCode}");
+    }
+
     // ── POST /api/wallet/withdraw ─────────────────────────────────────────────
 
     [Fact]

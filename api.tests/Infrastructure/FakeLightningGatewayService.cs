@@ -13,6 +13,7 @@ public class FakeLightningGatewayService : ILightningGatewayService
     public string? RHashToReturn { get; set; } = "aabbccdd";
     public long ExpiresAtToReturn { get; set; } = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds();
     public bool ShouldInvoiceBeSettled { get; set; } = false;
+    public bool ShouldGatewayFail { get; set; } = false;
     public string? PaymentHashToReturn { get; set; } = "pay_hash_001";
     public long FeePaidSatsToReturn { get; set; } = 1;
     public bool ShouldPaymentFail { get; set; } = false;
@@ -28,6 +29,9 @@ public class FakeLightningGatewayService : ILightningGatewayService
     public Task<ServiceResult<GatewayInvoiceStatus>> GetInvoiceStatusAsync(
         string rHash, CancellationToken ct = default)
     {
+        if (ShouldGatewayFail)
+            return Task.FromResult(ServiceResult<GatewayInvoiceStatus>.Fail("gateway_unreachable"));
+
         var result = ServiceResult<GatewayInvoiceStatus>.Ok(
             new GatewayInvoiceStatus(
                 ShouldInvoiceBeSettled ? "SETTLED" : "OPEN",

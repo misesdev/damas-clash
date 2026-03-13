@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTranslation } from 'react-i18next';
 import { useWalletScreen } from '../hooks/useWalletScreen';
@@ -12,9 +12,83 @@ interface Props {
   session: LoginResponse;
   onBack: () => void;
   onBalanceChanged: (sats: number) => void;
+  lightningAddress: string | null;
+  onRegisterLightningAddress: () => void;
 }
 
 type WalletTab = 'deposit' | 'withdraw' | 'history';
+
+// ── SatsInput ─────────────────────────────────────────────────────────────────
+
+function SatsInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const display = value === '' ? '0' : Number(value).toLocaleString();
+  const fontSize = display.length > 9 ? 36 : display.length > 6 ? 44 : 56;
+
+  return (
+    <>
+      <style>{`
+        @keyframes sats-blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+      `}</style>
+      <div
+        onClick={() => inputRef.current?.focus()}
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'text', padding: '16px 0 8px' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <span
+            style={{
+              fontSize,
+              fontWeight: 700,
+              color: 'var(--text)',
+              letterSpacing: -2,
+              lineHeight: 1,
+              transition: 'font-size 0.1s',
+            }}
+          >
+            {display}
+          </span>
+          <span
+            style={{
+              display: 'inline-block',
+              width: 3,
+              height: Math.round(fontSize * 0.85),
+              background: 'var(--text)',
+              borderRadius: 2,
+              marginLeft: 4,
+              animation: 'sats-blink 1s step-start infinite',
+            }}
+          />
+        </div>
+        <span style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-muted)', marginTop: 8, letterSpacing: 1 }}>
+          sats
+        </span>
+        <input
+          ref={inputRef}
+          type="text"
+          inputMode="numeric"
+          value={value}
+          onChange={e => {
+            const digits = e.target.value.replace(/\D/g, '');
+            const cleaned = digits.replace(/^0+/, '').slice(0, 10);
+            onChange(cleaned);
+          }}
+          style={{
+            position: 'absolute',
+            opacity: 0,
+            width: 1,
+            height: 1,
+            pointerEvents: 'none',
+          }}
+        />
+      </div>
+    </>
+  );
+}
+
+// ── TabButton ─────────────────────────────────────────────────────────────────
 
 function TabButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
@@ -37,6 +111,8 @@ function TabButton({ label, active, onClick }: { label: string; active: boolean;
     </button>
   );
 }
+
+// ── TxRow ─────────────────────────────────────────────────────────────────────
 
 function TxRow({ entry }: { entry: LedgerEntry }) {
   const { t } = useTranslation();
@@ -65,20 +141,16 @@ function TxRow({ entry }: { entry: LedgerEntry }) {
         <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{label}</p>
         <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 0' }}>{date}</p>
       </div>
-      <span
-        style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: isPositive ? '#4CAF50' : 'var(--danger)',
-        }}
-      >
+      <span style={{ fontSize: 14, fontWeight: 700, color: isPositive ? '#4CAF50' : 'var(--danger)' }}>
         {isPositive ? '+' : '-'}{Math.abs(entry.amountSats).toLocaleString()} sats
       </span>
     </div>
   );
 }
 
-export function WalletScreen({ session, onBack, onBalanceChanged }: Props) {
+// ── WalletScreen ──────────────────────────────────────────────────────────────
+
+export function WalletScreen({ session, onBack, onBalanceChanged, lightningAddress, onRegisterLightningAddress }: Props) {
   const { t } = useTranslation();
   const {
     wallet,
@@ -93,16 +165,12 @@ export function WalletScreen({ session, onBack, onBalanceChanged }: Props) {
     handleGenerateInvoice,
     handleResetDeposit,
     handleCopyInvoice,
-    withdrawTab,
-    setWithdrawTab,
-    withdrawInvoice,
-    setWithdrawInvoice,
     withdrawAmount,
     setWithdrawAmount,
     withdrawLoading,
     withdrawError,
     withdrawSuccess,
-    handleWithdrawInvoice,
+    handleWithdrawToAddress,
   } = useWalletScreen(session, onBalanceChanged);
 
   const [activeTab, setActiveTab] = useState<WalletTab>('deposit');
@@ -122,15 +190,7 @@ export function WalletScreen({ session, onBack, onBalanceChanged }: Props) {
       >
         <button
           onClick={onBack}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: 'var(--text)',
-            fontSize: 20,
-            lineHeight: 1,
-            padding: '2px 6px',
-          }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: 20, lineHeight: 1, padding: '2px 6px' }}
           aria-label="back"
         >
           ‹
@@ -168,13 +228,7 @@ export function WalletScreen({ session, onBack, onBalanceChanged }: Props) {
           ) : null}
 
           {/* Tabs */}
-          <div
-            style={{
-              display: 'flex',
-              borderBottom: '1px solid var(--border)',
-              marginBottom: 24,
-            }}
-          >
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
             <TabButton label={t('wallet_depositTab')} active={activeTab === 'deposit'} onClick={() => setActiveTab('deposit')} />
             <TabButton label={t('wallet_withdrawTab')} active={activeTab === 'withdraw'} onClick={() => setActiveTab('withdraw')} />
             <TabButton label={t('wallet_historyTab')} active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
@@ -198,16 +252,15 @@ export function WalletScreen({ session, onBack, onBalanceChanged }: Props) {
           {/* ── Withdraw ── */}
           {activeTab === 'withdraw' && (
             <WithdrawPanel
-              withdrawTab={withdrawTab}
-              setWithdrawTab={setWithdrawTab}
-              withdrawInvoice={withdrawInvoice}
-              setWithdrawInvoice={setWithdrawInvoice}
+              lightningAddress={lightningAddress}
+              availableSats={wallet?.availableBalanceSats ?? null}
               withdrawAmount={withdrawAmount}
               setWithdrawAmount={setWithdrawAmount}
               withdrawLoading={withdrawLoading}
               withdrawError={withdrawError}
               withdrawSuccess={withdrawSuccess}
-              onWithdrawInvoice={handleWithdrawInvoice}
+              onWithdraw={handleWithdrawToAddress}
+              onRegisterLightningAddress={onRegisterLightningAddress}
             />
           )}
 
@@ -262,24 +315,12 @@ function Spinner() {
   );
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-      {children}
-    </p>
-  );
-}
-
 function ErrorMsg({ msg }: { msg: string }) {
-  return (
-    <p style={{ fontSize: 13, color: 'var(--danger)', margin: '10px 0 0', lineHeight: 1.4 }}>{msg}</p>
-  );
+  return <p style={{ fontSize: 13, color: 'var(--danger)', margin: '10px 0 0', lineHeight: 1.4 }}>{msg}</p>;
 }
 
 function SuccessMsg({ msg }: { msg: string }) {
-  return (
-    <p style={{ fontSize: 13, color: '#4CAF50', margin: '10px 0 0', lineHeight: 1.4 }}>{msg}</p>
-  );
+  return <p style={{ fontSize: 13, color: '#4CAF50', margin: '10px 0 0', lineHeight: 1.4 }}>{msg}</p>;
 }
 
 // ── Deposit Panel ─────────────────────────────────────────────────────────────
@@ -309,10 +350,17 @@ function DepositPanel({
 }: DepositPanelProps) {
   const { t } = useTranslation();
 
+  // Auto-focus SatsInput when deposit panel mounts
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const t = setTimeout(() => inputRef.current?.focus(), 100);
+    return () => clearTimeout(t);
+  }, []);
+
   if (depositStep === 'paid') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '32px 0' }}>
-        <span style={{ fontSize: 56 }}>✅</span>
+        <span style={{ fontSize: 56 }}>⚡</span>
         <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{t('wallet_paid')}</p>
         <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: 0 }}>{t('wallet_paidMsg')}</p>
         <button onClick={onReset} style={actionButtonStyle()}>{t('wallet_newDeposit')}</button>
@@ -324,18 +372,10 @@ function DepositPanel({
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
         {depositData?.invoice && (
-          <div
-            style={{
-              background: 'white',
-              borderRadius: 16,
-              padding: 16,
-              display: 'inline-block',
-            }}
-          >
+          <div style={{ background: 'white', borderRadius: 16, padding: 16, display: 'inline-block' }}>
             <QRCodeSVG value={depositData.invoice} size={220} />
           </div>
         )}
-
         <div style={{ width: '100%' }}>
           <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Invoice
@@ -356,26 +396,16 @@ function DepositPanel({
             {depositData?.invoice ?? ''}
           </div>
         </div>
-
         <button onClick={onCopy} style={actionButtonStyle()}>{t('wallet_copyInvoice')}</button>
-
         {depositStep === 'polling' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Spinner />
             <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('wallet_waitingPayment')}</span>
           </div>
         )}
-
         <button
           onClick={onReset}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-faint)',
-            fontSize: 13,
-            cursor: 'pointer',
-            textDecoration: 'underline',
-          }}
+          style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }}
         >
           {t('wallet_newDeposit')}
         </button>
@@ -383,20 +413,10 @@ function DepositPanel({
     );
   }
 
-  // idle
+  // idle — modern SatsInput
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div>
-        <FieldLabel>{t('wallet_depositAmountLabel')}</FieldLabel>
-        <input
-          type="number"
-          value={depositAmount}
-          onChange={e => setDepositAmount(e.target.value)}
-          placeholder={t('wallet_depositAmountPlaceholder')}
-          min={1}
-          style={inputStyle()}
-        />
-      </div>
+      <SatsInput value={depositAmount} onChange={setDepositAmount} />
       {depositError && <ErrorMsg msg={depositError} />}
       <button onClick={onGenerate} disabled={depositLoading} style={actionButtonStyle(depositLoading)}>
         {depositLoading ? t('wallet_generating') : t('wallet_generateInvoice')}
@@ -408,121 +428,108 @@ function DepositPanel({
 // ── Withdraw Panel ────────────────────────────────────────────────────────────
 
 interface WithdrawPanelProps {
-  withdrawTab: 'invoice' | 'address';
-  setWithdrawTab: (v: 'invoice' | 'address') => void;
-  withdrawInvoice: string;
-  setWithdrawInvoice: (v: string) => void;
+  lightningAddress: string | null;
+  availableSats: number | null;
   withdrawAmount: string;
   setWithdrawAmount: (v: string) => void;
   withdrawLoading: boolean;
   withdrawError: string;
   withdrawSuccess: string;
-  onWithdrawInvoice: () => void;
+  onWithdraw: () => void;
+  onRegisterLightningAddress: () => void;
 }
 
 function WithdrawPanel({
-  withdrawTab,
-  setWithdrawTab,
-  withdrawInvoice,
-  setWithdrawInvoice,
+  lightningAddress,
+  availableSats,
   withdrawAmount,
   setWithdrawAmount,
   withdrawLoading,
   withdrawError,
   withdrawSuccess,
-  onWithdrawInvoice,
+  onWithdraw,
+  onRegisterLightningAddress,
 }: WithdrawPanelProps) {
   const { t } = useTranslation();
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Sub-tabs */}
+  if (!lightningAddress) {
+    return (
       <div
         style={{
           display: 'flex',
-          gap: 8,
-          background: 'var(--surface2)',
-          borderRadius: 12,
-          padding: 4,
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 16,
+          padding: '40px 0',
+          textAlign: 'center',
         }}
       >
-        {(['invoice', 'address'] as const).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setWithdrawTab(tab)}
-            style={{
-              flex: 1,
-              padding: '8px 0',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              border: 'none',
-              borderRadius: 9,
-              background: withdrawTab === tab ? 'var(--surface)' : 'transparent',
-              color: withdrawTab === tab ? 'var(--text)' : 'var(--text-muted)',
-              transition: 'background 0.15s, color 0.15s',
-            }}
-          >
-            {tab === 'invoice' ? t('wallet_withdrawInvoiceTab') : t('wallet_withdrawAddressTab')}
-          </button>
-        ))}
+        <span style={{ fontSize: 48 }}>⚡</span>
+        <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+          {t('wallet_withdrawNoAddressTitle')}
+        </p>
+        <p style={{ fontSize: 14, color: 'var(--text-muted)', margin: 0, lineHeight: 1.5, maxWidth: 320 }}>
+          {t('wallet_withdrawNoAddressHint')}
+        </p>
+        <button
+          onClick={onRegisterLightningAddress}
+          style={{ ...actionButtonStyle(), maxWidth: 320, marginTop: 8 }}
+        >
+          {t('wallet_withdrawNoAddressButton')}
+        </button>
+      </div>
+    );
+  }
+
+  if (withdrawSuccess) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '32px 0' }}>
+        <span style={{ fontSize: 56 }}>⚡</span>
+        <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{withdrawSuccess}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <SatsInput value={withdrawAmount} onChange={setWithdrawAmount} />
+
+      {/* Address tag */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+          padding: '10px 16px',
+          background: 'var(--surface2)',
+          borderRadius: 12,
+          border: '1px solid var(--border)',
+        }}
+      >
+        <span style={{ fontSize: 14 }}>⚡</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>
+          {t('wallet_withdrawAddressLabel')}:
+        </span>
+        <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{lightningAddress}</span>
       </div>
 
-      {withdrawTab === 'invoice' ? (
-        <>
-          <div>
-            <FieldLabel>{t('wallet_invoiceLabel')}</FieldLabel>
-            <textarea
-              value={withdrawInvoice}
-              onChange={e => setWithdrawInvoice(e.target.value)}
-              placeholder={t('wallet_invoicePlaceholder')}
-              rows={3}
-              style={{ ...inputStyle(), resize: 'vertical', fontFamily: 'monospace', fontSize: 11 }}
-            />
-          </div>
-          <div>
-            <FieldLabel>{t('wallet_withdrawAmountLabel')}</FieldLabel>
-            <input
-              type="number"
-              value={withdrawAmount}
-              onChange={e => setWithdrawAmount(e.target.value)}
-              placeholder={t('wallet_withdrawAmountPlaceholder')}
-              min={1}
-              style={inputStyle()}
-            />
-          </div>
-          {withdrawError && <ErrorMsg msg={withdrawError} />}
-          {withdrawSuccess && <SuccessMsg msg={withdrawSuccess} />}
-          <button onClick={onWithdrawInvoice} disabled={withdrawLoading} style={actionButtonStyle(withdrawLoading)}>
-            {withdrawLoading ? t('wallet_withdrawing') : t('wallet_withdrawButton')}
-          </button>
-        </>
-      ) : (
-        <div style={{ padding: '24px 0', textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-faint)', fontSize: 13 }}>
-            Lightning Address coming soon.
-          </p>
-        </div>
+      {availableSats !== null && (
+        <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: 0, textAlign: 'center' }}>
+          {t('wallet_withdrawAvailable', { amount: availableSats.toLocaleString() })}
+        </p>
       )}
+
+      {withdrawError && <ErrorMsg msg={withdrawError} />}
+
+      <button onClick={onWithdraw} disabled={withdrawLoading} style={actionButtonStyle(withdrawLoading)}>
+        {withdrawLoading ? t('wallet_withdrawing') : t('wallet_withdrawButton')}
+      </button>
     </div>
   );
 }
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
-
-function inputStyle(): React.CSSProperties {
-  return {
-    width: '100%',
-    boxSizing: 'border-box',
-    padding: '10px 14px',
-    borderRadius: 10,
-    border: '1px solid var(--border)',
-    background: 'var(--surface2)',
-    color: 'var(--text)',
-    fontSize: 14,
-    outline: 'none',
-  };
-}
 
 function actionButtonStyle(disabled = false): React.CSSProperties {
   return {

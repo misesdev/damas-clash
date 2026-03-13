@@ -72,6 +72,10 @@ const pt = {
     heading: 'Confirme seu acesso',
   },
   home: {
+    walletTab: 'Carteira',
+    gamesTab: 'Partidas',
+    transactions: 'Transações',
+    emptyGames: 'Nenhuma partida ativa.',
     waitingTab: 'Aguardando',
     inProgressTab: 'Em andamento',
     searchPlaceholder: 'Buscar jogador...',
@@ -166,6 +170,7 @@ const pt = {
   },
   deposit: {
     title: 'Depositar',
+    subtitle: 'Adicione satoshis à sua carteira via Lightning Network.',
     amountLabel: 'Quantia em satoshis',
     amountPlaceholder: '1000',
     continueButton: 'Gerar invoice',
@@ -184,6 +189,7 @@ const pt = {
   },
   withdraw: {
     title: 'Sacar',
+    subtitle: 'Envie satoshis para o seu endereço Lightning cadastrado.',
     availableLabel: 'Disponível: {{amount}} sats',
     withdrawButton: 'Sacar',
     successTitle: 'Saque realizado!',
@@ -363,7 +369,7 @@ const pt = {
     draw: 'Empate',
   },
   bottomTab: {
-    games: 'Partidas',
+    games: 'Início',
     newGame: 'Nova partida',
     profile: 'Perfil',
   },

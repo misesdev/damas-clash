@@ -215,7 +215,6 @@ export function MainNavigator() {
             onOpenOnlinePlayers={() => setShowOnlinePlayers(true)}
             onDeposit={handleOpenDeposit}
             onWithdraw={handleOpenWithdraw}
-            onWalletHistory={handleOpenWalletHistory}
             onOpenDashboard={handleOpenDashboard}
           />
         ) : (

@@ -288,34 +288,34 @@ const content = {
   },
   pt: {
     title: 'Termos de Uso',
-    lastUpdated: 'Ultima atualizacao: marco de 2026',
+    lastUpdated: 'Última atualização: março de 2026',
     sections: [
       {
-        title: '1. Aceitacao dos termos',
+        title: '1. Aceitação dos termos',
         body: (
           <p>
             Ao criar uma conta ou utilizar o Damas Clash — seja pelo aplicativo Android ou
-            pelo site — voce declara ter lido, entendido e concordado com estes Termos de Uso.
-            Se nao concordar com qualquer parte, nao utilize o servico.
+            pelo site — você declara ter lido, entendido e concordado com estes Termos de Uso.
+            Se não concordar com qualquer parte, não utilize o serviço.
           </p>
         ),
       },
       {
-        title: '2. Descricao do servico',
+        title: '2. Descrição do serviço',
         body: (
           <>
             <p>
-              O Damas Clash e uma plataforma de jogo online de Damas Brasileiras (modalidade
-              oficial, tabuleiro 8x8). O servico permite que jogadores criem contas, disputem
-              partidas em tempo real contra outros jogadores, consultem historico de partidas e
+              O Damas Clash é uma plataforma de jogo online de Damas Brasileiras (modalidade
+              oficial, tabuleiro 8x8). O serviço permite que jogadores criem contas, disputem
+              partidas em tempo real contra outros jogadores, consultem histórico de partidas e
               personalizem seu perfil.
             </p>
             <p>
-              A plataforma tambem oferece uma carteira Lightning Network opcional que permite
-              depositar e sacar satoshis (fracoes de Bitcoin) e participar de partidas com
+              A plataforma também oferece uma carteira Lightning Network opcional que permite
+              depositar e sacar satoshis (frações de Bitcoin) e participar de partidas com
               aposta, onde o vencedor recebe a soma das apostas dos dois jogadores. O uso da
-              carteira e das partidas com aposta e inteiramente opcional — todos os recursos do
-              jogo sao acessiveis sem depositar qualquer valor, escolhendo o modo amigavel.
+              carteira e das partidas com aposta é inteiramente opcional — todos os recursos do
+              jogo são acessíveis sem depositar qualquer valor, escolhendo o modo amigável.
             </p>
           </>
         ),
@@ -325,32 +325,32 @@ const content = {
         body: (
           <>
             <p>
-              O servico e destinado a pessoas com 13 anos ou mais. Ao criar uma conta, voce
-              confirma que atende a este requisito. Usuarios entre 13 e 18 anos devem ter
-              autorizacao de um responsavel legal.
+              O serviço é destinado a pessoas com 13 anos ou mais. Ao criar uma conta, você
+              confirma que atende a este requisito. Usuários entre 13 e 18 anos devem ter
+              autorização de um responsável legal.
             </p>
             <p>
-              O uso da carteira Lightning e a participacao em partidas com aposta sao
-              permitidos exclusivamente para usuarios com 18 anos completos ou a idade minima
-              exigida pela legislacao de sua jurisdicao para atividades envolvendo apostas
-              em dinheiro. Ao depositar fundos ou entrar em uma partida com aposta, voce
+              O uso da carteira Lightning e a participação em partidas com aposta são
+              permitidos exclusivamente para usuários com 18 anos completos ou a idade mínima
+              exigida pela legislação de sua jurisdição para atividades envolvendo apostas
+              em dinheiro. Ao depositar fundos ou entrar em uma partida com aposta, você
               confirma que atende a este requisito.
             </p>
           </>
         ),
       },
       {
-        title: '4. Contas de usuario',
+        title: '4. Contas de usuário',
         body: (
           <>
             <p>
-              Cada usuario pode possuir uma unica conta. Voce e responsavel por manter a
-              seguranca do acesso a sua conta e por todas as atividades realizadas atraves dela.
-              Qualquer suspeita de uso nao autorizado deve ser reportada imediatamente.
+              Cada usuário pode possuir uma única conta. Você é responsável por manter a
+              segurança do acesso à sua conta e por todas as atividades realizadas através dela.
+              Qualquer suspeita de uso não autorizado deve ser reportada imediatamente.
             </p>
             <p>
-              E proibido compartilhar, vender ou transferir sua conta para terceiros. Voce e
-              o unico responsavel por todas as transacoes e apostas realizadas a partir da
+              É proibido compartilhar, vender ou transferir sua conta para terceiros. Você é
+              o único responsável por todas as transações e apostas realizadas a partir da
               sua conta.
             </p>
           </>
@@ -362,40 +362,40 @@ const content = {
           <>
             <p>
               O Damas Clash disponibiliza uma carteira interna na rede Lightning Network para
-              facilitar depositos, saques e liquidacao de apostas. Ao utilizar a carteira,
-              voce reconhece e aceita o seguinte:
+              facilitar depósitos, saques e liquidação de apostas. Ao utilizar a carteira,
+              você reconhece e aceita o seguinte:
             </p>
             <ul>
               <li>
-                <strong>Depositos</strong> — os fundos sao creditados apos a confirmacao do
-                pagamento na rede Lightning. O Damas Clash nao se responsabiliza por atrasos
+                <strong>Depósitos</strong> — os fundos são creditados após a confirmação do
+                pagamento na rede Lightning. O Damas Clash não se responsabiliza por atrasos
                 ou falhas causados pela rede Lightning ou pela sua carteira externa.
               </li>
               <li>
-                <strong>Saques</strong> — processados para um Endereco Lightning cadastrado
-                no seu perfil. Voce e responsavel por fornecer um endereco valido e operacional.
-                O Damas Clash nao se responsabiliza por fundos enviados a um endereco incorreto
-                fornecido por voce.
+                <strong>Saques</strong> — processados para um Endereço Lightning cadastrado
+                no seu perfil. Você é responsável por fornecer um endereço válido e operacional.
+                O Damas Clash não se responsabiliza por fundos enviados a um endereço incorreto
+                fornecido por você.
               </li>
               <li>
                 <strong>Taxas</strong> — taxas de roteamento da rede Lightning podem incidir
-                sobre depositos e saques. O Damas Clash pode cobrar uma taxa de plataforma sobre
-                o pagamento de partidas com aposta, que sera informada no momento da transacao.
+                sobre depósitos e saques. O Damas Clash pode cobrar uma taxa de plataforma sobre
+                o pagamento de partidas com aposta, que será informada no momento da transação.
               </li>
               <li>
-                <strong>Volatilidade</strong> — o valor dos satoshis em moeda fiduciaria oscila.
-                O Damas Clash nao se responsabiliza por ganhos ou perdas decorrentes de variacoes
-                da taxa de cambio.
+                <strong>Volatilidade</strong> — o valor dos satoshis em moeda fiduciária oscila.
+                O Damas Clash não se responsabiliza por ganhos ou perdas decorrentes de variações
+                da taxa de câmbio.
               </li>
               <li>
-                <strong>Valores minimos</strong> — valores minimos de deposito e saque podem
-                ser aplicados e sao exibidos na interface da carteira.
+                <strong>Valores mínimos</strong> — valores mínimos de depósito e saque podem
+                ser aplicados e são exibidos na interface da carteira.
               </li>
             </ul>
             <p>
-              O Damas Clash nao e uma instituicao financeira, processador de pagamentos ou
-              corretora. A carteira e um recurso utilitario destinado exclusivamente a
-              viabilizar a mecanica de apostas dentro do jogo.
+              O Damas Clash não é uma instituição financeira, processador de pagamentos ou
+              corretora. A carteira é um recurso utilitário destinado exclusivamente a
+              viabilizar a mecânica de apostas dentro do jogo.
             </p>
           </>
         ),
@@ -405,44 +405,44 @@ const content = {
         body: (
           <>
             <p>
-              Partidas com aposta sao partidas em que ambos os jogadores apostam uma quantia
+              Partidas com aposta são partidas em que ambos os jogadores apostam uma quantia
               igual em satoshis. O vencedor recebe o total combinado, descontadas eventuais
-              taxas de plataforma. Ao participar de uma partida com aposta, voce reconhece e
+              taxas de plataforma. Ao participar de uma partida com aposta, você reconhece e
               aceita o seguinte:
             </p>
             <ul>
-              <li>As apostas sao bloqueadas no inicio da partida e nao sao reembolsaveis apos
-              o inicio da partida, exceto em caso de cancelamento tecnico iniciado pelo Damas
+              <li>As apostas são bloqueadas no início da partida e não são reembolsáveis após
+              o início da partida, exceto em caso de cancelamento técnico iniciado pelo Damas
               Clash.</li>
-              <li>Se um jogador desistir ou perder todas as pecas, o adversario recebe o
+              <li>Se um jogador desistir ou perder todas as peças, o adversário recebe o
               pagamento integral.</li>
-              <li>Em caso de empate, as apostas sao devolvidas a cada jogador, descontadas
+              <li>Em caso de empate, as apostas são devolvidas a cada jogador, descontadas
               eventuais taxas.</li>
               <li>Desconectar-se ou abandonar deliberadamente uma partida com aposta para
-              evitar a derrota pode resultar em perda automatica da aposta e suspensao
+              evitar a derrota pode resultar em perda automática da aposta e suspensão
               da conta.</li>
-              <li>As partidas com aposta sao um recurso do jogo e nao constituem jogo de azar
-              sob nenhuma jurisdicao especifica. Voce e o unico responsavel por cumprir as leis
-              aplicaveis em seu pais ou regiao em relacao a apostas financeiras em jogos online.</li>
+              <li>As partidas com aposta são um recurso do jogo e não constituem jogo de azar
+              sob nenhuma jurisdição específica. Você é o único responsável por cumprir as leis
+              aplicáveis em seu país ou região em relação a apostas financeiras em jogos online.</li>
             </ul>
           </>
         ),
       },
       {
-        title: '7. Conduta do usuario',
+        title: '7. Conduta do usuário',
         body: (
           <>
-            <p>Ao utilizar o Damas Clash, voce concorda em nao:</p>
+            <p>Ao utilizar o Damas Clash, você concorda em não:</p>
             <ul>
-              <li>Usar programas automaticos, bots ou qualquer software de assistencia durante as partidas;</li>
+              <li>Usar programas automáticos, bots ou qualquer software de assistência durante as partidas;</li>
               <li>Abandonar deliberadamente partidas com aposta para evitar a perda de fundos;</li>
               <li>Combinar resultados com outro jogador para manipular o desfecho de uma partida com aposta;</li>
-              <li>Tentar explorar falhas tecnicas para obter vantagem indevida ou fundos sem autorizacao;</li>
-              <li>Assediar, insultar ou ameacar outros jogadores;</li>
+              <li>Tentar explorar falhas técnicas para obter vantagem indevida ou fundos sem autorização;</li>
+              <li>Assediar, insultar ou ameaçar outros jogadores;</li>
               <li>Criar contas falsas ou se passar por outras pessoas;</li>
-              <li>Tentar acessar areas restritas do sistema ou dados de outros usuarios;</li>
-              <li>Usar o servico para lavagem de dinheiro, fraude ou qualquer atividade financeira ilegal;</li>
-              <li>Utilizar o servico para fins contrarios a legislacao aplicavel na sua jurisdicao.</li>
+              <li>Tentar acessar áreas restritas do sistema ou dados de outros usuários;</li>
+              <li>Usar o serviço para lavagem de dinheiro, fraude ou qualquer atividade financeira ilegal;</li>
+              <li>Utilizar o serviço para fins contrários à legislação aplicável na sua jurisdição.</li>
             </ul>
           </>
         ),
@@ -452,9 +452,9 @@ const content = {
         body: (
           <p>
             As partidas seguem as regras oficiais das Damas Brasileiras, incluindo captura
-            obrigatoria e multicaptura. O Damas Clash reserva-se o direito de implementar
-            variacoes de regras e de atualizar a mecanica do jogo sem aviso previo. Atualizacoes
-            de regras nao dao direito a nenhum usuario a reembolso de fundos mantidos na
+            obrigatória e multicaptura. O Damas Clash reserva-se o direito de implementar
+            variações de regras e de atualizar a mecânica do jogo sem aviso prévio. Atualizações
+            de regras não dão direito a nenhum usuário a reembolso de fundos mantidos na
             carteira.
           </p>
         ),
@@ -464,28 +464,28 @@ const content = {
         body: (
           <>
             <p>
-              Todo o conteudo do Damas Clash — incluindo codigo-fonte, design, logotipos,
-              graficos e textos — e de propriedade exclusiva do servico e esta protegido por
-              leis de direito autoral. E vedada a reproducao, modificacao ou distribuicao sem
-              autorizacao expressa.
+              Todo o conteúdo do Damas Clash — incluindo código-fonte, design, logotipos,
+              gráficos e textos — é de propriedade exclusiva do serviço e está protegido por
+              leis de direito autoral. É vedada a reprodução, modificação ou distribuição sem
+              autorização expressa.
             </p>
             <p>
-              Ao enviar uma foto de perfil, voce declara ter os direitos necessarios sobre a
-              imagem e concede ao Damas Clash licenca limitada para exibi-la no servico.
+              Ao enviar uma foto de perfil, você declara ter os direitos necessários sobre a
+              imagem e concede ao Damas Clash licença limitada para exibi-la no serviço.
             </p>
           </>
         ),
       },
       {
-        title: '10. Disponibilidade do servico',
+        title: '10. Disponibilidade do serviço',
         body: (
           <p>
-            O Damas Clash e oferecido no estado em que se encontra, sem garantia de
-            disponibilidade ininterrupta. Podemos realizar manutencoes, atualizacoes ou
-            suspender o servico temporariamente a qualquer momento, sem aviso previo. Em caso
-            de interrupcao planejada ou nao planejada, o Damas Clash envidara esforcos
-            razoaveis para devolver os fundos bloqueados em partidas com aposta ativas dentro
-            de prazo razoavel.
+            O Damas Clash é oferecido no estado em que se encontra, sem garantia de
+            disponibilidade ininterrupta. Podemos realizar manutenções, atualizações ou
+            suspender o serviço temporariamente a qualquer momento, sem aviso prévio. Em caso
+            de interrupção planejada ou não planejada, o Damas Clash envidará esforços
+            razoáveis para devolver os fundos bloqueados em partidas com aposta ativas dentro
+            de prazo razoável.
           </p>
         ),
       },
@@ -495,50 +495,50 @@ const content = {
           <>
             <p>
               Reservamo-nos o direito de suspender ou encerrar contas que violem estes termos,
-              sem aviso previo. Em caso de encerramento por violacao de politica envolvendo
-              atividade fraudulenta ou manipulacao do sistema de apostas, o saldo remanescente
+              sem aviso prévio. Em caso de encerramento por violação de política envolvendo
+              atividade fraudulenta ou manipulação do sistema de apostas, o saldo remanescente
               pode ser confiscado.
             </p>
             <p>
-              Voce pode solicitar o encerramento da sua propria conta a qualquer momento. Antes
-              da exclusao, qualquer saldo positivo deve ser sacado. O Damas Clash nao se
-              responsabiliza por fundos abandonados em uma conta excluida.
+              Você pode solicitar o encerramento da sua própria conta a qualquer momento. Antes
+              da exclusão, qualquer saldo positivo deve ser sacado. O Damas Clash não se
+              responsabiliza por fundos abandonados em uma conta excluída.
             </p>
           </>
         ),
       },
       {
-        title: '12. Limitacao de responsabilidade',
+        title: '12. Limitação de responsabilidade',
         body: (
           <p>
-            O Damas Clash nao se responsabiliza por danos diretos, indiretos ou consequentes
-            decorrentes do uso ou da impossibilidade de uso do servico, incluindo perda de
-            fundos por falhas da rede Lightning, enderecos de saque incorretos fornecidos
-            pelo usuario, interrupcao de partidas ou falhas de comunicacao. A responsabilidade
-            total do Damas Clash perante qualquer usuario nao excedera o saldo mantido na
-            carteira desse usuario no momento da reclamacao.
+            O Damas Clash não se responsabiliza por danos diretos, indiretos ou consequentes
+            decorrentes do uso ou da impossibilidade de uso do serviço, incluindo perda de
+            fundos por falhas da rede Lightning, endereços de saque incorretos fornecidos
+            pelo usuário, interrupção de partidas ou falhas de comunicação. A responsabilidade
+            total do Damas Clash perante qualquer usuário não excederá o saldo mantido na
+            carteira desse usuário no momento da reclamação.
           </p>
         ),
       },
       {
-        title: '13. Alteracoes nos termos',
+        title: '13. Alterações nos termos',
         body: (
           <p>
-            Podemos atualizar estes termos periodicamente. A continuidade do uso do servico
-            apos publicacao de novas versoes implica aceitacao automatica das alteracoes.
-            Mudancas significativas serao comunicadas por e-mail ou mediante aviso no
-            aplicativo. Alteracoes que afetem a carteira ou as funcionalidades de apostas
-            incluirao um prazo minimo de aviso de 7 dias antes de entrar em vigor.
+            Podemos atualizar estes termos periodicamente. A continuidade do uso do serviço
+            após publicação de novas versões implica aceitação automática das alterações.
+            Mudanças significativas serão comunicadas por e-mail ou mediante aviso no
+            aplicativo. Alterações que afetem a carteira ou as funcionalidades de apostas
+            incluirão um prazo mínimo de aviso de 7 dias antes de entrar em vigor.
           </p>
         ),
       },
       {
-        title: '14. Lei aplicavel',
+        title: '14. Lei aplicável',
         body: (
           <p>
-            Estes Termos de Uso sao regidos pela legislacao brasileira. Eventuais disputas
-            serao submetidas ao foro da comarca de domicilio do usuario, salvo disposicao
-            legal em contrario.
+            Estes Termos de Uso são regidos pela legislação brasileira. Eventuais disputas
+            serão submetidas ao foro da comarca de domicílio do usuário, salvo disposição
+            legal em contrário.
           </p>
         ),
         last: true,

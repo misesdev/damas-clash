@@ -3,9 +3,7 @@ import {useTranslation} from 'react-i18next';
 import {showMessage} from '../components/MessageBox';
 import {cancelGame, joinGame, listGames} from '../api/games';
 import type {LoginResponse} from '../types/auth';
-import type {GameResponse, GameStatus} from '../types/game';
-
-export type FilterTab = Exclude<GameStatus, "Completed">;
+import type {GameResponse} from '../types/game';
 
 export function useHomeScreen(
   user: LoginResponse,
@@ -21,7 +19,6 @@ export function useHomeScreen(
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<FilterTab>('WaitingForPlayers');
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchGames = useCallback(async () => {
@@ -32,17 +29,16 @@ export function useHomeScreen(
     } catch {
       setError(t('home.errors.loadGames'));
     }
-  }, [user.token]);
+  }, [user.token, t]);
 
   // Initial fetch — used until first real-time update arrives
   useEffect(() => {
     if (liveGames !== null && liveGames !== undefined) {
-      // Already have live data, skip initial fetch
       setLoading(false);
       return;
     }
     fetchGames().finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // When live data arrives for the first time, stop showing loader
@@ -105,21 +101,24 @@ export function useHomeScreen(
 
   // Use live games when available, otherwise fall back to fetched
   const games = liveGames ?? fetchedGames;
-  const filteredFromServer = games.filter(g => g.status === activeTab);
-  const tabFiltered =
-    pendingGame &&
-    pendingGame.status === activeTab &&
-    !filteredFromServer.some(g => g.id === pendingGame.id)
-      ? [pendingGame, ...filteredFromServer]
-      : filteredFromServer;
+
+  // Single unified list: all active games (Waiting + InProgress)
+  const activeGames = games.filter(
+    g => g.status === 'WaitingForPlayers' || g.status === 'InProgress',
+  );
+  const withPending =
+    pendingGame && !activeGames.some(g => g.id === pendingGame.id)
+      ? [pendingGame, ...activeGames]
+      : activeGames;
 
   const q = searchQuery.trim().toLowerCase();
   const filtered = q
-    ? tabFiltered.filter(g =>
-        g.playerBlackUsername?.toLowerCase().includes(q) ||
-        g.playerWhiteUsername?.toLowerCase().includes(q),
+    ? withPending.filter(
+        g =>
+          g.playerBlackUsername?.toLowerCase().includes(q) ||
+          g.playerWhiteUsername?.toLowerCase().includes(q),
       )
-    : tabFiltered;
+    : withPending;
 
   return {
     loading,
@@ -127,8 +126,6 @@ export function useHomeScreen(
     joiningId,
     cancellingId,
     error,
-    activeTab,
-    setActiveTab,
     searchQuery,
     setSearchQuery,
     filtered,

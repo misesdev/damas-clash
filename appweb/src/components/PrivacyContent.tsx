@@ -203,18 +203,18 @@ const content = {
     ],
   },
   pt: {
-    title: 'Politica de Privacidade',
-    lastUpdated: 'Ultima atualizacao: marco de 2026',
+    title: 'Política de Privacidade',
+    lastUpdated: 'Última atualização: março de 2026',
     sections: [
       {
         title: '1. Quem somos',
         body: (
           <p>
-            O Damas Clash e um servico de jogo online de Damas Brasileiras disponivel em
-            navegadores web e no aplicativo Android. O servico inclui funcionalidades opcionais
+            O Damas Clash é um serviço de jogo online de Damas Brasileiras disponível em
+            navegadores web e no aplicativo Android. O serviço inclui funcionalidades opcionais
             como uma carteira Lightning Network para depositar, sacar e apostar satoshis de Bitcoin.
-            Ao utilizar o servico, voce concorda com a coleta e uso das informacoes descritas
-            nesta politica.
+            Ao utilizar o serviço, você concorda com a coleta e uso das informações descritas
+            nesta política.
           </p>
         ),
       },
@@ -222,15 +222,15 @@ const content = {
         title: '2. Dados coletados',
         body: (
           <>
-            <p>Coletamos as seguintes informacoes ao criar e utilizar uma conta:</p>
+            <p>Coletamos as seguintes informações ao criar e utilizar uma conta:</p>
             <ul>
-              <li><strong>Endereco de e-mail</strong> — usado para autenticacao e comunicacoes do servico.</li>
-              <li><strong>Nome de usuario</strong> — identificador publico exibido nas partidas.</li>
-              <li><strong>Foto de perfil</strong> — imagem opcional enviada pelo usuario.</li>
-              <li><strong>Dados de partidas</strong> — historico de jogos, movimentos, resultados e valores apostados.</li>
-              <li><strong>Dados financeiros</strong> — saldo da carteira Lightning (em satoshis) e historico completo de transacoes (depositos, saques, apostas, ganhos, reembolsos), incluindo identificadores de invoice e valores. Esses dados sao necessarios para o funcionamento da carteira e resolucao de disputas.</li>
-              <li><strong>Chave publica Nostr</strong> — se voce optar por autenticar via Nostr, sua chave publica (npub) e armazenada e associada a sua conta. Sua chave privada nunca e transmitida nem armazenada em nossos servidores.</li>
-              <li><strong>Dados de uso</strong> — informacoes tecnicas como horarios de acesso e endereco IP, para fins de seguranca e estabilidade.</li>
+              <li><strong>Endereço de e-mail</strong> — usado para autenticação e comunicações do serviço.</li>
+              <li><strong>Nome de usuário</strong> — identificador público exibido nas partidas.</li>
+              <li><strong>Foto de perfil</strong> — imagem opcional enviada pelo usuário.</li>
+              <li><strong>Dados de partidas</strong> — histórico de jogos, movimentos, resultados e valores apostados.</li>
+              <li><strong>Dados financeiros</strong> — saldo da carteira Lightning (em satoshis) e histórico completo de transações (depósitos, saques, apostas, ganhos, reembolsos), incluindo identificadores de invoice e valores. Esses dados são necessários para o funcionamento da carteira e resolução de disputas.</li>
+              <li><strong>Chave pública Nostr</strong> — se você optar por autenticar via Nostr, sua chave pública (npub) é armazenada e associada à sua conta. Sua chave privada nunca é transmitida nem armazenada em nossos servidores.</li>
+              <li><strong>Dados de uso</strong> — informações técnicas como horários de acesso e endereço IP, para fins de segurança e estabilidade.</li>
             </ul>
           </>
         ),
@@ -239,89 +239,89 @@ const content = {
         title: '3. Como usamos seus dados',
         body: (
           <>
-            <p>Os dados coletados sao utilizados exclusivamente para:</p>
+            <p>Os dados coletados são utilizados exclusivamente para:</p>
             <ul>
               <li>Autenticar e identificar sua conta;</li>
-              <li>Exibir seu perfil e historico de partidas;</li>
-              <li>Enviar codigos de verificacao por e-mail (login e confirmacao de cadastro);</li>
-              <li>Processar depositos, saques e apostas via Lightning Network;</li>
-              <li>Manter registro preciso do seu saldo e historico de transacoes;</li>
-              <li>Resolver disputas relacionadas a operacoes da carteira ou resultados de partidas;</li>
-              <li>Garantir a seguranca e o bom funcionamento do servico.</li>
+              <li>Exibir seu perfil e histórico de partidas;</li>
+              <li>Enviar códigos de verificação por e-mail (login e confirmação de cadastro);</li>
+              <li>Processar depósitos, saques e apostas via Lightning Network;</li>
+              <li>Manter registro preciso do seu saldo e histórico de transações;</li>
+              <li>Resolver disputas relacionadas a operações da carteira ou resultados de partidas;</li>
+              <li>Garantir a segurança e o bom funcionamento do serviço.</li>
             </ul>
-            <p>Nao vendemos, alugamos nem compartilhamos seus dados pessoais com terceiros para fins comerciais.</p>
+            <p>Não vendemos, alugamos nem compartilhamos seus dados pessoais com terceiros para fins comerciais.</p>
           </>
         ),
       },
       {
-        title: '4. Servicos de terceiros',
+        title: '4. Serviços de terceiros',
         body: (
           <>
-            <p>O Damas Clash utiliza os seguintes servicos de terceiros, cada um com sua propria politica de privacidade:</p>
+            <p>O Damas Clash utiliza os seguintes serviços de terceiros, cada um com sua própria política de privacidade:</p>
             <ul>
-              <li><strong>SendGrid (Twilio)</strong> — envio de e-mails transacionais (confirmacao de cadastro, codigos de acesso).</li>
+              <li><strong>SendGrid (Twilio)</strong> — envio de e-mails transacionais (confirmação de cadastro, códigos de acesso).</li>
               <li><strong>Cloudinary</strong> — armazenamento e entrega de imagens de perfil.</li>
-              <li><strong>Gateway Lightning Network (LND)</strong> — processamento de pagamentos Bitcoin Lightning. Dados de invoice e hashes de pagamento sao compartilhados com esse servico para executar depositos e saques. Nenhuma informacao pessoal identificavel e transmitida alem do necessario para o roteamento do pagamento.</li>
-              <li><strong>Google Sign-In</strong> — autenticacao opcional via conta Google. Se utilizado, a politica de privacidade do Google rege os dados trocados durante esse fluxo de autenticacao.</li>
+              <li><strong>Gateway Lightning Network (LND)</strong> — processamento de pagamentos Bitcoin Lightning. Dados de invoice e hashes de pagamento são compartilhados com esse serviço para executar depósitos e saques. Nenhuma informação pessoal identificável é transmitida além do necessário para o roteamento do pagamento.</li>
+              <li><strong>Google Sign-In</strong> — autenticação opcional via conta Google. Se utilizado, a política de privacidade do Google rege os dados trocados durante esse fluxo de autenticação.</li>
             </ul>
           </>
         ),
       },
       {
-        title: '5. Armazenamento e seguranca',
+        title: '5. Armazenamento e segurança',
         body: (
           <>
             <p>
-              Seus dados sao armazenados em servidores seguros. Senhas nao sao utilizadas — a
-              autenticacao ocorre por codigos de uso unico enviados ao seu e-mail, login com Google
-              ou assinatura de chave Nostr. Os tokens de sessao sao armazenados localmente no seu
+              Seus dados são armazenados em servidores seguros. Senhas não são utilizadas — a
+              autenticação ocorre por códigos de uso único enviados ao seu e-mail, login com Google
+              ou assinatura de chave Nostr. Os tokens de sessão são armazenados localmente no seu
               dispositivo e expiram automaticamente.
             </p>
             <p>
-              Os saldos e registros de transacoes da carteira sao armazenados em banco de dados
-              criptografado. Adotamos medidas tecnicas e organizacionais razoaveis para proteger
-              suas informacoes contra acesso nao autorizado, perda ou alteracao.
+              Os saldos e registros de transações da carteira são armazenados em banco de dados
+              criptografado. Adotamos medidas técnicas e organizacionais razoáveis para proteger
+              suas informações contra acesso não autorizado, perda ou alteração.
             </p>
             <p>
-              As transacoes Lightning Network sao irreversiveis por natureza. Uma vez que um
-              saque e enviado para o endereco ou invoice que voce forneceu, nao e possivel
-              revertê-lo. Voce e o unico responsavel por fornecer dados de saque corretos.
-            </p>
-          </>
-        ),
-      },
-      {
-        title: '6. Retencao de dados',
-        body: (
-          <>
-            <p>
-              Seus dados pessoais (nome de usuario, e-mail, foto de perfil, historico de partidas)
-              sao mantidos enquanto sua conta estiver ativa. Voce pode solicitar a exclusao da sua
-              conta a qualquer momento pelas configuracoes do aplicativo ou pelo contato indicado
-              na secao 10.
-            </p>
-            <p>
-              <strong>Registros financeiros</strong> (historico de transacoes, logs de apostas,
-              movimentacoes da carteira) sao retidos por no minimo 5 anos apos a data da transacao,
-              mesmo apos a exclusao da conta, para cumprir obrigacoes legais de registro financeiro
-              e permitir a resolucao de disputas.
+              As transações Lightning Network são irreversíveis por natureza. Uma vez que um
+              saque é enviado para o endereço ou invoice que você forneceu, não é possível
+              revertê-lo. Você é o único responsável por fornecer dados de saque corretos.
             </p>
           </>
         ),
       },
       {
-        title: '7. Criancas e restricoes de idade',
+        title: '6. Retenção de dados',
         body: (
           <>
             <p>
-              O Damas Clash nao e direcionado a menores de 13 anos. Nao coletamos intencionalmente
-              informacoes de criancas. Se voce acredita que uma crianca forneceu dados sem
-              consentimento, entre em contato conosco para remocao imediata.
+              Seus dados pessoais (nome de usuário, e-mail, foto de perfil, histórico de partidas)
+              são mantidos enquanto sua conta estiver ativa. Você pode solicitar a exclusão da sua
+              conta a qualquer momento pelas configurações do aplicativo ou pelo contato indicado
+              na seção 10.
             </p>
             <p>
-              A carteira Lightning e as funcionalidades de apostas estao disponiveis apenas para
-              usuarios com pelo menos 18 anos de idade, ou a idade minima legal para jogos de
-              azar na sua jurisdicao, o que for maior. Ao usar essas funcionalidades, voce
+              <strong>Registros financeiros</strong> (histórico de transações, logs de apostas,
+              movimentações da carteira) são retidos por no mínimo 5 anos após a data da transação,
+              mesmo após a exclusão da conta, para cumprir obrigações legais de registro financeiro
+              e permitir a resolução de disputas.
+            </p>
+          </>
+        ),
+      },
+      {
+        title: '7. Crianças e restrições de idade',
+        body: (
+          <>
+            <p>
+              O Damas Clash não é direcionado a menores de 13 anos. Não coletamos intencionalmente
+              informações de crianças. Se você acredita que uma criança forneceu dados sem
+              consentimento, entre em contato conosco para remoção imediata.
+            </p>
+            <p>
+              A carteira Lightning e as funcionalidades de apostas estão disponíveis apenas para
+              usuários com pelo menos 18 anos de idade, ou a idade mínima legal para jogos de
+              azar na sua jurisdição, o que for maior. Ao usar essas funcionalidades, você
               confirma que atende a esse requisito.
             </p>
           </>
@@ -331,11 +331,11 @@ const content = {
         title: '8. Seus direitos',
         body: (
           <>
-            <p>Voce tem direito a:</p>
+            <p>Você tem direito a:</p>
             <ul>
-              <li>Acessar os dados pessoais que mantemos sobre voce;</li>
+              <li>Acessar os dados pessoais que mantemos sobre você;</li>
               <li>Corrigir dados incorretos ou desatualizados;</li>
-              <li>Solicitar a exclusao da sua conta e dados pessoais (sujeito as obrigacoes de retencao de registros financeiros descritas na secao 6);</li>
+              <li>Solicitar a exclusão da sua conta e dados pessoais (sujeito às obrigações de retenção de registros financeiros descritas na seção 6);</li>
               <li>Revogar o consentimento para uso dos seus dados.</li>
             </ul>
           </>
@@ -346,21 +346,21 @@ const content = {
         body: (
           <p>
             O Damas Clash utiliza armazenamento local do navegador e, no celular, armazenamento
-            do dispositivo para manter seu token de sessao e preferencia de idioma. Nenhum cookie
-            de publicidade ou rastreamento e utilizado. Esses dados ficam apenas no seu dispositivo
-            e nao sao transmitidos a terceiros.
+            do dispositivo para manter seu token de sessão e preferência de idioma. Nenhum cookie
+            de publicidade ou rastreamento é utilizado. Esses dados ficam apenas no seu dispositivo
+            e não são transmitidos a terceiros.
           </p>
         ),
       },
       {
-        title: '10. Alteracoes nesta politica',
+        title: '10. Alterações nesta política',
         body: (
           <p>
-            Podemos atualizar esta politica periodicamente. Alteracoes significativas serao
-            comunicadas por e-mail ou mediante aviso no proprio servico. Alteracoes que afetem
-            o tratamento de dados financeiros ou da carteira serao comunicadas com pelo menos
-            7 dias de antecedencia. O uso continuado do Damas Clash apos as alteracoes implica
-            aceitacao da nova politica.
+            Podemos atualizar esta política periodicamente. Alterações significativas serão
+            comunicadas por e-mail ou mediante aviso no próprio serviço. Alterações que afetem
+            o tratamento de dados financeiros ou da carteira serão comunicadas com pelo menos
+            7 dias de antecedência. O uso continuado do Damas Clash após as alterações implica
+            aceitação da nova política.
           </p>
         ),
       },
@@ -368,8 +368,8 @@ const content = {
         title: '11. Contato',
         body: (
           <p>
-            Duvidas, solicitacoes ou reclamacoes relacionadas a privacidade podem ser enviadas
-            para o endereco de e-mail disponibilizado no aplicativo ou no perfil do aplicativo
+            Dúvidas, solicitações ou reclamações relacionadas à privacidade podem ser enviadas
+            para o endereço de e-mail disponibilizado no aplicativo ou no perfil do aplicativo
             na Google Play Store.
           </p>
         ),

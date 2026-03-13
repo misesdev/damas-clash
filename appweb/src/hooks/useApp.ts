@@ -11,6 +11,7 @@ import { showMessage } from '../components/MessageBox';
 import { cancelGame, createGame, getGame } from '../api/games';
 import { refreshAccessToken } from '../api/auth';
 import { getWallet } from '../api/wallet';
+import { getPlayer } from '../api/players';
 import { BASE_URL } from '../api/client';
 import { clearActiveGameId, clearSession, loadActiveGameId, loadSession, saveActiveGameId, saveSession } from '../utils/session';
 import type { LoginResponse } from '../types/auth';
@@ -19,7 +20,7 @@ import type { OnlinePlayerInfo } from '../types/player';
 import i18n from '../i18n';
 
 type Screen = 'landing' | 'login' | 'register' | 'confirmEmail' | 'verifyLogin' | 'nostrLogin';
-type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'wallet' | 'playerProfile' | 'dashboard';
+type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'wallet' | 'editLightningAddress' | 'playerProfile' | 'dashboard';
 
 interface SelectedPlayer {
   playerId: string;
@@ -46,6 +47,7 @@ export function useApp() {
   const [showOnlinePlayers, setShowOnlinePlayers] = useState(false);
   const [selectedPlayerProfile, setSelectedPlayerProfile] = useState<SelectedPlayer | null>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [lightningAddress, setLightningAddress] = useState<string | null>(null);
   const [showNewGameModal, setShowNewGameModal] = useState(false);
 
   const authScreenRef = useRef<AuthScreen>('tabs');
@@ -102,6 +104,14 @@ export function useApp() {
     getWallet(session.token)
       .then(w => setWalletBalance(w.availableBalanceSats))
       .catch(() => setWalletBalance(null));
+  }, [session?.token]);
+
+  // Fetch lightning address when session changes
+  useEffect(() => {
+    if (!session?.token || !session?.playerId) { setLightningAddress(null); return; }
+    getPlayer(session.token, session.playerId)
+      .then(p => setLightningAddress(p.lightningAddress))
+      .catch(() => setLightningAddress(null));
   }, [session?.token]);
 
   // Persistent SignalR connection
@@ -293,6 +303,12 @@ export function useApp() {
 
   const handleOpenWallet = () => setAuthScreen('wallet');
   const handleBackFromWallet = () => { setAuthScreen('tabs'); setTab('profile'); };
+  const handleOpenEditLightningAddress = () => setAuthScreen('editLightningAddress');
+  const handleBackFromLightningAddress = () => setAuthScreen('wallet');
+  const handleLightningAddressSaved = (addr: string | null) => {
+    setLightningAddress(addr);
+    setAuthScreen('wallet');
+  };
   const handleOpenDashboard = () => setAuthScreen('dashboard');
   const handleBackFromDashboard = () => { setAuthScreen('tabs'); setTab('home'); };
   const handleNavigateToEditUsername = () => setAuthScreen('editUsername');
@@ -365,6 +381,11 @@ export function useApp() {
     handleCreateGame,
     handleOpenWallet,
     handleBackFromWallet,
+    lightningAddress,
+    setLightningAddress,
+    handleOpenEditLightningAddress,
+    handleBackFromLightningAddress,
+    handleLightningAddressSaved,
     handleOpenDashboard,
     handleBackFromDashboard,
   };

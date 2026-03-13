@@ -2,6 +2,15 @@ import React from 'react';
 import {render, fireEvent, waitFor} from '@testing-library/react-native';
 import {WithdrawScreen} from '../src/screens/wallet/WithdrawScreen';
 
+jest.mock('react-native-safe-area-context', () => {
+  const {View} = require('react-native');
+  return {
+    SafeAreaProvider: ({children}: {children: React.ReactNode}) => <View>{children}</View>,
+    SafeAreaView: ({children}: {children: React.ReactNode}) => <View>{children}</View>,
+    useSafeAreaInsets: () => ({top: 0, right: 0, bottom: 0, left: 0}),
+  };
+});
+
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({t: (key: string, opts?: any) => {
     if (opts?.amount !== undefined) {return `${opts.amount} sats`;}

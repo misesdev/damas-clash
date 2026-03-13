@@ -2,16 +2,18 @@ import {StyleSheet} from 'react-native';
 import {colors} from '../theme/colors';
 
 export const styles = StyleSheet.create({
+  // ─── Container ────────────────────────────────────────────────────────────
   container: {flex: 1, backgroundColor: colors.bg},
 
+  // ─── Top bar ──────────────────────────────────────────────────────────────
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
+    paddingTop: 12,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
   topBarLogo: {
@@ -25,10 +27,12 @@ export const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 3,
   },
-  topBarAvatar: {},
-  dashboardPill: {
+  topBarRight: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+  },
+  adminPill: {
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
@@ -36,16 +40,16 @@ export const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  dashboardText: {
+  adminText: {
     color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   onlinePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
@@ -60,68 +64,233 @@ export const styles = StyleSheet.create({
   },
   onlineText: {
     color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  avatarImg: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  avatarPlaceholder: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitials: {
-    color: colors.text,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
 
-  sectionHeading: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 4,
+  // ─── Segment tabs ─────────────────────────────────────────────────────────
+  segment: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 4,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  sectionTitle: {
+  segmentTab: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 9,
+    alignItems: 'center',
+  },
+  segmentTabActive: {
+    backgroundColor: colors.bg,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  segmentLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.textMuted,
+  },
+  segmentLabelActive: {
     color: colors.text,
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.3,
+    fontWeight: '700',
   },
 
-  tabs: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    gap: 8,
+  // ─── Shared tab content wrapper ───────────────────────────────────────────
+  tabContent: {
+    flex: 1,
   },
-  tab: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+
+  // ─── Wallet tab ───────────────────────────────────────────────────────────
+  walletScroll: {
+    paddingBottom: 40,
+  },
+
+  balanceCard: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    backgroundColor: colors.surface,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  balanceLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  },
+  balanceLoader: {
+    marginVertical: 8,
+  },
+  balanceRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  balanceAmount: {
+    fontSize: 52,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: -2,
+    lineHeight: 56,
+  },
+  balanceUnit: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.textMuted,
+    marginBottom: 6,
+  },
+  lockedBadge: {
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,193,7,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,193,7,0.25)',
+  },
+  lockedText: {
+    fontSize: 12,
+    color: '#FFC107',
+    fontWeight: '500',
+  },
+
+  actionRow: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 12,
+    gap: 12,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 15,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  tabActive: {backgroundColor: colors.primary, borderColor: colors.primary},
-  tabText: {color: colors.textSecondary, fontSize: 13, fontWeight: '500'},
-  tabTextActive: {color: colors.primaryText, fontWeight: '600'},
+  actionBtnPrimary: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  actionIcon: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  actionIconPrimary: {
+    color: colors.primaryText,
+  },
+  actionLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  actionLabelPrimary: {
+    color: colors.primaryText,
+  },
 
+  txSectionHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 28,
+    paddingBottom: 12,
+  },
+  txSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    letterSpacing: -0.2,
+  },
+  txList: {
+    marginHorizontal: 20,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  txRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  txDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginHorizontal: 16,
+  },
+  txIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  txIconPos: {backgroundColor: 'rgba(76, 175, 80, 0.15)'},
+  txIconNeg: {backgroundColor: 'rgba(255, 69, 58, 0.12)'},
+  txIconText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  txInfo: {flex: 1},
+  txLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  txDate: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  txAmount: {
+    fontSize: 14,
+    fontWeight: '700',
+    flexShrink: 0,
+  },
+  txAmountPos: {color: '#4CAF50'},
+  txAmountNeg: {color: colors.error},
+  txCenter: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  txEmpty: {
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+
+  // ─── Games tab ────────────────────────────────────────────────────────────
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 20,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    height: 40,
-    borderRadius: 10,
+    marginTop: 16,
+    marginBottom: 8,
+    paddingHorizontal: 14,
+    height: 42,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
@@ -129,7 +298,7 @@ export const styles = StyleSheet.create({
   },
   searchIcon: {
     color: colors.textMuted,
-    fontSize: 14,
+    fontSize: 15,
   },
   searchInput: {
     flex: 1,
@@ -139,28 +308,28 @@ export const styles = StyleSheet.create({
   },
   searchClear: {
     color: colors.textMuted,
-    fontSize: 16,
+    fontSize: 15,
     paddingHorizontal: 2,
   },
 
-  stickyHeader: {
-    backgroundColor: colors.bg,
-    paddingTop: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingBottom: 8,
+  gamesList: {
+    paddingHorizontal: 20,
+    paddingBottom: 80,
+    paddingTop: 4,
   },
-
-  loadingArea: {flex: 1, alignItems: 'center', justifyContent: 'center'},
-  list: {paddingHorizontal: 20, paddingBottom: 80, paddingTop: 8},
-  empty: {
+  gamesCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gamesEmpty: {
     color: colors.textMuted,
     fontSize: 14,
     textAlign: 'center',
     marginTop: 48,
     lineHeight: 22,
   },
-  error: {
+  gamesError: {
     color: colors.error,
     fontSize: 13,
     textAlign: 'center',

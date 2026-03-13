@@ -72,6 +72,10 @@ const en = {
     heading: 'Confirm your access',
   },
   home: {
+    walletTab: 'Wallet',
+    gamesTab: 'Matches',
+    transactions: 'Transactions',
+    emptyGames: 'No active matches.',
     waitingTab: 'Waiting',
     inProgressTab: 'In progress',
     searchPlaceholder: 'Search player...',
@@ -166,6 +170,7 @@ const en = {
   },
   deposit: {
     title: 'Deposit',
+    subtitle: 'Add satoshis to your wallet via Lightning Network.',
     amountLabel: 'Amount in satoshis',
     amountPlaceholder: '1000',
     continueButton: 'Generate invoice',
@@ -184,6 +189,7 @@ const en = {
   },
   withdraw: {
     title: 'Withdraw',
+    subtitle: 'Send satoshis to your registered Lightning address.',
     availableLabel: 'Available: {{amount}} sats',
     withdrawButton: 'Withdraw',
     successTitle: 'Withdrawal successful!',
@@ -363,7 +369,7 @@ const en = {
     draw: 'Draw',
   },
   bottomTab: {
-    games: 'Games',
+    games: 'Home',
     newGame: 'New game',
     profile: 'Profile',
   },

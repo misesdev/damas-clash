@@ -82,11 +82,10 @@ export const styles = StyleSheet.create({
     lineHeight: 22,
   },
   noAddressContainer: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-    gap: 12,
+    paddingHorizontal: 40,
+    paddingTop: 16,
+    gap: 16,
   },
   noAddressIcon: {fontSize: 48, marginBottom: 8},
   noAddressTitle: {

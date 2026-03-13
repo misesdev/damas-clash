@@ -1,53 +1,53 @@
-# Descricao completa — Google Play Store
+# Descrição completa — Google Play Store
 
-> Campo: Play Console -> Presenca na Play Store -> Descricao completa (max. 4000 caracteres)
-> Idioma principal: Portugues (Brasil)
+> Campo: Play Console → Presença na Play Store → Descrição completa (máx. 4000 caracteres)
+> Idioma principal: Português (Brasil)
 
 ---
 
-## Portugues (pt-BR)
+## Português (pt-BR)
 
 ```
-Damas Clash e o jeito mais moderno de jogar Damas Brasileiras. Encontre um adversario em segundos e dispute partidas em tempo real — direto do seu celular, de graca.
+Damas Clash é o jeito mais moderno de jogar Damas Brasileiras. Encontre um adversário em segundos e dispute partidas em tempo real — direto do seu celular, de graça.
 
 REGRAS OFICIAIS DAS DAMAS BRASILEIRAS
 
-Tabuleiro 8x8 com todas as regras oficiais:
-- Captura obrigatoria — se houver peca para capturar, a jogada e forcada
-- Multicaptura — encadeie varias capturas em um unico turno
-- Damas (king) — pecas coroadas se movem livremente em qualquer diagonal
-- Promocao — ao chegar na ultima fileira, sua peca vira dama automaticamente
+Tabuleiro 8×8 com todas as regras oficiais:
+- Captura obrigatória — se houver peça para capturar, a jogada é forçada
+- Multicaptura — encadeie várias capturas em um único turno
+- Damas (king) — peças coroadas se movem livremente em qualquer diagonal
+- Promoção — ao chegar na última fileira, sua peça vira dama automaticamente
 
 MULTIPLAYER EM TEMPO REAL
 
-As jogadas aparecem na tela do adversario no instante em que sao feitas. Sem travamentos, sem delay — como se voces estivessem na mesma mesa.
+As jogadas aparecem na tela do adversário no instante em que são feitas. Sem travamentos, sem delay — como se vocês estivessem na mesma mesa.
 
 CARTEIRA LIGHTNING
 
-Deposite e saque Bitcoin em satoshis via Lightning Network. Sem bancos, sem burocracia. Partidas amigaveis sao gratuitas; partidas valendo sats permitem apostar e ganhar o dobro.
+Deposite e saque Bitcoin em satoshis via Lightning Network. Sem bancos, sem burocracia. Partidas amigáveis são gratuitas; partidas valendo sats permitem apostar e ganhar o dobro.
 
 SALA DE ESPERA
 
-Crie uma partida e aguarde na sala de espera ate um oponente entrar. O jogo comeca automaticamente — voce recebe uma notificacao na hora.
+Crie uma partida e aguarde na sala de espera até um oponente entrar. O jogo começa automaticamente — você recebe uma notificação na hora.
 
-PERFIL E ESTATISTICAS
+PERFIL E ESTATÍSTICAS
 
-- Veja seu total de partidas, vitorias e derrotas
+- Veja seu total de partidas, vitórias e derrotas
 - Reveja qualquer partida jogada, movimento por movimento
-- Personalize seu perfil com foto e nome de usuario unicos
+- Personalize seu perfil com foto e nome de usuário únicos
 
-ENTRAR E FACIL
+ENTRAR É FÁCIL
 
 Crie sua conta com e-mail, entre com a sua conta Google ou autentique com Nostr. Nada de senhas para lembrar.
 
-TAMBEM NO NAVEGADOR
+TAMBÉM NO NAVEGADOR
 
-Prefere jogar no computador? Acesse pelo navegador com a mesma conta — seu perfil e historico estao em todas as plataformas.
+Prefere jogar no computador? Acesse pelo navegador com a mesma conta — seu perfil e histórico estão em todas as plataformas.
 
 ---
 
-Damas Clash e gratuito e esta em constante evolucao. Sugestoes sao sempre bem-vindas!
-O uso da carteira e das apostas e permitido apenas para maiores de 18 anos.
+Damas Clash é gratuito e está em constante evolução. Sugestões são sempre bem-vindas!
+O uso da carteira e das apostas é permitido apenas para maiores de 18 anos.
 ```
 
 ---
@@ -59,7 +59,7 @@ Damas Clash is the most modern way to play Brazilian Checkers. Find an opponent 
 
 OFFICIAL BRAZILIAN CHECKERS RULES
 
-8x8 board with full official rules:
+8×8 board with full official rules:
 - Mandatory capture — if there's a piece to capture, the move is forced
 - Multi-capture — chain multiple captures in a single turn
 - Kings — crowned pieces move freely along any diagonal

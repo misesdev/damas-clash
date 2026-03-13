@@ -7,14 +7,12 @@ import {
   getTransactions,
   getWallet,
   initiateDeposit,
-  withdraw,
   withdrawToAddress,
 } from '../api/wallet';
 import type { DepositInitiatedResponse, LedgerEntry, WalletResponse } from '../types/wallet';
 import type { LoginResponse } from '../types/auth';
 
 type DepositStep = 'idle' | 'invoice' | 'polling' | 'paid';
-type WithdrawTab = 'invoice' | 'address';
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_FEE_SATS = 10;
@@ -32,12 +30,10 @@ export function useWalletScreen(session: LoginResponse, onBalanceChanged: (sats:
   const [depositLoading, setDepositLoading] = useState(false);
   const [depositError, setDepositError] = useState('');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isPollingRef = useRef(false);
 
-  // Withdraw
-  const [withdrawTab, setWithdrawTab] = useState<WithdrawTab>('invoice');
-  const [withdrawInvoice, setWithdrawInvoice] = useState('');
+  // Withdraw to address
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawAddressAmount, setWithdrawAddressAmount] = useState('');
   const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [withdrawError, setWithdrawError] = useState('');
   const [withdrawSuccess, setWithdrawSuccess] = useState('');
@@ -61,7 +57,39 @@ export function useWalletScreen(session: LoginResponse, onBalanceChanged: (sats:
     refresh().finally(() => setLoadingWallet(false));
   }, [refresh]);
 
-  // Deposit flow
+  // ── Deposit flow ─────────────────────────────────────────────────────────────
+
+  const stopPolling = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    isPollingRef.current = false;
+  };
+
+  useEffect(() => () => stopPolling(), []);
+
+  const startPolling = (rHash: string) => {
+    setDepositStep('polling');
+    isPollingRef.current = false;
+    pollRef.current = setInterval(async () => {
+      if (isPollingRef.current) return;
+      isPollingRef.current = true;
+      try {
+        const status = await checkDepositStatus(session.token, rHash);
+        if (status.credited) {
+          stopPolling();
+          setDepositStep('paid');
+          refresh();
+        }
+      } catch {
+        // keep polling
+      } finally {
+        isPollingRef.current = false;
+      }
+    }, POLL_INTERVAL_MS);
+  };
+
   const handleGenerateInvoice = async () => {
     const amount = parseInt(depositAmount, 10);
     if (!amount || amount <= 0) {
@@ -82,31 +110,6 @@ export function useWalletScreen(session: LoginResponse, onBalanceChanged: (sats:
     }
   };
 
-  const startPolling = (rHash: string) => {
-    setDepositStep('polling');
-    pollRef.current = setInterval(async () => {
-      try {
-        const status = await checkDepositStatus(session.token, rHash);
-        if (status.credited) {
-          stopPolling();
-          setDepositStep('paid');
-          refresh();
-        }
-      } catch {
-        // keep polling
-      }
-    }, POLL_INTERVAL_MS);
-  };
-
-  const stopPolling = () => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  };
-
-  useEffect(() => () => stopPolling(), []);
-
   const handleResetDeposit = () => {
     stopPolling();
     setDepositStep('idle');
@@ -119,31 +122,10 @@ export function useWalletScreen(session: LoginResponse, onBalanceChanged: (sats:
     if (depositData?.invoice) navigator.clipboard.writeText(depositData.invoice).catch(() => {});
   };
 
-  // Withdraw flow
-  const handleWithdrawInvoice = async () => {
-    if (!withdrawInvoice.trim()) {
-      setWithdrawError(t('wallet_withdrawErrorInvoice'));
-      return;
-    }
-    setWithdrawLoading(true);
-    setWithdrawError('');
-    setWithdrawSuccess('');
-    try {
-      const amount = withdrawAmount ? parseInt(withdrawAmount, 10) : undefined;
-      await withdraw(session.token, withdrawInvoice.trim(), amount, MAX_FEE_SATS);
-      setWithdrawSuccess(t('wallet_withdrawSuccess'));
-      setWithdrawInvoice('');
-      setWithdrawAmount('');
-      refresh();
-    } catch {
-      setWithdrawError(t('wallet_withdrawError'));
-    } finally {
-      setWithdrawLoading(false);
-    }
-  };
+  // ── Withdraw to Lightning Address ────────────────────────────────────────────
 
   const handleWithdrawToAddress = async () => {
-    const amount = parseInt(withdrawAddressAmount, 10);
+    const amount = parseInt(withdrawAmount, 10);
     if (!amount || amount <= 0) {
       setWithdrawError(t('wallet_withdrawErrorAmount'));
       return;
@@ -154,7 +136,7 @@ export function useWalletScreen(session: LoginResponse, onBalanceChanged: (sats:
     try {
       await withdrawToAddress(session.token, amount, MAX_FEE_SATS);
       setWithdrawSuccess(t('wallet_withdrawSuccess'));
-      setWithdrawAddressAmount('');
+      setWithdrawAmount('');
       refresh();
     } catch {
       setWithdrawError(t('wallet_withdrawError'));
@@ -178,18 +160,11 @@ export function useWalletScreen(session: LoginResponse, onBalanceChanged: (sats:
     handleResetDeposit,
     handleCopyInvoice,
     // withdraw
-    withdrawTab,
-    setWithdrawTab,
-    withdrawInvoice,
-    setWithdrawInvoice,
     withdrawAmount,
     setWithdrawAmount,
-    withdrawAddressAmount,
-    setWithdrawAddressAmount,
     withdrawLoading,
     withdrawError,
     withdrawSuccess,
-    handleWithdrawInvoice,
     handleWithdrawToAddress,
   };
 }

@@ -3,7 +3,7 @@ import {colors} from '../theme/colors';
 
 export const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.bg},
-  scroll: {padding: 24},
+  scroll: {paddingHorizontal: 24, paddingBottom: 32},
   heading: {
     color: colors.text,
     fontSize: 24,
@@ -34,7 +34,7 @@ export const styles = StyleSheet.create({
   },
   invoiceText: {
     color: colors.textSecondary,
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: 'monospace',
   },
   copyBtn: {

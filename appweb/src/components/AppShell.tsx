@@ -19,6 +19,7 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { ReplayScreen } from '../screens/ReplayScreen';
 import { WaitingRoomScreen } from '../screens/WaitingRoomScreen';
+import { EditLightningAddressScreen } from '../screens/EditLightningAddressScreen';
 import { WalletScreen } from '../screens/WalletScreen';
 import { PlayerProfileScreen } from '../screens/PlayerProfileScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -325,12 +326,16 @@ export function AppShell() {
     handleCreateGame,
     handleOpenWallet,
     handleBackFromWallet,
+    lightningAddress,
+    handleOpenEditLightningAddress,
+    handleBackFromLightningAddress,
+    handleLightningAddressSaved,
     handleOpenDashboard,
     handleBackFromDashboard,
   } = useApp();
 
   // Full-screen screens (no sidebar/tabs)
-  const isFullScreen = authScreen === 'checkersBoard' || authScreen === 'waitingRoom' || authScreen === 'gameHistory' || authScreen === 'replay' || authScreen === 'wallet' || authScreen === 'playerProfile' || authScreen === 'dashboard';
+  const isFullScreen = authScreen === 'checkersBoard' || authScreen === 'waitingRoom' || authScreen === 'gameHistory' || authScreen === 'replay' || authScreen === 'wallet' || authScreen === 'editLightningAddress' || authScreen === 'playerProfile' || authScreen === 'dashboard';
 
   const renderContent = () => {
     if (loading) {
@@ -414,6 +419,19 @@ export function AppShell() {
             session={session}
             onBack={handleBackFromWallet}
             onBalanceChanged={sats => setWalletBalance(sats)}
+            lightningAddress={lightningAddress}
+            onRegisterLightningAddress={handleOpenEditLightningAddress}
+          />
+        );
+      }
+
+      if (authScreen === 'editLightningAddress') {
+        return (
+          <EditLightningAddressScreen
+            session={session}
+            initialAddress={lightningAddress}
+            onSaved={handleLightningAddressSaved}
+            onBack={handleBackFromLightningAddress}
           />
         );
       }
