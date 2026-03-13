@@ -1,0 +1,57 @@
+repository: https://github.com/misesdev/damas-clash
+pubkey: npub124rja8qp7dartasr9wdh3kk78phxunzhmq8ar5ryd2anj2qwtcnsz3tuhs
+
+name: Damas Clash
+
+summary: Play checkers online against real players in fast and competitive matches. Create games with or without bets and compete for satoshis via Lightning while testing your strategy and climbing the leaderboard.
+
+description: |
+  **Play checkers online with real players.**
+
+  Challenge opponents from anywhere in fast, strategic, and competitive matches. The app offers a simple and smooth experience for fans of the classic checkers game, with real-time matches and quick game creation.
+
+  You can create or join games with or without bets, making the experience even more exciting. In wagered matches, players compete for satoshis using the Bitcoin Lightning Network, with fast payments and low fees.
+
+  **Key features:**
+
+  * Real-time online checkers matches
+  * Play against real players
+  * Create games with or without bets
+  * Compete for satoshis via Lightning
+  * Simple and fast interface
+  * Leaderboard to track your progress
+
+  Test your strategy, challenge other players, and prove that you are the best on the board.
+
+tags: 
+  - Damas
+  - checkers
+  - strategy
+  - bets
+  - lightning
+
+license: MIT
+
+website: https://damas.clashapps.com
+
+icon: ./appmobile/assets/default-icon.png
+
+release_notes: ./appmobile/store/release-notes.md
+
+images: 
+  - ./appmobile/screenshots/screenshot0.png
+  - ./appmobile/screenshots/screenshot1.png
+  - ./appmobile/screenshots/screenshot2.png
+  - ./appmobile/screenshots/screenshot3.png
+  - ./appmobile/screenshots/screenshot5.png
+  - ./appmobile/screenshots/screenshot6.png
+  - ./appmobile/screenshots/screenshot7.png
+  - ./appmobile/screenshots/screenshot8.png
+  - ./appmobile/screenshots/screenshot9.png
+  - ./appmobile/screenshots/screenshot10.png
+
+release_source: ./appmobile/android/app/build/outputs/apk/release/app-release.apk
+
+
+
+
