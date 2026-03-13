@@ -1,4 +1,5 @@
 repository: https://github.com/misesdev/damas-clash
+
 pubkey: npub124rja8qp7dartasr9wdh3kk78phxunzhmq8ar5ryd2anj2qwtcnsz3tuhs
 
 name: Damas Clash
@@ -50,8 +51,9 @@ images:
   - ./appmobile/screenshots/screenshot9.png
   - ./appmobile/screenshots/screenshot10.png
 
-release_source: ./appmobile/android/app/build/outputs/apk/release/app-release.apk
+# release_source: ./appmobile/android/app/build/outputs/apk/release/app-release.apk
 
-
+metadata_sources:
+    - github
 
 
