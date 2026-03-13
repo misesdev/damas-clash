@@ -32,6 +32,7 @@ export interface LoginResponse {
   email: string | null;
   avatarUrl?: string | null;
   nostrPubKey?: string | null;
+  role?: string;
 }
 
 export interface ConfirmEmailRequest {

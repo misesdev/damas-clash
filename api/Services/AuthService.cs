@@ -72,7 +72,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString()));
     }
 
     public async Task<ServiceResult<SendLoginCodeResponse>> LoginAsync(LoginRequest req, CancellationToken ct = default)
@@ -116,7 +116,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString()));
     }
 
     public async Task<ServiceResult<LoginResponse>> RefreshAsync(string refreshToken, CancellationToken ct = default)
@@ -136,7 +136,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, newRefreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString()));
     }
 
     public async Task<ServiceResult<string>> ResendConfirmationAsync(ResendConfirmationRequest req, CancellationToken ct = default)
@@ -203,6 +203,7 @@ public class AuthService(
         if (player is null)
             return ServiceResult<string>.NotFound("player_not_found");
 
+        db.AccountDeletionLogs.Add(new AccountDeletionLog { Id = Guid.NewGuid() });
         db.Players.Remove(player);
         await db.SaveChangesAsync(ct);
 
@@ -265,7 +266,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString()));
     }
 
     public async Task<ServiceResult<LoginResponse>> NostrAuthAsync(NostrLoginRequest req, CancellationToken ct = default)
@@ -316,7 +317,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString()));
     }
 
 /// <summary>

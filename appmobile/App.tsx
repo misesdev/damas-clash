@@ -16,9 +16,7 @@ function AppContent() {
     showOnlinePlayers,
     setShowOnlinePlayers,
     onlinePlayers,
-    pendingChallengeId,
-    handleChallengePlayer,
-    handleCancelChallenge,
+    handleViewPlayerProfile,
     handleWatchOnlineGame,
   } = useAppContext();
 
@@ -44,9 +42,7 @@ function AppContent() {
           onClose={() => setShowOnlinePlayers(false)}
           players={onlinePlayers}
           currentPlayerId={session.playerId}
-          pendingChallengeId={pendingChallengeId}
-          onChallenge={handleChallengePlayer}
-          onCancelChallenge={handleCancelChallenge}
+          onViewProfile={handleViewPlayerProfile}
           onWatch={handleWatchOnlineGame}
         />
       )}

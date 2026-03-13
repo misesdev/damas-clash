@@ -3,6 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useProfileScreen } from '../hooks/useProfileScreen';
+import { pubkeyToShortNpub } from '../services/nostr/NostrAuthService';
 import type { LoginResponse } from '../types/auth';
 import '../i18n';
 
@@ -13,6 +14,8 @@ interface Props {
   onEditEmail: () => void;
   onAvatarChanged: (url: string) => void;
   onOpenHistory: () => void;
+  onOpenWallet?: () => void;
+  walletBalance?: number | null;
 }
 
 interface MenuItemProps {
@@ -44,7 +47,7 @@ function MenuItem({ label, value, onClick, danger }: MenuItemProps) {
       <span style={{ fontSize: 14, fontWeight: 500, color: danger ? 'var(--danger)' : 'var(--text)' }}>
         {label}
       </span>
-      {!danger && (
+      {!danger && !!onClick && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {value && (
             <span
@@ -110,6 +113,8 @@ export function ProfileScreen({
   onEditEmail,
   onAvatarChanged,
   onOpenHistory,
+  onOpenWallet,
+  walletBalance,
 }: Props) {
   const { t } = useTranslation();
   const { uploading, stats, fileInputRef, handleLogout, handleDeleteAccount, handleAvatarPress, handleFileChange } =
@@ -219,7 +224,11 @@ export function ProfileScreen({
             <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>
               {user.username}
             </p>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{user.email}</p>
+            {user.nostrPubKey
+              ? <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{pubkeyToShortNpub(user.nostrPubKey)}</p>
+              : user.email
+                ? <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{user.email}</p>
+                : null}
           </div>
         </div>
 
@@ -260,7 +269,17 @@ export function ProfileScreen({
         <Section label={t('profile_sectionAccount')}>
           <MenuItem label={t('profile_username')} value={user.username} onClick={onEditUsername} />
           <Divider />
-          <MenuItem label={t('profile_email')} value={user.email} onClick={onEditEmail} />
+          <MenuItem
+            label={t('profile_email')}
+            value={user.nostrPubKey ? undefined : (user.email ?? undefined)}
+            onClick={user.nostrPubKey ? undefined : onEditEmail}
+          />
+          <Divider />
+          <MenuItem
+            label={t('profile_wallet')}
+            value={walletBalance != null ? `⚡ ${walletBalance.toLocaleString()} sats` : undefined}
+            onClick={onOpenWallet}
+          />
         </Section>
 
         {/* ── History section ── */}

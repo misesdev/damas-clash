@@ -127,9 +127,9 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   watchBtnText: {color: colors.textSecondary, fontSize: 12, fontWeight: '600'},
-  waitingBtn: {
+  profileBtn: {
     borderColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceRaised,
   },
-  waitingBtnText: {color: colors.textMuted, fontSize: 12, fontWeight: '500'},
+  profileBtnText: {color: colors.text, fontSize: 12, fontWeight: '600'},
 });

@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using api.Config;
 using api.Data;
 using api.Hubs;
+using api.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +27,8 @@ builder.Services.AddCors(options =>
         policy.AllowAnyHeader().AllowAnyMethod();
     });
 });
+
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 var app = builder.Build();
 

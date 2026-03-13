@@ -2,13 +2,13 @@ import React, {useEffect, useState} from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {getPlayerGames} from '../api/games';
+import {PlayerVs} from '../components/PlayerVs';
 import type {LoginResponse} from '../types/auth';
 import type {GameResponse} from '../types/game';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -18,19 +18,6 @@ interface Props {
   user: LoginResponse;
   onReplay: (game: GameResponse) => void;
   onBack: () => void;
-}
-
-function Avatar({username, avatarUrl, size = 36}: {username: string | null; avatarUrl: string | null; size?: number}) {
-  if (avatarUrl) {
-    return <Image source={{uri: avatarUrl}} style={{width: size, height: size, borderRadius: size / 2}} />;
-  }
-  return (
-    <View style={{width: size, height: size, borderRadius: size / 2, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#232323', alignItems: 'center', justifyContent: 'center'}}>
-      <Text style={{color: '#888', fontSize: size * 0.38, fontWeight: '700'}}>
-        {(username ?? '?')[0].toUpperCase()}
-      </Text>
-    </View>
-  );
 }
 
 function formatDate(iso: string) {
@@ -99,45 +86,55 @@ export function GameHistoryScreen({user, onReplay, onBack}: Props) {
         }
         renderItem={({item: game}) => {
           const isBlack = game.playerBlackId === user.playerId;
-          const opponent = isBlack
-            ? {username: game.playerWhiteUsername, avatarUrl: game.playerWhiteAvatarUrl}
-            : {username: game.playerBlackUsername, avatarUrl: game.playerBlackAvatarUrl};
           const won = game.winnerId === user.playerId;
           const drew = game.winnerId === null;
+          const resultColor = drew ? '#888' : won ? '#2ecc71' : '#ff453a';
+          const betLabel = game.betAmountSats > 0
+            ? `⚡ ${game.betAmountSats.toLocaleString()} sats`
+            : t('gameHistory.friendly');
 
           return (
             <View style={{backgroundColor: '#131313', borderRadius: 16, borderWidth: 1, borderColor: '#232323', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10}}>
-              {/* Badge */}
+              {/* Result badge */}
               <View style={{
                 width: 36, height: 36, borderRadius: 10,
                 backgroundColor: drew ? '#1a1a1a' : won ? 'rgba(46,204,113,0.12)' : 'rgba(255,69,58,0.1)',
                 borderWidth: 1,
                 borderColor: drew ? '#232323' : won ? 'rgba(46,204,113,0.35)' : 'rgba(255,69,58,0.3)',
                 alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
               }}>
-                <Text style={{fontSize: 15, color: drew ? '#888' : won ? '#2ecc71' : '#ff453a'}}>
+                <Text style={{fontSize: 15, color: resultColor}}>
                   {drew ? '—' : won ? '✓' : '✗'}
                 </Text>
               </View>
 
-              <Avatar username={opponent.username} avatarUrl={opponent.avatarUrl} size={34} />
+              {/* Players */}
+              <PlayerVs
+                left={{
+                  username: isBlack ? game.playerBlackUsername : game.playerWhiteUsername,
+                  avatarUrl: isBlack ? game.playerBlackAvatarUrl : game.playerWhiteAvatarUrl,
+                }}
+                right={{
+                  username: isBlack ? game.playerWhiteUsername : game.playerBlackUsername,
+                  avatarUrl: isBlack ? game.playerWhiteAvatarUrl : game.playerBlackAvatarUrl,
+                }}
+                detail={betLabel}
+              />
 
-              <View style={{flex: 1}}>
-                <Text style={{color: '#fff', fontSize: 13, fontWeight: '600'}} numberOfLines={1}>{opponent.username ?? t('gameHistory.unknownOpponent')}</Text>
-                <Text style={{color: '#888', fontSize: 11, marginTop: 2}}>{formatDate(game.updatedAt)}</Text>
+              {/* Result + Replay */}
+              <View style={{alignItems: 'flex-end', gap: 6, flexShrink: 0}}>
+                <Text style={{fontSize: 12, fontWeight: '700', color: resultColor}}>
+                  {drew ? t('gameHistory.results.draw') : won ? t('gameHistory.results.win') : t('gameHistory.results.loss')}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => onReplay(game)}
+                  activeOpacity={0.75}
+                  style={{backgroundColor: '#1a1a1a', borderRadius: 8, borderWidth: 1, borderColor: '#232323', paddingHorizontal: 10, paddingVertical: 5}}
+                >
+                  <Text style={{color: '#fff', fontSize: 11, fontWeight: '600'}}>{t('gameHistory.replayButton')}</Text>
+                </TouchableOpacity>
               </View>
-
-              <Text style={{fontSize: 12, fontWeight: '700', color: drew ? '#888' : won ? '#2ecc71' : '#ff453a', marginRight: 6}}>
-                {drew ? t('gameHistory.results.draw') : won ? t('gameHistory.results.win') : t('gameHistory.results.loss')}
-              </Text>
-
-              <TouchableOpacity
-                onPress={() => onReplay(game)}
-                activeOpacity={0.75}
-                style={{backgroundColor: '#1a1a1a', borderRadius: 8, borderWidth: 1, borderColor: '#232323', paddingHorizontal: 12, paddingVertical: 7}}
-              >
-                <Text style={{color: '#fff', fontSize: 12, fontWeight: '600'}}>{t('gameHistory.replayButton')}</Text>
-              </TouchableOpacity>
             </View>
           );
         }}

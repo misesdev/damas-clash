@@ -9,10 +9,8 @@ import '../i18n';
 interface Props {
   players: OnlinePlayerInfo[];
   currentPlayerId: string;
-  pendingChallengeId: string | null;
   onClose: () => void;
-  onChallenge: (playerId: string) => void;
-  onCancelChallenge: (playerId: string) => void;
+  onViewProfile: (playerId: string, username: string, avatarUrl?: string | null) => void;
   onWatch: (gameId: string) => void;
 }
 
@@ -50,15 +48,11 @@ function PlayerAvatar({ username, avatarUrl, size = 40 }: { username: string; av
 
 function PlayerRow({
   player,
-  isPending,
-  onChallenge,
-  onCancelChallenge,
+  onViewProfile,
   onWatch,
 }: {
   player: OnlinePlayerInfo;
-  isPending: boolean;
-  onChallenge: () => void;
-  onCancelChallenge: () => void;
+  onViewProfile: () => void;
   onWatch: () => void;
 }) {
   const { t } = useTranslation();
@@ -82,28 +76,9 @@ function PlayerRow({
     >
       {t('online_watch')}
     </button>
-  ) : isPending ? (
-    <button
-      onClick={onCancelChallenge}
-      style={{
-        padding: '6px 14px',
-        borderRadius: 8,
-        fontSize: 12,
-        fontWeight: 600,
-        cursor: 'pointer',
-        border: '1px solid var(--border)',
-        background: 'var(--surface2)',
-        color: 'var(--text-faint)',
-        flexShrink: 0,
-        whiteSpace: 'nowrap',
-      }}
-      title={t('online_cancelHint')}
-    >
-      {t('online_waiting')}
-    </button>
   ) : (
     <button
-      onClick={onChallenge}
+      onClick={onViewProfile}
       style={{
         padding: '6px 14px',
         borderRadius: 8,
@@ -117,7 +92,7 @@ function PlayerRow({
         whiteSpace: 'nowrap',
       }}
     >
-      {t('online_challenge')}
+      {t('online_viewProfile')}
     </button>
   );
 
@@ -165,10 +140,8 @@ function PlayerRow({
 export function OnlinePlayersModal({
   players,
   currentPlayerId,
-  pendingChallengeId,
   onClose,
-  onChallenge,
-  onCancelChallenge,
+  onViewProfile,
   onWatch,
 }: Props) {
   const { t } = useTranslation();
@@ -312,9 +285,7 @@ export function OnlinePlayersModal({
               <PlayerRow
                 key={player.playerId}
                 player={player}
-                isPending={pendingChallengeId === player.playerId}
-                onChallenge={() => onChallenge(player.playerId)}
-                onCancelChallenge={() => onCancelChallenge(player.playerId)}
+                onViewProfile={() => onViewProfile(player.playerId, player.username, player.avatarUrl)}
                 onWatch={() => player.gameId && onWatch(player.gameId)}
               />
             ))

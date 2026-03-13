@@ -19,9 +19,7 @@ interface Props {
   onClose: () => void;
   players: OnlinePlayerInfo[];
   currentPlayerId: string;
-  pendingChallengeId: string | null;
-  onChallenge: (playerId: string) => void;
-  onCancelChallenge: (playerId: string) => void;
+  onViewProfile: (playerId: string, username: string, avatarUrl?: string | null) => void;
   onWatch: (gameId: string) => void;
 }
 
@@ -38,15 +36,11 @@ function PlayerAvatar({username, avatarUrl}: {username: string; avatarUrl?: stri
 
 function PlayerRow({
   player,
-  isPending,
-  onChallenge,
-  onCancelChallenge,
+  onViewProfile,
   onWatch,
 }: {
   player: OnlinePlayerInfo;
-  isPending: boolean;
-  onChallenge: () => void;
-  onCancelChallenge: () => void;
+  onViewProfile: () => void;
   onWatch: () => void;
 }) {
   const {t} = useTranslation();
@@ -56,13 +50,9 @@ function PlayerRow({
     <TouchableOpacity style={[styles.actionBtn, styles.watchBtn]} onPress={onWatch}>
       <Text style={styles.watchBtnText}>{t('onlinePlayers.watchButton')}</Text>
     </TouchableOpacity>
-  ) : isPending ? (
-    <TouchableOpacity style={[styles.actionBtn, styles.waitingBtn]} onPress={onCancelChallenge}>
-      <Text style={styles.waitingBtnText}>{t('onlinePlayers.challengePending')}</Text>
-    </TouchableOpacity>
   ) : (
-    <TouchableOpacity style={[styles.actionBtn, styles.challengeBtn]} onPress={onChallenge}>
-      <Text style={styles.challengeBtnText}>{t('onlinePlayers.challengeButton')}</Text>
+    <TouchableOpacity style={[styles.actionBtn, styles.profileBtn]} onPress={onViewProfile}>
+      <Text style={styles.profileBtnText}>{t('onlinePlayers.viewProfileButton')}</Text>
     </TouchableOpacity>
   );
 
@@ -88,9 +78,7 @@ export function OnlinePlayersScreen({
   onClose,
   players,
   currentPlayerId,
-  pendingChallengeId,
-  onChallenge,
-  onCancelChallenge,
+  onViewProfile,
   onWatch,
 }: Props) {
   const {t} = useTranslation();
@@ -157,9 +145,7 @@ export function OnlinePlayersScreen({
             renderItem={({item}) => (
               <PlayerRow
                 player={item}
-                isPending={pendingChallengeId === item.playerId}
-                onChallenge={() => onChallenge(item.playerId)}
-                onCancelChallenge={() => onCancelChallenge(item.playerId)}
+                onViewProfile={() => onViewProfile(item.playerId, item.username, item.avatarUrl)}
                 onWatch={() => item.gameId && onWatch(item.gameId)}
               />
             )}

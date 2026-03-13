@@ -8,4 +8,5 @@ public record LoginResponse(
     string Username,
     string? Email,
     string? AvatarUrl,
-    string? NostrPubKey);
+    string? NostrPubKey,
+    string Role);

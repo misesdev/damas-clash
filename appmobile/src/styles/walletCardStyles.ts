@@ -66,4 +66,16 @@ export const styles = StyleSheet.create({
   btnTextPrimary: {
     color: colors.primaryText,
   },
+  historyBtn: {
+    marginTop: 10,
+    paddingVertical: 9,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  historyBtnText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
 });

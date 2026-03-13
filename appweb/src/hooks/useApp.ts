@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import { showMessage } from '../components/MessageBox';
 import { cancelGame, createGame, getGame } from '../api/games';
 import { refreshAccessToken } from '../api/auth';
+import { getWallet } from '../api/wallet';
 import { BASE_URL } from '../api/client';
 import { clearActiveGameId, clearSession, loadActiveGameId, loadSession, saveActiveGameId, saveSession } from '../utils/session';
 import type { LoginResponse } from '../types/auth';
@@ -17,8 +18,14 @@ import type { GameResponse } from '../types/game';
 import type { OnlinePlayerInfo } from '../types/player';
 import i18n from '../i18n';
 
-type Screen = 'landing' | 'login' | 'register' | 'confirmEmail' | 'verifyLogin';
-type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay';
+type Screen = 'landing' | 'login' | 'register' | 'confirmEmail' | 'verifyLogin' | 'nostrLogin';
+type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'wallet' | 'playerProfile' | 'dashboard';
+
+interface SelectedPlayer {
+  playerId: string;
+  username: string;
+  avatarUrl?: string | null;
+}
 type TabName = 'home' | 'profile';
 
 const REFRESH_BUFFER_MS = 2 * 60 * 1000;
@@ -37,7 +44,9 @@ export function useApp() {
   const [liveGames, setLiveGames] = useState<GameResponse[] | null>(null);
   const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayerInfo[]>([]);
   const [showOnlinePlayers, setShowOnlinePlayers] = useState(false);
-  const [pendingChallengeId, setPendingChallengeId] = useState<string | null>(null);
+  const [selectedPlayerProfile, setSelectedPlayerProfile] = useState<SelectedPlayer | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [showNewGameModal, setShowNewGameModal] = useState(false);
 
   const authScreenRef = useRef<AuthScreen>('tabs');
   useEffect(() => { authScreenRef.current = authScreen; }, [authScreen]);
@@ -87,6 +96,14 @@ export function useApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.token]);
 
+  // Fetch wallet balance when session changes
+  useEffect(() => {
+    if (!session?.token) { setWalletBalance(null); return; }
+    getWallet(session.token)
+      .then(w => setWalletBalance(w.availableBalanceSats))
+      .catch(() => setWalletBalance(null));
+  }, [session?.token]);
+
   // Persistent SignalR connection
   useEffect(() => {
     if (!session) return;
@@ -115,67 +132,9 @@ export function useApp() {
           setOnlinePlayers(players);
         });
 
-        hub.on('ChallengeReceived', (fromId: string, fromUsername: string) => {
-          if (!active) return;
-          showMessage({
-            title: i18n.t('app_challengeTitle', { name: fromUsername }),
-            message: i18n.t('app_challengeMessage'),
-            type: 'confirm',
-            actions: [
-              {
-                label: i18n.t('app_challengeDecline'),
-                onPress: () => hub.invoke('DeclineChallenge', fromId).catch(() => {}),
-              },
-              {
-                label: i18n.t('app_challengeAccept'),
-                primary: true,
-                onPress: () => hub.invoke('AcceptChallenge', fromId).catch(() => {}),
-              },
-            ],
-          });
-        });
-
-        hub.on('ChallengeDeclined', (byUsername: string) => {
-          if (!active) return;
-          setPendingChallengeId(null);
-          showMessage({
-            title: i18n.t('app_challengeDeclinedTitle'),
-            message: i18n.t('app_challengeDeclinedMsg', { name: byUsername }),
-            type: 'info',
-            actions: [{ label: i18n.t('app_ok') }],
-          });
-        });
-
-        hub.on('ChallengeCancelled', () => {
-          if (!active) return;
-          showMessage({
-            title: i18n.t('app_challengeCancelledTitle'),
-            message: i18n.t('app_challengeCancelledMsg'),
-            type: 'info',
-            actions: [{ label: i18n.t('app_ok') }],
-          });
-        });
-
-        hub.on('ChallengeError', (reason: string) => {
-          if (!active) return;
-          setPendingChallengeId(null);
-          const messages: Record<string, string> = {
-            player_offline: i18n.t('app_challengeError_offline'),
-            challenge_expired: i18n.t('app_challengeError_expired'),
-            create_failed: i18n.t('app_challengeError_createFailed'),
-          };
-          showMessage({
-            title: i18n.t('app_challengeErrorTitle'),
-            message: messages[reason] ?? i18n.t('app_challengeError_default'),
-            type: 'info',
-            actions: [{ label: i18n.t('app_ok') }],
-          });
-        });
-
         hub.on('GameStarted', (game: GameResponse) => {
           if (!active) return;
           setPendingGameId(null);
-          setPendingChallengeId(null);
           setShowOnlinePlayers(false);
           saveActiveGameId(game.id);
 
@@ -251,19 +210,18 @@ export function useApp() {
     setLiveGames(null);
     setOnlinePlayers([]);
     setShowOnlinePlayers(false);
-    setPendingChallengeId(null);
+    setSelectedPlayerProfile(null);
   };
 
-  const handleChallengePlayer = (targetPlayerId: string) => {
-    setPendingChallengeId(targetPlayerId);
-    hubRef.current?.invoke('ChallengePlayer', targetPlayerId).catch(() => {
-      setPendingChallengeId(null);
-    });
+  const handleViewPlayerProfile = (playerId: string, username: string, avatarUrl?: string | null) => {
+    setSelectedPlayerProfile({ playerId, username, avatarUrl });
+    setShowOnlinePlayers(false);
+    setAuthScreen('playerProfile');
   };
 
-  const handleCancelChallenge = (targetPlayerId: string) => {
-    setPendingChallengeId(null);
-    hubRef.current?.invoke('CancelChallenge', targetPlayerId).catch(() => {});
+  const handleBackFromPlayerProfile = () => {
+    setSelectedPlayerProfile(null);
+    setAuthScreen('tabs');
   };
 
   const handleWatchOnlineGame = async (gameId: string) => {
@@ -277,9 +235,8 @@ export function useApp() {
     }
   };
 
-  const handleNewGame = async () => {
+  const handleNewGame = () => {
     if (!session || creatingGame) return;
-
     const existingGame = liveGames?.find(
       g => g.playerBlackId === session.playerId && g.status === 'WaitingForPlayers',
     );
@@ -289,10 +246,15 @@ export function useApp() {
       setAuthScreen('waitingRoom');
       return;
     }
+    setShowNewGameModal(true);
+  };
 
+  const handleCreateGame = async (betAmountSats: number) => {
+    if (!session || creatingGame) return;
     setCreatingGame(true);
     try {
-      const game = await createGame(session.token);
+      const game = await createGame(session.token, betAmountSats);
+      setShowNewGameModal(false);
       setSelectedGame(game);
       setPendingGameId(game.id);
       setAuthScreen('waitingRoom');
@@ -329,8 +291,14 @@ export function useApp() {
     setSelectedGame(null);
   };
 
+  const handleOpenWallet = () => setAuthScreen('wallet');
+  const handleBackFromWallet = () => { setAuthScreen('tabs'); setTab('profile'); };
+  const handleOpenDashboard = () => setAuthScreen('dashboard');
+  const handleBackFromDashboard = () => { setAuthScreen('tabs'); setTab('home'); };
   const handleNavigateToEditUsername = () => setAuthScreen('editUsername');
   const handleNavigateToEditEmail = () => setAuthScreen('editEmail');
+  const handleNavigateToNostr = () => setScreen('nostrLogin');
+  const handleBackFromNostr = () => setScreen('login');
 
   const handleOpenHistory = () => setAuthScreen('gameHistory');
   const handleBackFromHistory = () => { setAuthScreen('tabs'); setTab('profile'); };
@@ -371,9 +339,9 @@ export function useApp() {
     onlineCount: onlinePlayers.length || null,
     showOnlinePlayers,
     setShowOnlinePlayers,
-    pendingChallengeId,
-    handleChallengePlayer,
-    handleCancelChallenge,
+    selectedPlayerProfile,
+    handleViewPlayerProfile,
+    handleBackFromPlayerProfile,
     handleWatchOnlineGame,
     handleNewGame,
     handleCancelWaitingRoom,
@@ -388,5 +356,16 @@ export function useApp() {
     handleBackFromHistory,
     handleOpenReplay,
     handleBackFromReplay,
+    handleNavigateToNostr,
+    handleBackFromNostr,
+    walletBalance,
+    setWalletBalance,
+    showNewGameModal,
+    setShowNewGameModal,
+    handleCreateGame,
+    handleOpenWallet,
+    handleBackFromWallet,
+    handleOpenDashboard,
+    handleBackFromDashboard,
   };
 }

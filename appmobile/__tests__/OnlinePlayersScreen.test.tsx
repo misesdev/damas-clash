@@ -5,9 +5,7 @@
  *  - Render with empty list
  *  - Render with mixed Online / InGame players (excluding self)
  *  - Search filtering
- *  - Challenge button press → onChallenge called
- *  - Pending state → "Aguardando..." rendered
- *  - Cancel pending challenge
+ *  - "Ver Perfil" button for Online players
  *  - Watch button for InGame players
  *  - Close button
  */
@@ -45,11 +43,9 @@ const SELF_PLAYER: OnlinePlayerInfo = {
 
 function renderScreen(
   players: OnlinePlayerInfo[] = [],
-  pendingChallengeId: string | null = null,
   overrides: Partial<{
     onClose: jest.Mock;
-    onChallenge: jest.Mock;
-    onCancelChallenge: jest.Mock;
+    onViewProfile: jest.Mock;
     onWatch: jest.Mock;
   }> = {},
 ) {
@@ -58,9 +54,7 @@ function renderScreen(
     onClose: overrides.onClose ?? jest.fn(),
     players,
     currentPlayerId: SELF_ID,
-    pendingChallengeId,
-    onChallenge: overrides.onChallenge ?? jest.fn(),
-    onCancelChallenge: overrides.onCancelChallenge ?? jest.fn(),
+    onViewProfile: overrides.onViewProfile ?? jest.fn(),
     onWatch: overrides.onWatch ?? jest.fn(),
   };
   return {props, ...render(<OnlinePlayersScreen {...props} />)};
@@ -83,9 +77,9 @@ describe('OnlinePlayersScreen', () => {
     expect(screen.getByText('alice')).toBeTruthy();
   });
 
-  it('shows "Desafiar" button for Online players', () => {
+  it('shows "Ver Perfil" button for Online players', () => {
     renderScreen([ONLINE_PLAYER]);
-    expect(screen.getByText('Desafiar')).toBeTruthy();
+    expect(screen.getByText('Ver Perfil')).toBeTruthy();
   });
 
   it('shows "Assistir" button for InGame players', () => {
@@ -98,44 +92,30 @@ describe('OnlinePlayersScreen', () => {
     expect(screen.getByText('Em partida')).toBeTruthy();
   });
 
-  it('calls onChallenge with correct playerId when Desafiar pressed', () => {
-    const onChallenge = jest.fn();
-    renderScreen([ONLINE_PLAYER], null, {onChallenge});
-    fireEvent.press(screen.getByText('Desafiar'));
-    expect(onChallenge).toHaveBeenCalledWith('player-1');
-  });
-
-  it('shows "Aguardando..." when pendingChallengeId matches player', () => {
-    renderScreen([ONLINE_PLAYER], 'player-1');
-    expect(screen.getByText('Aguardando...')).toBeTruthy();
-  });
-
-  it('calls onCancelChallenge when "Aguardando..." pressed', () => {
-    const onCancelChallenge = jest.fn();
-    renderScreen([ONLINE_PLAYER], 'player-1', {onCancelChallenge});
-    fireEvent.press(screen.getByText('Aguardando...'));
-    expect(onCancelChallenge).toHaveBeenCalledWith('player-1');
+  it('calls onViewProfile with correct data when "Ver Perfil" pressed', () => {
+    const onViewProfile = jest.fn();
+    renderScreen([ONLINE_PLAYER], {onViewProfile});
+    fireEvent.press(screen.getByText('Ver Perfil'));
+    expect(onViewProfile).toHaveBeenCalledWith('player-1', 'alice', null);
   });
 
   it('calls onWatch with gameId when Assistir pressed', () => {
     const onWatch = jest.fn();
-    renderScreen([INGAME_PLAYER], null, {onWatch});
+    renderScreen([INGAME_PLAYER], {onWatch});
     fireEvent.press(screen.getByText('Assistir'));
     expect(onWatch).toHaveBeenCalledWith('game-abc');
   });
 
   it('calls onClose when close button pressed', () => {
     const onClose = jest.fn();
-    renderScreen([], null, {onClose});
+    renderScreen([], {onClose});
     fireEvent.press(screen.getByTestId('close-online-players'));
     expect(onClose).toHaveBeenCalled();
   });
 
   it('filters players by search query', () => {
     renderScreen([ONLINE_PLAYER, INGAME_PLAYER]);
-
     fireEvent.changeText(screen.getByTestId('search-online-input'), 'ali');
-
     expect(screen.getByText('alice')).toBeTruthy();
     expect(screen.queryByText('bob')).toBeNull();
   });
@@ -144,7 +124,6 @@ describe('OnlinePlayersScreen', () => {
     renderScreen([ONLINE_PLAYER, INGAME_PLAYER]);
     fireEvent.changeText(screen.getByTestId('search-online-input'), 'ali');
     fireEvent.press(screen.getByTestId('search-online-clear'));
-
     expect(screen.getByText('alice')).toBeTruthy();
     expect(screen.getByText('bob')).toBeTruthy();
   });
@@ -157,7 +136,6 @@ describe('OnlinePlayersScreen', () => {
 
   it('shows correct player count in subtitle', () => {
     renderScreen([ONLINE_PLAYER, INGAME_PLAYER, SELF_PLAYER]);
-    // 2 others (ONLINE_PLAYER + INGAME_PLAYER), SELF excluded
     expect(screen.getByText(/2 jogadores/i)).toBeTruthy();
   });
 
@@ -165,7 +143,7 @@ describe('OnlinePlayersScreen', () => {
     renderScreen([ONLINE_PLAYER, INGAME_PLAYER]);
     expect(screen.getByText('alice')).toBeTruthy();
     expect(screen.getByText('bob')).toBeTruthy();
-    expect(screen.getByText('Desafiar')).toBeTruthy();
+    expect(screen.getByText('Ver Perfil')).toBeTruthy();
     expect(screen.getByText('Assistir')).toBeTruthy();
   });
 });

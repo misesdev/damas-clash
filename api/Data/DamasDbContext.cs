@@ -11,6 +11,7 @@ public class DamasDbContext(DbContextOptions<DamasDbContext> options) : DbContex
     public DbSet<Wallet> Wallets => Set<Wallet>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<LightningPayment> LightningPayments => Set<LightningPayment>();
+    public DbSet<AccountDeletionLog> AccountDeletionLogs => Set<AccountDeletionLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,6 +27,7 @@ public class DamasDbContext(DbContextOptions<DamasDbContext> options) : DbContex
             e.Property(p => p.Email).HasMaxLength(256);
             e.Property(p => p.IsEmailConfirmed).HasDefaultValue(false);
             e.Property(p => p.LightningAddress).HasMaxLength(320);
+            e.Property(p => p.Role).HasDefaultValue(PlayerRole.Player);
         });
 
         modelBuilder.Entity<Game>(e =>
@@ -94,6 +96,12 @@ public class DamasDbContext(DbContextOptions<DamasDbContext> options) : DbContex
                 .WithMany()
                 .HasForeignKey(p => p.PlayerId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AccountDeletionLog>(e =>
+        {
+            e.HasKey(a => a.Id);
+            e.Property(a => a.OccurredAt).IsRequired();
         });
     }
 }

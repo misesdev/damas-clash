@@ -9,9 +9,10 @@ interface Props {
   loading?: boolean;
   onDeposit: () => void;
   onWithdraw: () => void;
+  onHistory: () => void;
 }
 
-export function WalletCard({wallet, loading, onDeposit, onWithdraw}: Props) {
+export function WalletCard({wallet, loading, onDeposit, onWithdraw, onHistory}: Props) {
   const {t} = useTranslation();
 
   return (
@@ -42,6 +43,9 @@ export function WalletCard({wallet, loading, onDeposit, onWithdraw}: Props) {
           <Text style={[styles.btnText, styles.btnTextPrimary]}>{t('wallet.depositButton')}</Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity style={styles.historyBtn} onPress={onHistory} testID="wallet-history-btn">
+        <Text style={styles.historyBtnText}>{t('wallet.historyButton')}</Text>
+      </TouchableOpacity>
     </View>
   );
 }

@@ -152,6 +152,13 @@ export function GameCard({
           </span>
         </div>
 
+        {(game.betAmountSats ?? 0) > 0 && (
+          <span style={{ fontSize: 12, color: '#f5a623', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+            <span>⚡</span>
+            {game.betAmountSats!.toLocaleString()}
+          </span>
+        )}
+
         {/* Actions */}
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {isOwner && isWaiting && onCancel && (

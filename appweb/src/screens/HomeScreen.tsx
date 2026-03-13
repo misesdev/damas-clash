@@ -12,9 +12,12 @@ interface Props {
   pendingGame?: GameResponse | null;
   liveGames?: GameResponse[] | null;
   onlineCount?: number | null;
+  walletBalance?: number | null;
   onGameSelect: (game: GameResponse) => void;
   onGameCancelled?: (gameId: string) => void;
   onOpenOnlinePlayers?: () => void;
+  onOpenWallet?: () => void;
+  onOpenDashboard?: () => void;
 }
 
 type FilterTab = Exclude<GameStatus, 'Completed'>;
@@ -24,9 +27,12 @@ export function HomeScreen({
   pendingGame,
   liveGames,
   onlineCount,
+  walletBalance,
   onGameSelect,
   onGameCancelled,
   onOpenOnlinePlayers,
+  onOpenWallet,
+  onOpenDashboard,
 }: Props) {
   const { t } = useTranslation();
   const {
@@ -69,7 +75,7 @@ export function HomeScreen({
           padding: '12px 16px',
         }}
       >
-        {/* Row 1: filter tabs + online badge */}
+        {/* Row 1: filter tabs + online badge + dashboard */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
           <div style={{ display: 'flex', gap: 6 }}>
             {TABS.map(tab => (
@@ -94,6 +100,32 @@ export function HomeScreen({
             ))}
           </div>
 
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {user.role === 'Admin' && onOpenDashboard && (
+            <button
+              onClick={onOpenDashboard}
+              title="Dashboard"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 10px',
+                borderRadius: 20,
+                border: '1px solid var(--border)',
+                background: 'var(--surface2)',
+                flexShrink: 0,
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                transition: 'border-color 0.15s',
+              }}
+              onMouseOver={e => (e.currentTarget.style.borderColor = 'var(--text-muted)')}
+              onMouseOut={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+            >
+              ⚙ Dashboard
+            </button>
+          )}
           {onlineCount != null && (
             <button
               onClick={onOpenOnlinePlayers}
@@ -127,6 +159,7 @@ export function HomeScreen({
               </span>
             </button>
           )}
+          </div>
         </div>
 
         {/* Row 2: search + refresh */}
@@ -147,7 +180,7 @@ export function HomeScreen({
             onFocusCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--text-muted)'; }}
             onBlurCapture={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border)'; }}
           >
-            <span style={{ fontSize: 13, color: 'var(--text-faint)', flexShrink: 0, lineHeight: 1 }}>⌕</span>
+            <span style={{ fontSize: 20, color: 'var(--text-faint)', flexShrink: 0, lineHeight: 1 }}>⌕</span>
             <input
               type="text"
               value={searchQuery}
@@ -219,6 +252,38 @@ export function HomeScreen({
           </button>
         </div>
       </div>
+
+      {/* ── Wallet balance banner ── */}
+      {walletBalance != null && (
+        <div style={{ flexShrink: 0, padding: '8px 16px 0', maxWidth: 960, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+          <button
+            onClick={onOpenWallet}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 16px',
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              width: '100%',
+              cursor: onOpenWallet ? 'pointer' : 'default',
+              transition: 'border-color 0.15s',
+            }}
+            onMouseOver={e => { if (onOpenWallet) (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--text-muted)'; }}
+            onMouseOut={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'}
+          >
+            <span style={{ fontSize: 16 }}>⚡</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+              {walletBalance.toLocaleString()} sats
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+              {t('home_walletBalance')}
+            </span>
+            {onOpenWallet && <span style={{ fontSize: 14, color: 'var(--text-faint)' }}>›</span>}
+          </button>
+        </div>
+      )}
 
       {/* ── Error banner ── */}
       {error && (

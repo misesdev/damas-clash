@@ -23,6 +23,7 @@ public class JwtTokenService(IOptions<JwtSettings> opts) : ITokenService
         {
             new(JwtRegisteredClaimNames.Sub, player.Id.ToString()),
             new("username", player.Username),
+            new("role", player.Role.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

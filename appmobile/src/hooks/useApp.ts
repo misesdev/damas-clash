@@ -23,7 +23,7 @@ import type {WalletResponse} from '../types/wallet';
 import type {OnlinePlayerInfo} from '../types/player';
 
 type Screen = 'login' | 'register' | 'confirmEmail' | 'verifyLogin' | 'nostrLogin';
-type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'deposit' | 'withdraw' | 'editLightningAddress';
+type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'deposit' | 'withdraw' | 'editLightningAddress' | 'walletHistory' | 'playerProfile' | 'dashboard';
 
 const REFRESH_BUFFER_MS = 2 * 60 * 1000; // refresh 2 min before expiry
 
@@ -47,6 +47,7 @@ export function useApp() {
   const [wallet, setWallet] = useState<WalletResponse | null>(null);
   const [walletLoading, setWalletLoading] = useState(false);
   const [lightningAddress, setLightningAddress] = useState<string | null>(null);
+  const [selectedPlayerProfile, setSelectedPlayerProfile] = useState<{playerId: string; username: string; avatarUrl?: string | null} | null>(null);
 
   // ── Wallet ────────────────────────────────────────────────────────────────
 
@@ -408,6 +409,16 @@ export function useApp() {
 
   const handleOpenDeposit = () => setAuthScreen('deposit');
   const handleOpenWithdraw = () => setAuthScreen('withdraw');
+  const handleOpenWalletHistory = () => setAuthScreen('walletHistory');
+  const handleViewPlayerProfile = (playerId: string, username: string, avatarUrl?: string | null) => {
+    setSelectedPlayerProfile({playerId, username, avatarUrl});
+    setShowOnlinePlayers(false);
+    setAuthScreen('playerProfile');
+  };
+  const handleBackFromPlayerProfile = () => {
+    setSelectedPlayerProfile(null);
+    setAuthScreen('tabs');
+  };
   const handleOpenEditLightningAddress = () => setAuthScreen('editLightningAddress');
   const handleBackFromWallet = () => {setAuthScreen('tabs'); fetchWallet();};
   const handleLightningAddressSaved = (addr: string | null) => {
@@ -418,6 +429,8 @@ export function useApp() {
 
   const handleNavigateToEditUsername = () => setAuthScreen('editUsername');
   const handleNavigateToEditEmail = () => setAuthScreen('editEmail');
+  const handleOpenDashboard = () => setAuthScreen('dashboard');
+  const handleBackFromDashboard = () => { setAuthScreen('tabs'); };
 
   const handleOpenHistory = () => setAuthScreen('gameHistory');
   const handleBackFromHistory = () => {setAuthScreen('tabs'); setTab('profile');};
@@ -487,9 +500,15 @@ export function useApp() {
     handleConfirmCreateGame,
     handleOpenDeposit,
     handleOpenWithdraw,
+    handleOpenWalletHistory,
+    selectedPlayerProfile,
+    handleViewPlayerProfile,
+    handleBackFromPlayerProfile,
     handleOpenEditLightningAddress,
     handleBackFromWallet,
     handleLightningAddressSaved,
     lightningAddress,
+    handleOpenDashboard,
+    handleBackFromDashboard,
   };
 }

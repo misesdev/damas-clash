@@ -19,5 +19,6 @@ public class Player
     public string? LightningAddress { get; set; }
     public string? RefreshToken { get; set; }
     public DateTimeOffset? RefreshTokenExpiry { get; set; }
+    public PlayerRole Role { get; set; } = PlayerRole.Player;
     public DateTimeOffset CreatedAt { get; set; }
 }

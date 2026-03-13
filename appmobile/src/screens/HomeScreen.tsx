@@ -33,6 +33,8 @@ interface Props {
   onOpenOnlinePlayers?: () => void;
   onDeposit: () => void;
   onWithdraw: () => void;
+  onWalletHistory: () => void;
+  onOpenDashboard?: () => void;
 }
 
 type FilterTab = Exclude<GameStatus, 'Completed'>;
@@ -41,7 +43,7 @@ export function HomeScreen({
   user, pendingGame, liveGames, onlineCount,
   wallet, walletLoading,
   onGameSelect, onGameCancelled, onOpenOnlinePlayers,
-  onDeposit, onWithdraw,
+  onDeposit, onWithdraw, onWalletHistory, onOpenDashboard,
 }: Props) {
   const {t} = useTranslation();
 
@@ -79,15 +81,25 @@ export function HomeScreen({
           <BoardMark size={26} />
           <Text style={styles.topBarTitle}>DAMAS CLASH</Text>
         </View>
-        {onlineCount != null && (
-          <TouchableOpacity
-            style={styles.onlinePill}
-            onPress={onOpenOnlinePlayers}
-            testID="online-pill">
-            <View style={styles.onlineDot} />
-            <Text style={styles.onlineText}>{t('home.onlineCount', {count: onlineCount})}</Text>
-          </TouchableOpacity>
-        )}
+        <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
+          {user.role === 'Admin' && onOpenDashboard && (
+            <TouchableOpacity
+              style={styles.dashboardPill}
+              onPress={onOpenDashboard}
+              testID="dashboard-btn">
+              <Text style={styles.dashboardText}>⚙ Admin</Text>
+            </TouchableOpacity>
+          )}
+          {onlineCount != null && (
+            <TouchableOpacity
+              style={styles.onlinePill}
+              onPress={onOpenOnlinePlayers}
+              testID="online-pill">
+              <View style={styles.onlineDot} />
+              <Text style={styles.onlineText}>{t('home.onlineCount', {count: onlineCount})}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Scrollable content */}
@@ -108,6 +120,7 @@ export function HomeScreen({
           loading={walletLoading}
           onDeposit={onDeposit}
           onWithdraw={onWithdraw}
+          onHistory={onWalletHistory}
         />
 
         {/* Index 1: Tabs + Search — becomes sticky */}

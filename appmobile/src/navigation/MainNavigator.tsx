@@ -11,7 +11,10 @@ import {ReplayScreen} from '../screens/ReplayScreen';
 import {WaitingRoomScreen} from '../screens/WaitingRoomScreen';
 import {DepositScreen} from '../screens/wallet/DepositScreen';
 import {WithdrawScreen} from '../screens/wallet/WithdrawScreen';
+import {WalletHistoryScreen} from '../screens/wallet/WalletHistoryScreen';
 import {EditLightningAddressScreen} from '../screens/profile/EditLightningAddressScreen';
+import {PlayerProfileScreen} from '../screens/PlayerProfileScreen';
+import {DashboardScreen} from '../screens/DashboardScreen';
 import {CreateGameModal} from '../components/CreateGameModal';
 import {colors} from '../theme/colors';
 import {useAppContext} from '../context/AppContext';
@@ -51,10 +54,16 @@ export function MainNavigator() {
     handleConfirmCreateGame,
     handleOpenDeposit,
     handleOpenWithdraw,
+    handleOpenWalletHistory,
+    selectedPlayerProfile,
+    handleViewPlayerProfile,
+    handleBackFromPlayerProfile,
     handleOpenEditLightningAddress,
     handleBackFromWallet,
     handleLightningAddressSaved,
     lightningAddress,
+    handleOpenDashboard,
+    handleBackFromDashboard,
   } = useAppContext();
 
   if (!session) {
@@ -150,6 +159,27 @@ export function MainNavigator() {
     );
   }
 
+  if (authScreen === 'walletHistory') {
+    return (
+      <WalletHistoryScreen
+        user={session}
+        onBack={handleBackFromWallet}
+      />
+    );
+  }
+
+  if (authScreen === 'playerProfile' && selectedPlayerProfile) {
+    return (
+      <PlayerProfileScreen
+        session={session}
+        profilePlayerId={selectedPlayerProfile.playerId}
+        profileUsername={selectedPlayerProfile.username}
+        profileAvatarUrl={selectedPlayerProfile.avatarUrl}
+        onBack={handleBackFromPlayerProfile}
+      />
+    );
+  }
+
   if (authScreen === 'editLightningAddress') {
     return (
       <EditLightningAddressScreen
@@ -159,6 +189,10 @@ export function MainNavigator() {
         onBack={handleBackToProfile}
       />
     );
+  }
+
+  if (authScreen === 'dashboard') {
+    return <DashboardScreen session={session} onBack={handleBackFromDashboard} />;
   }
 
   return (
@@ -181,6 +215,8 @@ export function MainNavigator() {
             onOpenOnlinePlayers={() => setShowOnlinePlayers(true)}
             onDeposit={handleOpenDeposit}
             onWithdraw={handleOpenWithdraw}
+            onWalletHistory={handleOpenWalletHistory}
+            onOpenDashboard={handleOpenDashboard}
           />
         ) : (
           <ProfileScreen

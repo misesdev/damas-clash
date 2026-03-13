@@ -150,7 +150,19 @@ const en = {
     unit: 'sats',
     depositButton: 'Deposit',
     withdrawButton: 'Withdraw',
+    historyButton: 'History',
     lockedLabel: '{{amount}} locked in bets',
+  },
+  walletHistory: {
+    title: 'History',
+    empty: 'No transactions yet.',
+    types: {
+      deposit: 'Deposit',
+      withdraw: 'Withdrawal',
+      bet: 'Bet',
+      win: 'Win',
+      refund: 'Refund',
+    },
   },
   deposit: {
     title: 'Deposit',
@@ -307,6 +319,7 @@ const en = {
     },
     empty: 'No finished games yet.',
     unknownOpponent: 'Unknown',
+    friendly: 'Friendly',
     results: {
       draw: 'Draw',
       win: 'Win',
@@ -332,8 +345,22 @@ const en = {
     inGame: 'In game',
     online: 'Online',
     watchButton: 'Watch',
-    challengePending: 'Waiting...',
-    challengeButton: 'Challenge',
+    viewProfileButton: 'View Profile',
+  },
+  playerProfile: {
+    title: "Player Profile",
+    stats: {
+      games: 'Games',
+      wins: 'Wins',
+      losses: 'Losses',
+    },
+    historyTitle: 'History',
+    historyEmpty: 'No finished games.',
+    unknown: 'Unknown',
+    friendly: 'Friendly',
+    win: 'Win',
+    loss: 'Loss',
+    draw: 'Draw',
   },
   bottomTab: {
     games: 'Games',

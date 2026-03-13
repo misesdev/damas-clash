@@ -150,7 +150,19 @@ const pt = {
     unit: 'sats',
     depositButton: 'Depositar',
     withdrawButton: 'Sacar',
+    historyButton: 'Histórico',
     lockedLabel: '{{amount}} bloqueados em apostas',
+  },
+  walletHistory: {
+    title: 'Histórico',
+    empty: 'Nenhuma transação ainda.',
+    types: {
+      deposit: 'Depósito',
+      withdraw: 'Saque',
+      bet: 'Aposta',
+      win: 'Vitória',
+      refund: 'Reembolso',
+    },
   },
   deposit: {
     title: 'Depositar',
@@ -307,6 +319,7 @@ const pt = {
     },
     empty: 'Nenhuma partida finalizada ainda.',
     unknownOpponent: 'Desconhecido',
+    friendly: 'Friendly',
     results: {
       draw: 'Empate',
       win: 'Vitória',
@@ -332,8 +345,22 @@ const pt = {
     inGame: 'Em partida',
     online: 'Online',
     watchButton: 'Assistir',
-    challengePending: 'Aguardando...',
-    challengeButton: 'Desafiar',
+    viewProfileButton: 'Ver Perfil',
+  },
+  playerProfile: {
+    title: "Perfil do Jogador",
+    stats: {
+      games: 'Partidas',
+      wins: 'Vitórias',
+      losses: 'Derrotas',
+    },
+    historyTitle: 'Histórico',
+    historyEmpty: 'Nenhuma partida finalizada.',
+    unknown: 'Desconhecido',
+    friendly: 'Friendly',
+    win: 'Vitória',
+    loss: 'Derrota',
+    draw: 'Empate',
   },
   bottomTab: {
     games: 'Partidas',

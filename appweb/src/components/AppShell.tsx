@@ -14,10 +14,15 @@ import { GameHistoryScreen } from '../screens/GameHistoryScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LandingScreen } from '../screens/LandingScreen';
 import { LoginScreen } from '../screens/LoginScreen';
+import { NostrLoginScreen } from '../screens/NostrLoginScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { ReplayScreen } from '../screens/ReplayScreen';
 import { WaitingRoomScreen } from '../screens/WaitingRoomScreen';
+import { WalletScreen } from '../screens/WalletScreen';
+import { PlayerProfileScreen } from '../screens/PlayerProfileScreen';
+import { DashboardScreen } from '../screens/DashboardScreen';
+import { NewGameModal } from './NewGameModal';
 import { useApp } from '../hooks/useApp';
 import { OnlinePlayersModal } from './OnlinePlayersModal';
 import '../i18n';
@@ -294,9 +299,9 @@ export function AppShell() {
     onlineCount,
     showOnlinePlayers,
     setShowOnlinePlayers,
-    pendingChallengeId,
-    handleChallengePlayer,
-    handleCancelChallenge,
+    selectedPlayerProfile,
+    handleViewPlayerProfile,
+    handleBackFromPlayerProfile,
     handleWatchOnlineGame,
     handleNewGame,
     handleCancelWaitingRoom,
@@ -311,10 +316,21 @@ export function AppShell() {
     handleBackFromHistory,
     handleOpenReplay,
     handleBackFromReplay,
+    handleNavigateToNostr,
+    handleBackFromNostr,
+    walletBalance,
+    setWalletBalance,
+    showNewGameModal,
+    setShowNewGameModal,
+    handleCreateGame,
+    handleOpenWallet,
+    handleBackFromWallet,
+    handleOpenDashboard,
+    handleBackFromDashboard,
   } = useApp();
 
   // Full-screen screens (no sidebar/tabs)
-  const isFullScreen = authScreen === 'checkersBoard' || authScreen === 'waitingRoom' || authScreen === 'gameHistory' || authScreen === 'replay';
+  const isFullScreen = authScreen === 'checkersBoard' || authScreen === 'waitingRoom' || authScreen === 'gameHistory' || authScreen === 'replay' || authScreen === 'wallet' || authScreen === 'playerProfile' || authScreen === 'dashboard';
 
   const renderContent = () => {
     if (loading) {
@@ -392,6 +408,32 @@ export function AppShell() {
         );
       }
 
+      if (authScreen === 'wallet') {
+        return (
+          <WalletScreen
+            session={session}
+            onBack={handleBackFromWallet}
+            onBalanceChanged={sats => setWalletBalance(sats)}
+          />
+        );
+      }
+
+      if (authScreen === 'playerProfile' && selectedPlayerProfile) {
+        return (
+          <PlayerProfileScreen
+            session={session}
+            profilePlayerId={selectedPlayerProfile.playerId}
+            profileUsername={selectedPlayerProfile.username}
+            profileAvatarUrl={selectedPlayerProfile.avatarUrl}
+            onBack={handleBackFromPlayerProfile}
+          />
+        );
+      }
+
+      if (authScreen === 'dashboard') {
+        return <DashboardScreen session={session} onBack={handleBackFromDashboard} />;
+      }
+
       // Main tab layout
       return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: "100%" }}>
@@ -415,11 +457,14 @@ export function AppShell() {
                 pendingGame={pendingGameId ? selectedGame : null}
                 liveGames={liveGames}
                 onlineCount={onlineCount}
+                walletBalance={walletBalance}
                 onGameSelect={handleGameSelect}
                 onGameCancelled={gameId => {
                   if (pendingGameId === gameId) setPendingGameId(null);
                 }}
                 onOpenOnlinePlayers={() => setShowOnlinePlayers(true)}
+                onOpenWallet={handleOpenWallet}
+                onOpenDashboard={handleOpenDashboard}
               />
             ) : (
               <ProfileScreen
@@ -429,6 +474,8 @@ export function AppShell() {
                 onEditEmail={handleNavigateToEditEmail}
                 onAvatarChanged={url => updateSession({ avatarUrl: url })}
                 onOpenHistory={handleOpenHistory}
+                onOpenWallet={handleOpenWallet}
+                walletBalance={walletBalance}
               />
             )}
           </div>
@@ -456,6 +503,13 @@ export function AppShell() {
             onCodeSent={email => { setPendingEmail(email); setScreen('verifyLogin'); }}
             onNavigateToRegister={() => setScreen('register')}
             onGoogleLogin={handleLogin}
+            onNavigateToNostr={handleNavigateToNostr}
+          />
+        )}
+        {screen === 'nostrLogin' && (
+          <NostrLoginScreen
+            onLogin={handleLogin}
+            onBack={handleBackFromNostr}
           />
         )}
         {screen === 'register' && (
@@ -497,14 +551,20 @@ export function AppShell() {
   return (
     <GoogleOAuthProvider clientId={googleClientId}>
     <MessageBoxProvider>
+      {session && showNewGameModal && (
+        <NewGameModal
+          walletBalance={walletBalance}
+          creating={creatingGame}
+          onConfirm={handleCreateGame}
+          onClose={() => setShowNewGameModal(false)}
+        />
+      )}
       {session && showOnlinePlayers && (
         <OnlinePlayersModal
           players={onlinePlayers}
           currentPlayerId={session.playerId}
-          pendingChallengeId={pendingChallengeId}
           onClose={() => setShowOnlinePlayers(false)}
-          onChallenge={handleChallengePlayer}
-          onCancelChallenge={handleCancelChallenge}
+          onViewProfile={handleViewPlayerProfile}
           onWatch={handleWatchOnlineGame}
         />
       )}

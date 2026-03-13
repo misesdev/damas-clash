@@ -26,6 +26,21 @@ export const styles = StyleSheet.create({
     letterSpacing: 3,
   },
   topBarAvatar: {},
+  dashboardPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  dashboardText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   onlinePill: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -22,6 +22,20 @@ namespace api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("api.Models.AccountDeletionLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AccountDeletionLogs");
+                });
+
             modelBuilder.Entity("api.Models.Game", b =>
                 {
                     b.Property<Guid>("Id")
@@ -242,6 +256,11 @@ namespace api.Migrations
 
                     b.Property<DateTimeOffset?>("RefreshTokenExpiry")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Role")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("Username")
                         .IsRequired()
