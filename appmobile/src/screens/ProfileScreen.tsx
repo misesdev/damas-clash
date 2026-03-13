@@ -12,6 +12,7 @@ import {useTranslation} from 'react-i18next';
 import {WEB_URL} from '@env';
 import {useProfileScreen} from '../hooks/useProfileScreen';
 import {useLanguage} from '../hooks/useLanguage';
+import {pubkeyToShortNpub} from '../utils/nostr';
 import {styles} from '../styles/profileStyles';
 import type {LoginResponse} from '../types/auth';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -23,6 +24,8 @@ interface Props {
   onEditEmail: () => void;
   onAvatarChanged: (url: string) => void;
   onOpenHistory: () => void;
+  lightningAddress?: string | null;
+  onEditLightningAddress: () => void;
 }
 
 const AVATAR_SIZE = 88;
@@ -92,7 +95,7 @@ function MenuItem({label, value, onPress, danger, testID}: MenuItemProps) {
             {value}
           </Text>
         ) : null}
-        {!danger && <Text style={styles.chevron}>›</Text>}
+        {!danger && !!onPress && <Text style={styles.chevron}>›</Text>}
       </View>
     </TouchableOpacity>
   );
@@ -105,6 +108,8 @@ export function ProfileScreen({
   onEditEmail,
   onAvatarChanged,
   onOpenHistory,
+  lightningAddress,
+  onEditLightningAddress,
 }: Props) {
   const {t} = useTranslation();
   const {currentLanguage, setLanguage, options: langOptions} = useLanguage();
@@ -120,7 +125,11 @@ export function ProfileScreen({
         <View style={styles.profileHeader}>
           <Avatar user={user} onPress={handleAvatarPress} uploading={uploading} />
           <Text style={styles.displayName}>{user.username}</Text>
-          <Text style={styles.emailLabel}>{user.email}</Text>
+          {user.nostrPubKey
+            ? <Text style={styles.emailLabel}>{pubkeyToShortNpub(user.nostrPubKey)}</Text>
+            : user.email
+              ? <Text style={styles.emailLabel}>{user.email}</Text>
+              : null}
         </View>
 
         {/* Stats */}
@@ -156,7 +165,23 @@ export function ProfileScreen({
           <View style={styles.card}>
             <MenuItem label={t('profile.items.username')} value={user.username} onPress={onEditUsername} />
             <View style={styles.separator} />
-            <MenuItem label={t('profile.items.email')} value={user.email} onPress={onEditEmail} />
+            <MenuItem
+              label={t('profile.items.email')}
+              value={user.email ?? undefined}
+              onPress={user.nostrPubKey ? undefined : onEditEmail}
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('profile.sections.lightning')}</Text>
+          <View style={styles.card}>
+            <MenuItem
+              label={t('profile.items.lightningAddress')}
+              value={lightningAddress || undefined}
+              onPress={onEditLightningAddress}
+              testID="lightning-address-item"
+            />
           </View>
         </View>
 
@@ -217,7 +242,7 @@ export function ProfileScreen({
           </View>
         </View>
 
-        <Text style={styles.version}>{t('profile.version', {version: '1.3'})}</Text>
+        <Text style={styles.version}>{t('profile.version', {version: '1.6'})}</Text>
       </ScrollView>
     </SafeAreaView>
   );

@@ -2,12 +2,12 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Image,
-  SafeAreaView,
   Text,
   TouchableOpacity,
   useWindowDimensions,
   View,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import {getGameMoves} from '../api/games';
 import {BOARD_SIZE, createInitialPieces, isDarkSquare} from '../game/checkers';

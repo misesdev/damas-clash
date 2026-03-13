@@ -10,19 +10,31 @@ public static class AppSettings
 {
     public static void UseAppSettings(this WebApplicationBuilder builder) 
     {
-        builder.Services.AddStackExchangeRedisCache(options =>
-            options.Configuration = builder.Configuration["Redis:Configuration"]);
+        var redisConfig = builder.Configuration["Redis:Configuration"];
+        if (!string.IsNullOrEmpty(redisConfig))
+            builder.Services.AddStackExchangeRedisCache(options => options.Configuration = redisConfig);
+        else
+            builder.Services.AddDistributedMemoryCache();
         builder.Services.AddScoped<IGameCacheService, GameCacheService>();
         builder.Services.AddSingleton<IGameWatcherService, GameWatcherService>();
         builder.Services.AddSingleton<IOnlinePlayerTracker, OnlinePlayerTracker>();
         builder.Services.AddSingleton<IChallengeService, ChallengeService>();
+        builder.Services.AddSingleton<INostrChallengeStore, NostrChallengeStore>();
 
+        builder.Services.AddHttpClient<ILightningAddressValidator, LightningAddressValidator>();
         builder.Services.AddScoped<IPlayerService, PlayerService>();
         builder.Services.AddScoped<IGameService, GameService>();
         builder.Services.AddScoped<IEmailService, SendGridEmailService>();
         builder.Services.AddScoped<ITokenService, JwtTokenService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+
+        // Financial services
+        builder.Services.AddScoped<IWalletService, WalletService>();
+        builder.Services.AddScoped<ILightningService, LightningService>();
+        builder.Services.AddScoped<ISettlementService, SettlementService>();
+
+        // Lightning Gateway HTTP client
 
         // In Development, load .env from the solution root (one level above api/)
         if (builder.Environment.IsDevelopment())
@@ -68,8 +80,19 @@ public static class AppSettings
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer();
 
-        // var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_API_CLIENT_ID");
-        // builder.Configuration["Google:ClientId"] = googleClientId;
+        var gatewayToken = Environment.GetEnvironmentVariable("GATEWAY_API_KEY");
+        if (!string.IsNullOrEmpty(gatewayToken))
+          builder.Configuration["LightningGateway:ApiKey"] = gatewayToken;
+
+        builder.Services.Configure<LightningGatewaySettings>(builder.Configuration
+            .GetSection("LightningGateway"));
+
+        builder.Services.AddHttpClient<ILightningGatewayService, LightningGatewayService>((sp, client) =>
+        {
+            var settings = sp.GetRequiredService<IOptions<LightningGatewaySettings>>().Value;
+            client.BaseAddress = new Uri(settings.BaseUrl);
+            client.DefaultRequestHeaders.Add("X-Api-Key", settings.ApiKey);
+        });
 
         builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
             .Configure<IOptions<JwtSettings>>((options, settings) =>

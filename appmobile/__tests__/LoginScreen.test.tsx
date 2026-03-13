@@ -12,6 +12,8 @@ const mockLogin = authApi.login as jest.MockedFunction<typeof authApi.login>;
 const defaultProps = {
   onCodeSent: jest.fn(),
   onNavigateToRegister: jest.fn(),
+  onGoogleLogin: jest.fn(),
+  onNostrLogin: jest.fn(),
 };
 
 beforeEach(() => {

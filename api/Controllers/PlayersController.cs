@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using api.DTOs.Players;
 using api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -7,7 +8,7 @@ namespace api.Controllers;
 
 [ApiController]
 [Route("api/players")]
-public class PlayersController(IPlayerService playerService, IGameService gameService) : ControllerBase
+public class PlayersController(IPlayerService playerService, IGameService gameService, ILightningAddressValidator lightningValidator) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken ct)
@@ -54,6 +55,43 @@ public class PlayersController(IPlayerService playerService, IGameService gameSe
     {
         var games = await gameService.GetCompletedByPlayerAsync(id, ct);
         return Ok(games);
+    }
+
+    /// <summary>GET /api/players/validate-lightning-address?address=user@domain — validate without saving.</summary>
+    [HttpGet("validate-lightning-address")]
+    public async Task<IActionResult> ValidateLightningAddress([FromQuery] string address, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+            return BadRequest(new { error = "address_required" });
+
+        var result = await lightningValidator.ValidateAsync(address, ct);
+        if (!result.IsSuccess)
+            return UnprocessableEntity(new { error = result.Error });
+
+        return Ok(new { callback = result.Value!.Callback, minSendable = result.Value.MinSendable, maxSendable = result.Value.MaxSendable });
+    }
+
+    /// <summary>PUT /api/players/{id}/lightning-address — validate and save Lightning Address.</summary>
+    [Authorize]
+    [HttpPut("{id:guid}/lightning-address")]
+    public async Task<IActionResult> UpdateLightningAddress(Guid id, [FromBody] UpdateLightningAddressRequest request, CancellationToken ct)
+    {
+        var callerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (callerId is null || !Guid.TryParse(callerId, out var callerGuid) || callerGuid != id)
+            return Forbid();
+
+        var result = await playerService.UpdateLightningAddressAsync(id, request.Address, ct);
+        if (!result.IsSuccess)
+        {
+            if (result.IsNotFound) return NotFound();
+            return result.Error switch
+            {
+                "invalid_format" => BadRequest(new { error = result.Error }),
+                _ => UnprocessableEntity(new { error = result.Error })
+            };
+        }
+
+        return Ok(result.Value);
     }
 
     [Authorize]

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace api.Services;
 
-public class PlayerService(DamasDbContext db, ICloudinaryService cloudinary) : IPlayerService
+public class PlayerService(DamasDbContext db, ICloudinaryService cloudinary, ILightningAddressValidator lightningValidator) : IPlayerService
 {
     public async Task<PlayerResponse?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
@@ -16,7 +16,7 @@ public class PlayerService(DamasDbContext db, ICloudinaryService cloudinary) : I
     public async Task<IEnumerable<PlayerResponse>> GetAllAsync(CancellationToken ct = default)
     {
         return await db.Players
-            .Select(p => new PlayerResponse(p.Id, p.Username, p.AvatarUrl, p.CreatedAt))
+            .Select(p => new PlayerResponse(p.Id, p.Username, p.AvatarUrl, p.LightningAddress, p.CreatedAt))
             .ToListAsync(ct);
     }
 
@@ -48,6 +48,24 @@ public class PlayerService(DamasDbContext db, ICloudinaryService cloudinary) : I
         return ServiceResult<string>.Ok(url);
     }
 
+    public async Task<ServiceResult<PlayerResponse>> UpdateLightningAddressAsync(Guid id, string? address, CancellationToken ct = default)
+    {
+        var player = await db.Players.FindAsync([id], ct);
+        if (player is null)
+            return ServiceResult<PlayerResponse>.NotFound("player_not_found");
+
+        if (!string.IsNullOrWhiteSpace(address))
+        {
+            var validation = await lightningValidator.ValidateAsync(address, ct);
+            if (!validation.IsSuccess)
+                return ServiceResult<PlayerResponse>.Fail(validation.Error!);
+        }
+
+        player.LightningAddress = string.IsNullOrWhiteSpace(address) ? null : address.Trim().ToLowerInvariant();
+        await db.SaveChangesAsync(ct);
+        return ServiceResult<PlayerResponse>.Ok(ToResponse(player));
+    }
+
     private static PlayerResponse ToResponse(Player p) =>
-        new(p.Id, p.Username, p.AvatarUrl, p.CreatedAt);
+        new(p.Id, p.Username, p.AvatarUrl, p.LightningAddress, p.CreatedAt);
 }

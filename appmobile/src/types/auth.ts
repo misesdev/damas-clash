@@ -29,8 +29,9 @@ export interface LoginResponse {
   expiresAt: string; // ISO 8601
   playerId: string;
   username: string;
-  email: string;
+  email: string | null;
   avatarUrl?: string | null;
+  nostrPubKey?: string | null;
 }
 
 export interface ConfirmEmailRequest {

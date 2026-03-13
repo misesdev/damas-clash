@@ -19,13 +19,15 @@ public class JwtTokenService(IOptions<JwtSettings> opts) : ITokenService
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expiresAt = DateTimeOffset.UtcNow.AddMinutes(_settings.ExpiryMinutes);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, player.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, player.Email),
-            new Claim("username", player.Username),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Sub, player.Id.ToString()),
+            new("username", player.Username),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        if (player.Email is not null)
+            claims.Add(new Claim(JwtRegisteredClaimNames.Email, player.Email));
 
         var token = new JwtSecurityToken(
             issuer: _settings.Issuer,

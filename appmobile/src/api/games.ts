@@ -13,8 +13,12 @@ const auth = (token: string) => ({Authorization: `Bearer ${token}`});
 export const listGames = (token: string) =>
   request<GameResponse[]>('/api/games', {headers: auth(token)});
 
-export const createGame = (token: string) =>
-  request<GameResponse>('/api/games', {method: 'POST', headers: auth(token)});
+export const createGame = (token: string, betAmountSats: number = 0) =>
+  request<GameResponse>('/api/games', {
+    method: 'POST',
+    headers: {...auth(token), 'Content-Type': 'application/json'},
+    body: JSON.stringify({betAmountSats}),
+  });
 
 export const joinGame = (token: string, gameId: string) =>
   request<GameResponse>(`/api/games/${gameId}/join`, {

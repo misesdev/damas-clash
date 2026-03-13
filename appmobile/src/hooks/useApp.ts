@@ -4,11 +4,13 @@ import {
   HttpTransportType,
 } from '@microsoft/signalr';
 import type {HubConnection} from '@microsoft/signalr';
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {showMessage} from '../components/MessageBox';
 import {cancelGame, createGame, getGame} from '../api/games';
 import {refreshAccessToken} from '../api/auth';
+import {getWallet} from '../api/wallet';
+import {getPlayer} from '../api/players';
 import {BASE_URL} from '../api/client';
 import {clearSession, loadSession, saveSession} from '../storage/auth';
 import {clearActiveGameId, loadActiveGameId, saveActiveGameId} from '../storage/game';
@@ -17,10 +19,11 @@ import i18n from '../i18n';
 import type {TabName} from '../components/BottomTabBar';
 import type {LoginResponse} from '../types/auth';
 import type {GameResponse} from '../types/game';
+import type {WalletResponse} from '../types/wallet';
 import type {OnlinePlayerInfo} from '../types/player';
 
-type Screen = 'login' | 'register' | 'confirmEmail' | 'verifyLogin';
-type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay';
+type Screen = 'login' | 'register' | 'confirmEmail' | 'verifyLogin' | 'nostrLogin';
+type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'deposit' | 'withdraw' | 'editLightningAddress';
 
 const REFRESH_BUFFER_MS = 2 * 60 * 1000; // refresh 2 min before expiry
 
@@ -40,6 +43,25 @@ export function useApp() {
   const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayerInfo[]>([]);
   const [showOnlinePlayers, setShowOnlinePlayers] = useState(false);
   const [pendingChallengeId, setPendingChallengeId] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [wallet, setWallet] = useState<WalletResponse | null>(null);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [lightningAddress, setLightningAddress] = useState<string | null>(null);
+
+  // ── Wallet ────────────────────────────────────────────────────────────────
+
+  const fetchWallet = useCallback(async () => {
+    if (!session) {return;}
+    setWalletLoading(true);
+    try {
+      const data = await getWallet(session.token);
+      setWallet(data);
+    } catch { /* silently ignore */ } finally {
+      setWalletLoading(false);
+    }
+  }, [session]);
+
+  useEffect(() => { fetchWallet(); }, [fetchWallet]);
 
   // Refs to avoid stale closures in async callbacks
   const authScreenRef = useRef<AuthScreen>('tabs');
@@ -78,6 +100,13 @@ export function useApp() {
               clearActiveGameId();
             }
           }
+        }
+
+        if (saved && !cancelled) {
+          try {
+            const profile = await getPlayer(saved.token, saved.playerId);
+            if (!cancelled) {setLightningAddress(profile.lightningAddress);}
+          } catch { /* silently ignore */ }
         }
       } finally {
         if (!cancelled) {setLoading(false);}
@@ -305,13 +334,20 @@ export function useApp() {
     }
   };
 
-  const handleNewGame = async () => {
+  const handleNewGame = () => {
+    if (creatingGame) {return;}
+    setShowCreateModal(true);
+  };
+
+  const handleConfirmCreateGame = async (betAmountSats: number) => {
     if (!session || creatingGame) {return;}
+    setShowCreateModal(false);
 
     const existingGame = liveGames?.find(
       g => g.playerBlackId === session.playerId && g.status === 'WaitingForPlayers',
     );
-    if (existingGame) {
+    // Reuse an existing pending game only when it has the exact same bet amount
+    if (existingGame && existingGame.betAmountSats === betAmountSats) {
       setSelectedGame(existingGame);
       setPendingGameId(existingGame.id);
       setAuthScreen('waitingRoom');
@@ -320,13 +356,19 @@ export function useApp() {
 
     setCreatingGame(true);
     try {
-      const game = await createGame(session.token);
+      const game = await createGame(session.token, betAmountSats);
       setSelectedGame(game);
       setPendingGameId(game.id);
       setAuthScreen('waitingRoom');
-    } catch (ex) {
-      console.log(ex);
-      // silently ignore
+      if (betAmountSats > 0) {fetchWallet();}
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t('createGame.errors.failed');
+      showMessage({
+        title: t('createGame.errors.title'),
+        message: msg,
+        type: 'error',
+        actions: [{label: t('common.ok')}],
+      });
     } finally {
       setCreatingGame(false);
     }
@@ -362,6 +404,16 @@ export function useApp() {
     clearActiveGameId();
     setAuthScreen('tabs');
     setSelectedGame(null);
+  };
+
+  const handleOpenDeposit = () => setAuthScreen('deposit');
+  const handleOpenWithdraw = () => setAuthScreen('withdraw');
+  const handleOpenEditLightningAddress = () => setAuthScreen('editLightningAddress');
+  const handleBackFromWallet = () => {setAuthScreen('tabs'); fetchWallet();};
+  const handleLightningAddressSaved = (addr: string | null) => {
+    setLightningAddress(addr);
+    setAuthScreen('tabs');
+    setTab('profile');
   };
 
   const handleNavigateToEditUsername = () => setAuthScreen('editUsername');
@@ -426,5 +478,18 @@ export function useApp() {
     handleChallengePlayer,
     handleCancelChallenge,
     handleWatchOnlineGame,
+    // Wallet
+    wallet,
+    walletLoading,
+    fetchWallet,
+    showCreateModal,
+    setShowCreateModal,
+    handleConfirmCreateGame,
+    handleOpenDeposit,
+    handleOpenWithdraw,
+    handleOpenEditLightningAddress,
+    handleBackFromWallet,
+    handleLightningAddressSaved,
+    lightningAddress,
   };
 }

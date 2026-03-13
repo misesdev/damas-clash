@@ -11,6 +11,8 @@ public class Game
     public GameStatus Status { get; set; }
     public string BoardState { get; set; } = string.Empty;
     public PieceColor CurrentTurn { get; set; }
+    public long BetAmountSats { get; set; }
+    public bool BetSettled { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 

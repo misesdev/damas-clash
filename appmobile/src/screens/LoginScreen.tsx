@@ -28,9 +28,10 @@ interface LoginScreenProps {
   onCodeSent: (email: string) => void;
   onNavigateToRegister: () => void;
   onGoogleLogin: (data: LoginResponse) => void;
+  onNostrLogin: () => void;
 }
 
-export function LoginScreen({onCodeSent, onNavigateToRegister, onGoogleLogin}: LoginScreenProps) {
+export function LoginScreen({onCodeSent, onNavigateToRegister, onGoogleLogin, onNostrLogin}: LoginScreenProps) {
   const {t} = useTranslation();
   const {identifier, setIdentifier, error, loading, handleLogin} = useLogin(onCodeSent);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -109,6 +110,14 @@ export function LoginScreen({onCodeSent, onNavigateToRegister, onGoogleLogin}: L
           {googleError ? (
             <Text style={styles.googleError}>{googleError}</Text>
           ) : null}
+          <TouchableOpacity
+            style={styles.nostrButton}
+            onPress={onNostrLogin}
+            testID="nostr-login-button">
+            <Text style={styles.nostrButtonText}>
+              ⚡ {t('login.nostrButton')}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>

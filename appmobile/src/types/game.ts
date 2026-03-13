@@ -15,6 +15,7 @@ export interface GameResponse {
   currentTurn: PieceColorApi;
   createdAt: string;
   updatedAt: string;
+  betAmountSats: number;
 }
 
 export interface MoveResponse {

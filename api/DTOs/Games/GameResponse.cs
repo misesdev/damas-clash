@@ -14,6 +14,7 @@ public record GameResponse(
     GameStatus Status,
     string BoardState,
     PieceColor CurrentTurn,
+    long BetAmountSats,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt
 );

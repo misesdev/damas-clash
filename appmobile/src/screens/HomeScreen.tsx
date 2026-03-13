@@ -1,9 +1,9 @@
 import React from 'react';
 import {
   ActivityIndicator,
-  FlatList,
-  Image,
+  //Image,
   RefreshControl,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -13,10 +13,12 @@ import {useTranslation} from 'react-i18next';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {BoardMark} from '../components/BoardMark';
 import {GameCard} from '../components/GameCard';
+import {WalletCard} from '../components/WalletCard';
 import {useHomeScreen} from '../hooks/useHomeScreen';
 import {styles} from '../styles/homeStyles';
 import type {LoginResponse} from '../types/auth';
 import type {GameResponse, GameStatus} from '../types/game';
+import type {WalletResponse} from '../types/wallet';
 import {colors} from '../theme/colors';
 
 interface Props {
@@ -24,14 +26,23 @@ interface Props {
   pendingGame?: GameResponse | null;
   liveGames?: GameResponse[] | null;
   onlineCount?: number | null;
+  wallet: WalletResponse | null;
+  walletLoading?: boolean;
   onGameSelect: (game: GameResponse) => void;
   onGameCancelled?: (gameId: string) => void;
   onOpenOnlinePlayers?: () => void;
+  onDeposit: () => void;
+  onWithdraw: () => void;
 }
 
 type FilterTab = Exclude<GameStatus, 'Completed'>;
 
-export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSelect, onGameCancelled, onOpenOnlinePlayers}: Props) {
+export function HomeScreen({
+  user, pendingGame, liveGames, onlineCount,
+  wallet, walletLoading,
+  onGameSelect, onGameCancelled, onOpenOnlinePlayers,
+  onDeposit, onWithdraw,
+}: Props) {
   const {t} = useTranslation();
 
   const TABS: {key: FilterTab; label: string}[] = [
@@ -60,12 +71,9 @@ export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSel
     handleCancelGame,
   } = useHomeScreen(user, pendingGame, liveGames, onGameSelect, onGameCancelled);
 
-  const initials = user.username ? user.username.slice(0, 2).toUpperCase() : '?';
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Top bar */}
-      <View style={{ height: 25 }}></View>
+      {/* Top bar (fixed) */}
       <View style={styles.topBar}>
         <View style={styles.topBarLogo}>
           <BoardMark size={26} />
@@ -80,95 +88,90 @@ export function HomeScreen({user, pendingGame, liveGames, onlineCount, onGameSel
             <Text style={styles.onlineText}>{t('home.onlineCount', {count: onlineCount})}</Text>
           </TouchableOpacity>
         )}
-        <View style={styles.topBarAvatar}>
-          {user.avatarUrl ? (
-            <Image source={{uri: user.avatarUrl}} style={styles.avatarImg} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitials}>{initials}</Text>
+      </View>
+
+      {/* Scrollable content */}
+      <ScrollView
+        stickyHeaderIndices={[1]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.text}
+          />
+        }
+        showsVerticalScrollIndicator={false}>
+
+        {/* Index 0: WalletCard — scrolls away */}
+        <WalletCard
+          wallet={wallet}
+          loading={walletLoading}
+          onDeposit={onDeposit}
+          onWithdraw={onWithdraw}
+        />
+
+        {/* Index 1: Tabs + Search — becomes sticky */}
+        <View style={styles.stickyHeader}>
+          <View style={styles.tabs}>
+            {TABS.map(tab => (
+              <TouchableOpacity
+                key={tab.key}
+                style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+                onPress={() => setActiveTab(tab.key)}
+                testID={`tab-filter-${tab.key}`}>
+                <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.searchWrapper}>
+            <Text style={styles.searchIcon}>⌕</Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder={t('home.searchPlaceholder')}
+              placeholderTextColor="#4E4E4E"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+              testID="search-input"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} testID="search-clear">
+                <Text style={styles.searchClear}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Index 2: Game list */}
+        <View style={styles.list}>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {loading ? (
+            <View style={styles.loadingArea}>
+              <ActivityIndicator color={colors.text} />
             </View>
-          )}
-        </View>
-      </View>
-
-      {/* Section heading */}
-      {/* <View style={styles.sectionHeading}> */}
-      {/*   <Text style={styles.sectionTitle}>Partidas</Text> */}
-      {/* </View> */}
-      <View style={{ height: 15 }} />
-
-      <View style={styles.tabs}>
-        {TABS.map(tab => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() => setActiveTab(tab.key)}
-            testID={`tab-filter-${tab.key}`}>
-            <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Search field */}
-      <View style={styles.searchWrapper}>
-        <Text style={styles.searchIcon}>⌕</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder={t('home.searchPlaceholder')}
-          placeholderTextColor="#4E4E4E"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-          returnKeyType="search"
-          testID="search-input"
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')} testID="search-clear">
-            <Text style={styles.searchClear}>✕</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      {loading ? (
-        <View style={styles.loadingArea}>
-          <ActivityIndicator color={colors.text} />
-        </View>
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={colors.text}
-            />
-          }
-          ListEmptyComponent={
+          ) : filtered.length === 0 ? (
             <Text style={styles.empty}>
-              {searchQuery.trim()
-                ? t('home.emptySearch')
-                : EMPTY_MESSAGES[activeTab]}
+              {searchQuery.trim() ? t('home.emptySearch') : EMPTY_MESSAGES[activeTab]}
             </Text>
-          }
-          renderItem={({item}) => (
-            <GameCard
-              game={item}
-              currentPlayerId={user.playerId}
-              loading={joiningId === item.id}
-              cancelling={cancellingId === item.id}
-              onPress={() => handleGamePress(item)}
-              onCancel={() => handleCancelGame(item)}
-            />
+          ) : (
+            filtered.map(item => (
+              <GameCard
+                key={item.id}
+                game={item}
+                currentPlayerId={user.playerId}
+                loading={joiningId === item.id}
+                cancelling={cancellingId === item.id}
+                onPress={() => handleGamePress(item)}
+                onCancel={() => handleCancelGame(item)}
+              />
+            ))
           )}
-        />
-      )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

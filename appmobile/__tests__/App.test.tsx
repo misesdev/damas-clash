@@ -24,8 +24,28 @@ const INITIAL_BOARD_STATE = JSON.stringify({
 
 jest.mock('../src/api/auth');
 jest.mock('../src/api/games');
+jest.mock('../src/api/wallet', () => ({
+  getWallet: jest.fn().mockResolvedValue({balanceSats: 0, lockedBalanceSats: 0, availableBalanceSats: 0}),
+  initiateDeposit: jest.fn(),
+  checkDepositStatus: jest.fn(),
+  withdraw: jest.fn(),
+  getTransactions: jest.fn(),
+}));
 jest.mock('../src/storage/auth');
 jest.mock('../src/storage/game');
+jest.mock('../src/api/players', () => ({
+  getPlayer: jest.fn().mockResolvedValue({
+    id: 'player-1',
+    username: 'testuser',
+    avatarUrl: null,
+    lightningAddress: null,
+    createdAt: '2025-01-01T00:00:00Z',
+  }),
+  updateUsername: jest.fn(),
+  updateLightningAddress: jest.fn(),
+  validateLightningAddress: jest.fn(),
+  updateAvatar: jest.fn(),
+}));
 
 jest.mock('react-native-safe-area-context', () => {
   const {View} = require('react-native');
@@ -112,6 +132,7 @@ const fakeGame = {
   currentTurn: 'Black' as const,
   createdAt: '',
   updatedAt: '',
+  betAmountSats: 0,
 };
 
 const fakeGameStarted = {
@@ -293,8 +314,11 @@ describe('App navigation', () => {
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
     fireEvent.press(getByTestId('new-game-button'));
 
+    await waitFor(() => expect(getByTestId('create-game-btn')).toBeTruthy());
+    fireEvent.press(getByTestId('create-game-btn'));
+
     await waitFor(() => expect(getByTestId('waiting-room-code')).toBeTruthy());
-    expect(mockCreateGame).toHaveBeenCalledWith(fakeSession.token);
+    expect(mockCreateGame).toHaveBeenCalledWith(fakeSession.token, 0);
   });
 
   it('can cancel from waiting room and return to home', async () => {
@@ -303,6 +327,9 @@ describe('App navigation', () => {
     const {getByTestId} = render(<App />);
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
     fireEvent.press(getByTestId('new-game-button'));
+
+    await waitFor(() => expect(getByTestId('create-game-btn')).toBeTruthy());
+    fireEvent.press(getByTestId('create-game-btn'));
 
     await waitFor(() => expect(getByTestId('waiting-room-cancel')).toBeTruthy());
     fireEvent.press(getByTestId('waiting-room-cancel'));
@@ -316,6 +343,9 @@ describe('App navigation', () => {
     const {getByTestId, queryAllByTestId} = render(<App />);
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
     fireEvent.press(getByTestId('new-game-button'));
+
+    await waitFor(() => expect(getByTestId('create-game-btn')).toBeTruthy());
+    fireEvent.press(getByTestId('create-game-btn'));
 
     // Wait for WaitingRoomScreen and SignalR handler registration
     await waitFor(() => expect(getByTestId('waiting-room-code')).toBeTruthy());
@@ -337,6 +367,9 @@ describe('App navigation', () => {
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
     fireEvent.press(getByTestId('new-game-button'));
 
+    await waitFor(() => expect(getByTestId('create-game-btn')).toBeTruthy());
+    fireEvent.press(getByTestId('create-game-btn'));
+
     await waitFor(() => expect(getByTestId('waiting-room-code')).toBeTruthy());
     await waitFor(() => expect(capturedGameStartedHandler).not.toBeNull());
     fireGameStarted(fakeGameStarted);
@@ -349,6 +382,9 @@ describe('App navigation', () => {
     const {getByTestId, queryAllByTestId} = render(<App />);
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
     fireEvent.press(getByTestId('new-game-button'));
+
+    await waitFor(() => expect(getByTestId('create-game-btn')).toBeTruthy());
+    fireEvent.press(getByTestId('create-game-btn'));
 
     await waitFor(() => expect(getByTestId('waiting-room-code')).toBeTruthy());
     await waitFor(() => expect(capturedGameStartedHandler).not.toBeNull());
@@ -364,6 +400,9 @@ describe('App navigation', () => {
     const {getByTestId} = render(<App />);
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
     fireEvent.press(getByTestId('new-game-button'));
+
+    await waitFor(() => expect(getByTestId('create-game-btn')).toBeTruthy());
+    fireEvent.press(getByTestId('create-game-btn'));
 
     await waitFor(() => expect(getByTestId('waiting-room-code')).toBeTruthy());
     await waitFor(() => expect(capturedGameStartedHandler).not.toBeNull());
@@ -382,6 +421,9 @@ describe('App navigation', () => {
     const {getByTestId, queryAllByTestId} = render(<App />);
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
     fireEvent.press(getByTestId('new-game-button'));
+
+    await waitFor(() => expect(getByTestId('create-game-btn')).toBeTruthy());
+    fireEvent.press(getByTestId('create-game-btn'));
 
     await waitFor(() => expect(getByTestId('waiting-room-code')).toBeTruthy());
     await waitFor(() => expect(capturedGameStartedHandler).not.toBeNull());
@@ -424,6 +466,9 @@ describe('App navigation', () => {
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
     fireEvent.press(getByTestId('new-game-button'));
 
+    await waitFor(() => expect(getByTestId('create-game-btn')).toBeTruthy());
+    fireEvent.press(getByTestId('create-game-btn'));
+
     await waitFor(() => expect(getByTestId('waiting-room-code')).toBeTruthy());
     await waitFor(() => expect(capturedGameStartedHandler).not.toBeNull());
     fireGameStarted(fakeGameStarted);
@@ -465,6 +510,9 @@ describe('App navigation', () => {
     const {getByTestId} = render(<App />);
     await waitFor(() => expect(getByTestId('new-game-button')).toBeTruthy());
     fireEvent.press(getByTestId('new-game-button'));
+
+    await waitFor(() => expect(getByTestId('create-game-btn')).toBeTruthy());
+    fireEvent.press(getByTestId('create-game-btn'));
 
     // Wait for WaitingRoomScreen and SignalR handler registration
     await waitFor(() => expect(getByTestId('waiting-room-cancel')).toBeTruthy());

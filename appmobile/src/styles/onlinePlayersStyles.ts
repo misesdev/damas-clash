@@ -9,6 +9,7 @@ export const styles = StyleSheet.create({
     //justifyContent: 'flex-end',
   },
   sheet: {
+    flex: 1,
     backgroundColor: colors.bg,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,

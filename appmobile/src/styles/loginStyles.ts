@@ -37,4 +37,13 @@ export const styles = StyleSheet.create({
 
   googleSection: {marginBottom: 8, gap: 12},
   googleError: {color: colors.error, fontSize: 12, textAlign: 'center'},
+
+  nostrButton: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  nostrButtonText: {color: colors.text, fontSize: 15, fontWeight: '600'},
 });

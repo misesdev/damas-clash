@@ -9,6 +9,10 @@ import {HomeScreen} from '../screens/HomeScreen';
 import {ProfileScreen} from '../screens/ProfileScreen';
 import {ReplayScreen} from '../screens/ReplayScreen';
 import {WaitingRoomScreen} from '../screens/WaitingRoomScreen';
+import {DepositScreen} from '../screens/wallet/DepositScreen';
+import {WithdrawScreen} from '../screens/wallet/WithdrawScreen';
+import {EditLightningAddressScreen} from '../screens/profile/EditLightningAddressScreen';
+import {CreateGameModal} from '../components/CreateGameModal';
 import {colors} from '../theme/colors';
 import {useAppContext} from '../context/AppContext';
 
@@ -40,6 +44,17 @@ export function MainNavigator() {
     handleLogout,
     updateSession,
     setShowOnlinePlayers,
+    wallet,
+    walletLoading,
+    showCreateModal,
+    setShowCreateModal,
+    handleConfirmCreateGame,
+    handleOpenDeposit,
+    handleOpenWithdraw,
+    handleOpenEditLightningAddress,
+    handleBackFromWallet,
+    handleLightningAddressSaved,
+    lightningAddress,
   } = useAppContext();
 
   if (!session) {
@@ -112,6 +127,40 @@ export function MainNavigator() {
     );
   }
 
+  if (authScreen === 'deposit') {
+    return (
+      <DepositScreen
+        user={session}
+        onBack={handleBackFromWallet}
+        onSuccess={handleBackFromWallet}
+      />
+    );
+  }
+
+  if (authScreen === 'withdraw') {
+    return (
+      <WithdrawScreen
+        user={session}
+        wallet={wallet}
+        lightningAddress={lightningAddress}
+        onBack={handleBackFromWallet}
+        onSuccess={handleBackFromWallet}
+        onRegisterLightningAddress={handleOpenEditLightningAddress}
+      />
+    );
+  }
+
+  if (authScreen === 'editLightningAddress') {
+    return (
+      <EditLightningAddressScreen
+        user={session}
+        initialAddress={lightningAddress}
+        onSaved={handleLightningAddressSaved}
+        onBack={handleBackToProfile}
+      />
+    );
+  }
+
   return (
     <View style={styles.tabContainer}>
       <View style={styles.tabContent}>
@@ -121,6 +170,8 @@ export function MainNavigator() {
             pendingGame={pendingGameId ? selectedGame : null}
             liveGames={liveGames}
             onlineCount={onlineCount}
+            wallet={wallet}
+            walletLoading={walletLoading}
             onGameSelect={handleGameSelect}
             onGameCancelled={gameId => {
               if (pendingGameId === gameId) {
@@ -128,6 +179,8 @@ export function MainNavigator() {
               }
             }}
             onOpenOnlinePlayers={() => setShowOnlinePlayers(true)}
+            onDeposit={handleOpenDeposit}
+            onWithdraw={handleOpenWithdraw}
           />
         ) : (
           <ProfileScreen
@@ -137,6 +190,8 @@ export function MainNavigator() {
             onEditEmail={handleNavigateToEditEmail}
             onAvatarChanged={url => updateSession({avatarUrl: url})}
             onOpenHistory={handleOpenHistory}
+            lightningAddress={lightningAddress}
+            onEditLightningAddress={handleOpenEditLightningAddress}
           />
         )}
       </View>
@@ -145,6 +200,13 @@ export function MainNavigator() {
         onPress={setTab}
         onNewGame={handleNewGame}
         creating={creatingGame}
+      />
+      <CreateGameModal
+        visible={showCreateModal}
+        wallet={wallet}
+        creating={creatingGame}
+        onConfirm={handleConfirmCreateGame}
+        onClose={() => setShowCreateModal(false)}
       />
     </View>
   );

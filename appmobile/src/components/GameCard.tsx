@@ -72,6 +72,15 @@ export function GameCard({game, currentPlayerId, onPress, onCancel, loading, can
           <View style={[styles.statusDot, {backgroundColor: statusColor}]} />
           <Text style={[styles.status, {color: statusColor}]}>{statusLabel}</Text>
         </View>
+        {game.betAmountSats > 0 ? (
+          <View style={styles.betBadge}>
+            <Text style={styles.betBadgeText}>⚡ {game.betAmountSats.toLocaleString()}</Text>
+          </View>
+        ) : (
+          <View style={styles.friendlyBadge}>
+            <Text style={styles.friendlyBadgeText}>{t('gameCard.friendly')}</Text>
+          </View>
+        )}
       </View>
 
       {isOwnPending && (
@@ -147,4 +156,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionText: {color: colors.primaryText, fontWeight: '600', fontSize: 13},
+  betBadge: {
+    backgroundColor: 'rgba(255, 200, 0, 0.12)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  betBadgeText: {color: '#FFC800', fontWeight: '700', fontSize: 11},
+  friendlyBadge: {
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  friendlyBadgeText: {color: colors.textMuted, fontWeight: '600', fontSize: 11},
 });

@@ -3,6 +3,7 @@ using api.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,8 @@ namespace api.tests.Infrastructure;
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
     public FakeEmailService EmailService { get; } = new();
+    public FakeLightningGatewayService LightningGateway { get; } = new();
+    public FakeLightningAddressValidator LightningAddressValidator { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -42,13 +45,20 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
             var dbName = "TestDb_" + Guid.NewGuid();
             services.AddDbContext<DamasDbContext>(options =>
-                options.UseInMemoryDatabase(dbName));
+                options.UseInMemoryDatabase(dbName)
+                       .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning)));
 
             services.RemoveAll<IDistributedCache>();
             services.AddDistributedMemoryCache();
 
             services.RemoveAll<IEmailService>();
             services.AddSingleton<IEmailService>(EmailService);
+
+            services.RemoveAll<ILightningGatewayService>();
+            services.AddSingleton<ILightningGatewayService>(LightningGateway);
+
+            services.RemoveAll<ILightningAddressValidator>();
+            services.AddSingleton<ILightningAddressValidator>(LightningAddressValidator);
         });
     }
 }

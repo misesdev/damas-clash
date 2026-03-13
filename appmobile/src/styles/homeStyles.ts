@@ -30,8 +30,8 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
@@ -45,8 +45,8 @@ export const styles = StyleSheet.create({
   },
   onlineText: {
     color: colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '800',
   },
   avatarImg: {
     width: 32,
@@ -128,8 +128,16 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
 
+  stickyHeader: {
+    backgroundColor: colors.bg,
+    paddingTop: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingBottom: 8,
+  },
+
   loadingArea: {flex: 1, alignItems: 'center', justifyContent: 'center'},
-  list: {paddingHorizontal: 20, paddingBottom: 20},
+  list: {paddingHorizontal: 20, paddingBottom: 80, paddingTop: 8},
   empty: {
     color: colors.textMuted,
     fontSize: 14,

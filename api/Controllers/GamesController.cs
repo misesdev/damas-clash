@@ -3,6 +3,7 @@ using api.DTOs.Games;
 using api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace api.Controllers;
 
@@ -26,10 +27,13 @@ public class GamesController(IGameService gameService) : ControllerBase
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> Create(CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] CreateGameRequest? request, CancellationToken ct)
     {
         var playerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var result = await gameService.CreateAsync(playerId, ct);
+        var betAmount = request?.BetAmountSats ?? 0;
+        var result = await gameService.CreateAsync(playerId, betAmount, ct);
+        if (!result.IsSuccess)
+            return BadRequest(result.Error);
         return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value);
     }
 

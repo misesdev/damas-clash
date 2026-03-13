@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using api.Data;
 using api.DTOs.Auth;
@@ -6,6 +7,8 @@ using api.Models;
 using Google.Apis.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using NBitcoin.Secp256k1;
 
 namespace api.Services;
 
@@ -13,7 +16,9 @@ public class AuthService(
     DamasDbContext db,
     IEmailService emailService,
     ITokenService tokenService,
-    IConfiguration configuration) : IAuthService
+    IConfiguration configuration,
+    INostrChallengeStore nostrChallengeStore,
+    ILogger<AuthService> logger) : IAuthService
 {
     public async Task<ServiceResult<RegisterResponse>> RegisterAsync(RegisterRequest req, CancellationToken ct = default)
     {
@@ -67,7 +72,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey));
     }
 
     public async Task<ServiceResult<SendLoginCodeResponse>> LoginAsync(LoginRequest req, CancellationToken ct = default)
@@ -111,7 +116,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey));
     }
 
     public async Task<ServiceResult<LoginResponse>> RefreshAsync(string refreshToken, CancellationToken ct = default)
@@ -131,7 +136,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, newRefreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey));
     }
 
     public async Task<ServiceResult<string>> ResendConfirmationAsync(ResendConfirmationRequest req, CancellationToken ct = default)
@@ -260,10 +265,94 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey));
     }
 
-    private async Task<string> GenerateUniqueUsernameAsync(string? displayName, CancellationToken ct)
+    public async Task<ServiceResult<LoginResponse>> NostrAuthAsync(NostrLoginRequest req, CancellationToken ct = default)
+    {
+        logger.LogDebug("NostrAuth: pubkey={Pubkey} sigLen={SigLen} challenge={Challenge}",
+            req.Pubkey[..Math.Min(16, req.Pubkey.Length)],
+            req.Sig.Length,
+            req.Challenge);
+
+        // 1. Validate and consume challenge (single-use, 5-min window)
+        var challengeValid = nostrChallengeStore.ValidateAndConsume(req.Challenge);
+        logger.LogDebug("NostrAuth: challenge valid={Valid}", challengeValid);
+        if (!challengeValid)
+            return ServiceResult<LoginResponse>.Fail("invalid_challenge");
+
+        // 2. Verify BIP-340 Schnorr signature over SHA-256(challenge)
+        var sigValid = VerifySchnorr(req.Pubkey, req.Challenge, req.Sig, logger);
+        logger.LogDebug("NostrAuth: signature valid={Valid}", sigValid);
+        if (!sigValid)
+            return ServiceResult<LoginResponse>.Fail("invalid_signature");
+
+        // 3. Find or create player
+        var player = await db.Players.FirstOrDefaultAsync(p => p.NostrPubKey == req.Pubkey, ct);
+        if (player is null)
+        {
+            var username = await GenerateUniqueUsernameAsync(req.Username, ct);
+            player = new Player
+            {
+                Id = Guid.NewGuid(),
+                NostrPubKey = req.Pubkey,
+                Username = username,
+                IsEmailConfirmed = true,
+                AvatarUrl = req.AvatarUrl,
+                CreatedAt = DateTimeOffset.UtcNow,
+            };
+            db.Players.Add(player);
+        }
+        else if (req.AvatarUrl is not null && player.AvatarUrl != req.AvatarUrl)
+        {
+            player.AvatarUrl = req.AvatarUrl;
+        }
+
+        var refreshToken = tokenService.GenerateRefreshToken();
+        player.RefreshToken = refreshToken;
+        player.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(30);
+        await db.SaveChangesAsync(ct);
+
+        var tokenResult = tokenService.Generate(player);
+        return ServiceResult<LoginResponse>.Ok(
+            new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey));
+    }
+
+/// <summary>
+    /// Verifies a BIP-340 Schnorr signature where the message is SHA-256(UTF-8(challenge)).
+    /// </summary>
+    private static bool VerifySchnorr(string pubkeyHex, string challenge, string sigHex, ILogger? log = null)
+    {
+        try
+        {
+            var pubBytes = Convert.FromHexString(pubkeyHex);
+            var sigBytes = Convert.FromHexString(sigHex);
+            var msgBytes = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(challenge));
+            log?.LogDebug("VerifySchnorr: pubLen={PubLen} sigLen={SigLen} msgHash={MsgHash}",
+                pubBytes.Length, sigBytes.Length, Convert.ToHexString(msgBytes)[..16]);
+            if (!ECXOnlyPubKey.TryCreate(pubBytes, Context.Instance, out var xOnlyPub) || xOnlyPub is null)
+            {
+                log?.LogDebug("VerifySchnorr: ECXOnlyPubKey.TryCreate failed");
+                return false;
+            }
+            if (!SecpSchnorrSignature.TryCreate(sigBytes, out var sig) || sig is null)
+            {
+                log?.LogDebug("VerifySchnorr: SecpSchnorrSignature.TryCreate failed");
+                return false;
+            }
+            var result = xOnlyPub.SigVerifyBIP340(sig, msgBytes);
+            log?.LogDebug("VerifySchnorr: SigVerifyBIP340={Result}", result);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            log?.LogDebug("VerifySchnorr: exception={Msg}", ex.Message);
+            return false;
+        }
+    }
+
+private async Task<string> GenerateUniqueUsernameAsync(string? displayName, CancellationToken ct)
     {
         var base_ = string.IsNullOrWhiteSpace(displayName)
             ? "player"

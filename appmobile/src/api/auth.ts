@@ -66,3 +66,22 @@ export function googleAuth(idToken: string): Promise<LoginResponse> {
     body: JSON.stringify({idToken}),
   });
 }
+
+export function nostrChallenge(): Promise<{challenge: string}> {
+  return request('/api/auth/nostr/challenge');
+}
+
+export interface NostrLoginRequest {
+  pubkey: string;
+  sig: string;
+  challenge: string;
+  username?: string;
+  avatarUrl?: string;
+}
+
+export function nostrLogin(data: NostrLoginRequest): Promise<LoginResponse> {
+  return request('/api/auth/nostr/login', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}

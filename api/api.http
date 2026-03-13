@@ -1,6 +1,125 @@
-@api_HostAddress = http://localhost:5271
+@host = http://localhost:8080
+@token = COLE_SEU_TOKEN_AQUI
 
-GET {{api_HostAddress}}/weatherforecast/
-Accept: application/json
+# ── 1. Registrar ─────────────────────────────────────────────────────────────
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "jogador1",
+  "email": "jogador1@test.com"
+}
+
+###
+
+# ── 2. Confirmar email (use o código recebido) ────────────────────────────────
+POST {{host}}/api/auth/confirm-email
+Content-Type: application/json
+
+{
+  "email": "jogador1@test.com",
+  "code": "123456"
+}
+
+###
+
+# ── 3. Login (envia código por email) ─────────────────────────────────────────
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "jogador1@test.com"
+}
+
+###
+
+# ── 4. Verificar login → obtém token ─────────────────────────────────────────
+POST {{host}}/api/auth/verify-login
+Content-Type: application/json
+
+{
+  "email": "jogador1@test.com",
+  "code": "123456"
+}
+
+###
+
+# ── WALLET ────────────────────────────────────────────────────────────────────
+
+# GET saldo
+GET {{host}}/api/wallet
+Authorization: Bearer {{token}}
+
+###
+
+# Histórico de transações
+GET {{host}}/api/wallet/transactions
+Authorization: Bearer {{token}}
+
+###
+
+# Iniciar depósito (recebe invoice Lightning)
+POST {{host}}/api/wallet/deposit
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amountSats": 1000,
+  "memo": "depósito teste"
+}
+
+###
+
+# Checar status do depósito (substitua o rHash)
+GET {{host}}/api/wallet/deposit/RHASH_AQUI/status
+Authorization: Bearer {{token}}
+
+###
+
+# Saque via invoice Lightning
+POST {{host}}/api/wallet/withdraw
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "invoice": "lnbc...",
+  "amountSats": 500,
+  "maxFeeSats": 10
+}
+
+###
+
+# ── GAMES ─────────────────────────────────────────────────────────────────────
+
+# Criar partida sem aposta
+POST {{host}}/api/games
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "betAmountSats": 0
+}
+
+###
+
+# Criar partida com aposta de 1000 sats
+POST {{host}}/api/games
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "betAmountSats": 1000
+}
+
+###
+
+# Entrar em partida
+POST {{host}}/api/games/GAME_ID_AQUI/join
+Authorization: Bearer {{token}}
+
+###
+
+# Listar partidas ativas
+GET {{host}}/api/games
 
 ###

@@ -10,16 +10,25 @@ using Microsoft.EntityFrameworkCore;
 
 namespace api.Services;
 
-public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCacheService cache, IOnlinePlayerTracker tracker) : IGameService
+public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCacheService cache, IOnlinePlayerTracker tracker, ISettlementService settlement) : IGameService
 {
-    public async Task<ServiceResult<GameResponse>> CreateAsync(Guid playerId, CancellationToken ct = default)
+    public async Task<ServiceResult<GameResponse>> CreateAsync(Guid playerId, long betAmountSats = 0, CancellationToken ct = default)
     {
         var existingPending = await db.Games
             .Include(g => g.PlayerBlack)
             .FirstOrDefaultAsync(g => g.PlayerBlackId == playerId && g.Status == GameStatus.WaitingForPlayers, ct);
 
         if (existingPending is not null)
-            return ServiceResult<GameResponse>.Ok(ToResponse(existingPending));
+        {
+            // Same type requested — return the existing game (idempotent)
+            if (existingPending.BetAmountSats == betAmountSats)
+                return ServiceResult<GameResponse>.Ok(ToResponse(existingPending));
+
+            // Different type — discard the old pending game and create the requested one.
+            // Bets are only locked on JOIN, so it is safe to delete here.
+            db.Games.Remove(existingPending);
+            await cache.InvalidateAsync(existingPending.Id, ct);
+        }
 
         var initialState = BoardEngine.CreateInitialState();
 
@@ -30,6 +39,8 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
             Status = GameStatus.WaitingForPlayers,
             BoardState = initialState.Serialize(),
             CurrentTurn = PieceColor.Black,
+            BetAmountSats = betAmountSats,
+            BetSettled = false,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };
@@ -61,6 +72,15 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
 
         if (game.PlayerBlackId == playerId)
             return ServiceResult<GameResponse>.Fail("You are already in this game");
+
+        // Lock bets from both players before starting the game
+        if (game.BetAmountSats > 0)
+        {
+            var lockResult = await settlement.LockBetsAsync(
+                game.Id, game.PlayerBlackId!.Value, playerId, game.BetAmountSats, ct);
+            if (!lockResult.IsSuccess)
+                return ServiceResult<GameResponse>.Fail(lockResult.Error!);
+        }
 
         game.PlayerWhiteId = playerId;
         game.Status = GameStatus.InProgress;
@@ -150,6 +170,14 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         await cache.SetBoardStateAsync(gameId, result.NewState!, ct);
         await db.SaveChangesAsync(ct);
 
+        if (result.GameOver && game.BetAmountSats > 0 && !game.BetSettled && game.WinnerId.HasValue)
+        {
+            var loserId = game.WinnerId == game.PlayerBlackId ? game.PlayerWhiteId!.Value : game.PlayerBlackId!.Value;
+            await settlement.SettleAsync(game.Id, game.WinnerId.Value, loserId, game.BetAmountSats, ct);
+            game.BetSettled = true;
+            await db.SaveChangesAsync(ct);
+        }
+
         var response = ToResponse(game);
         await hub.Clients.Group(gameId.ToString())
             .SendAsync("MoveMade", response, ct);
@@ -225,6 +253,14 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
 
         await db.SaveChangesAsync(ct);
 
+        if (game.BetAmountSats > 0 && !game.BetSettled)
+        {
+            var loserId = winnerId == game.PlayerBlackId ? game.PlayerWhiteId!.Value : game.PlayerBlackId!.Value;
+            await settlement.SettleAsync(game.Id, winnerId, loserId, game.BetAmountSats, ct);
+            game.BetSettled = true;
+            await db.SaveChangesAsync(ct);
+        }
+
         var response = ToResponse(game);
         await hub.Clients.Group(gameId.ToString()).SendAsync("MoveMade", response, ct);
         await BroadcastGameListAsync(ct);
@@ -292,13 +328,23 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
 
     private async Task BroadcastGameListAsync(CancellationToken ct = default)
     {
-        var games = (await GetActiveAsync(ct)).ToList();
-        await cache.SetGameListAsync(games, ct);
-        await hub.Clients.Group("lobby").SendAsync("GameListUpdated", games, ct);
+        try
+        {
+            var games = (await GetActiveAsync(ct)).ToList();
+            try { await cache.SetGameListAsync(games, ct); } catch { /* cache failure is non-fatal */ }
+            await hub.Clients.Group("lobby").SendAsync("GameListUpdated", games, ct);
+        }
+        catch { /* broadcast failures must not affect the HTTP response */ }
     }
 
-    private async Task BroadcastOnlinePlayersAsync(CancellationToken ct = default) =>
-        await hub.Clients.Group("lobby").SendAsync("OnlinePlayersUpdated", tracker.GetAll(), ct);
+    private async Task BroadcastOnlinePlayersAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            await hub.Clients.Group("lobby").SendAsync("OnlinePlayersUpdated", tracker.GetAll(), ct);
+        }
+        catch { /* broadcast failures must not affect the HTTP response */ }
+    }
 
     public async Task<ServiceResult<bool>> CancelAsync(Guid gameId, Guid playerId, CancellationToken ct = default)
     {
@@ -316,6 +362,7 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         db.Games.Remove(game);
         await db.SaveChangesAsync(ct);
 
+        // No bets are locked at WaitingForPlayers stage (lock happens on join)
         await BroadcastGameListAsync(ct);
 
         return ServiceResult<bool>.Ok(true);
@@ -326,5 +373,5 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
             g.PlayerBlackId, g.PlayerBlack?.Username, g.PlayerBlack?.AvatarUrl,
             g.PlayerWhiteId, g.PlayerWhite?.Username, g.PlayerWhite?.AvatarUrl,
             g.WinnerId, g.Status, g.BoardState, g.CurrentTurn,
-            g.CreatedAt, g.UpdatedAt);
+            g.BetAmountSats, g.CreatedAt, g.UpdatedAt);
 }

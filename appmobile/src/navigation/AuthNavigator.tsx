@@ -4,6 +4,7 @@ import {useTranslation} from 'react-i18next';
 import {login, resendConfirmation, verifyLogin} from '../api/auth';
 import {ConfirmEmailScreen} from '../screens/ConfirmEmailScreen';
 import {LoginScreen} from '../screens/LoginScreen';
+import {NostrLoginScreen} from '../screens/NostrLoginScreen';
 import {RegisterScreen} from '../screens/RegisterScreen';
 import {colors} from '../theme/colors';
 import {useAppContext} from '../context/AppContext';
@@ -48,6 +49,15 @@ export function AuthNavigator() {
     );
   }
 
+  if (screen === 'nostrLogin') {
+    return (
+      <NostrLoginScreen
+        onLogin={handleLogin}
+        onBack={() => setScreen('login')}
+      />
+    );
+  }
+
   if (screen === 'register') {
     return (
       <RegisterScreen
@@ -70,6 +80,7 @@ export function AuthNavigator() {
         }}
         onNavigateToRegister={() => setScreen('register')}
         onGoogleLogin={handleLogin}
+        onNostrLogin={() => setScreen('nostrLogin')}
       />
     </View>
   );

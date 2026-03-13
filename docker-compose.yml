@@ -9,6 +9,8 @@ services:
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # only in development
     networks:
       - backend
     healthcheck:
@@ -23,6 +25,8 @@ services:
     restart: unless-stopped
     networks:
       - backend
+    ports:
+      - "6379:6379" # only in development
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -80,6 +84,34 @@ services:
         sleep 300;
       done"
 
+  lnd-gateway:
+    build:
+      context: ./lnd-gateway
+      dockerfile: Dockerfile
+    container_name: damas-lnd-gateway
+    depends_on:
+      lnd:
+        condition: service_started
+    environment:
+      LND_REST_URL: https://lnd:8080
+      LND_MACAROON: ${LND_MACAROON}
+      GATEWAY_API_KEY: ${GATEWAY_API_KEY}
+      Lnd__TlsCertPath: /lnd/tls.cert
+      ASPNETCORE_ENVIRONMENT: Production
+    volumes:
+      - lnd_data:/lnd:ro
+    ports:
+      - "5001:8080"
+    networks:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   api:
     build:
       context: ./api
@@ -90,8 +122,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      lnd:
-        condition: service_started
+      lnd-gateway:
+        condition: service_healthy
     environment:
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${DB_DATABASE:-db_damas};Username=${DB_USERNAME:-mises};Password=${DB_PASSWORD:-mises}
       Redis__Configuration: redis:6379
@@ -101,12 +133,8 @@ services:
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
       Google__ClientId: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
-      Lightning__GrpcHost: lnd:10009
-      Lightning__RestHost: http://lnd:8080
-      Lightning__MacaroonPath: /lnd/data/chain/bitcoin/mainnet/admin.macaroon
-      Lightning__TlsCertPath: /lnd/tls.cert
-    volumes:
-      - lnd_data:/lnd:ro
+      LightningGateway__BaseUrl: http://lnd-gateway:8080
+      LightningGateway__ApiKey: ${GATEWAY_API_KEY}
     ports:
       - "8080:8080"
     networks:

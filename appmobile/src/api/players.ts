@@ -2,6 +2,31 @@ import {ApiError, BASE_URL, request} from './client';
 
 const auth = (token: string) => ({Authorization: `Bearer ${token}`});
 
+export interface PlayerProfile {
+  id: string;
+  username: string;
+  avatarUrl: string | null;
+  lightningAddress: string | null;
+  createdAt: string;
+}
+
+export const getPlayer = (token: string, playerId: string) =>
+  request<PlayerProfile>(`/api/players/${playerId}`, {
+    headers: auth(token),
+  });
+
+export const updateLightningAddress = (token: string, playerId: string, address: string | null) =>
+  request<PlayerProfile>(`/api/players/${playerId}/lightning-address`, {
+    method: 'PUT',
+    headers: auth(token),
+    body: JSON.stringify({address}),
+  });
+
+export const validateLightningAddress = (address: string) =>
+  request<{callback: string; minSendable: number; maxSendable: number}>(
+    `/api/players/validate-lightning-address?address=${encodeURIComponent(address)}`,
+  );
+
 export const updateUsername = (token: string, playerId: string, username: string) =>
   request<{id: string; username: string; email: string}>(`/api/players/${playerId}`, {
     method: 'PATCH',

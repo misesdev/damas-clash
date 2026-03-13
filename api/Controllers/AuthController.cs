@@ -135,6 +135,25 @@ public class AuthController(IAuthService authService) : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("nostr/challenge")]
+    public IActionResult NostrChallenge([FromServices] INostrChallengeStore store)
+        => Ok(new NostrChallengeResponse(store.Generate()));
+
+    [HttpPost("nostr/login")]
+    public async Task<IActionResult> NostrLogin([FromBody] NostrLoginRequest request, CancellationToken ct)
+    {
+        var result = await authService.NostrAuthAsync(request, ct);
+
+        if (!result.IsSuccess)
+            return result.Error switch
+            {
+                "invalid_signature" or "invalid_challenge" => Unauthorized(new { error = result.Error }),
+                _ => BadRequest(new { error = result.Error })
+            };
+
+        return Ok(result.Value);
+    }
+
     [HttpPost("google")]
     public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthRequest request, CancellationToken ct)
     {
