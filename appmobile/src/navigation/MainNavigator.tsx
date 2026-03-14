@@ -1,5 +1,6 @@
 import React from 'react';
-import {View, StyleSheet} from 'react-native';
+import {Alert, BackHandler, StyleSheet, View} from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {BottomTabBar} from '../components/BottomTabBar';
 import {CheckersBoardScreen} from '../screens/CheckersBoardScreen';
 import {EditEmailScreen} from '../screens/EditEmailScreen';
@@ -19,195 +20,54 @@ import {ChatScreen} from '../screens/ChatScreen';
 import {CreateGameModal} from '../components/CreateGameModal';
 import {colors} from '../theme/colors';
 import {useAppContext} from '../context/AppContext';
+import {useAndroidBack} from './useAndroidBack';
+import type {AuthScreen} from '../hooks/useApp';
+import type {ReactElement} from 'react';
+import { showMessage } from '../components/MessageBox';
 
-export function MainNavigator() {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface ScreenDef {
+  render: () => ReactElement | null;
+  onBack: () => void;
+}
+
+// ─── Tabs view (home + profile) ───────────────────────────────────────────────
+
+function TabsView() {
   const {
-    authScreen,
+    session,
     tab,
     setTab,
-    session,
     selectedGame,
     pendingGameId,
     setPendingGameId,
     creatingGame,
     liveGames,
     onlineCount,
-    replayGame,
-    handleNewGame,
-    handleCancelWaitingRoom,
-    handleWaitingRoomBack,
-    handleGameSelect,
-    handleBackFromBoard,
-    handleNavigateToEditUsername,
-    handleNavigateToEditEmail,
-    handleBackToProfile,
-    handleOpenHistory,
-    handleBackFromHistory,
-    handleOpenReplay,
-    handleBackFromReplay,
-    handleLogout,
-    updateSession,
-    setShowOnlinePlayers,
     wallet,
     walletLoading,
     showCreateModal,
     setShowCreateModal,
+    lightningAddress,
+    handleNewGame,
+    handleGameSelect,
     handleConfirmCreateGame,
+    handleNavigateToEditUsername,
+    handleNavigateToEditEmail,
+    handleOpenHistory,
+    handleLogout,
+    updateSession,
+    setShowOnlinePlayers,
     handleOpenDeposit,
     handleOpenWithdraw,
-    handleOpenWalletHistory,
-    selectedPlayerProfile,
-    handleViewPlayerProfile,
-    handleBackFromPlayerProfile,
-    handleOpenEditLightningAddress,
-    handleBackFromWallet,
-    handleLightningAddressSaved,
-    lightningAddress,
     handleOpenDashboard,
-    handleBackFromDashboard,
     handleOpenChat,
-    handleCloseChat,
+    handleOpenEditLightningAddress,
     onlinePlayers,
   } = useAppContext();
 
-  if (!session) {
-    return null;
-  }
-
-  if (authScreen === 'waitingRoom' && selectedGame) {
-    return (
-      <WaitingRoomScreen
-        game={selectedGame}
-        onBack={handleWaitingRoomBack}
-        onCancelGame={handleCancelWaitingRoom}
-      />
-    );
-  }
-
-  if (authScreen === 'checkersBoard' && selectedGame) {
-    return (
-      <CheckersBoardScreen
-        game={selectedGame}
-        session={session}
-        onBack={handleBackFromBoard}
-      />
-    );
-  }
-
-  if (authScreen === 'gameHistory') {
-    return (
-      <GameHistoryScreen
-        user={session}
-        onReplay={handleOpenReplay}
-        onBack={handleBackFromHistory}
-      />
-    );
-  }
-
-  if (authScreen === 'replay' && replayGame) {
-    return (
-      <ReplayScreen
-        game={replayGame}
-        session={session}
-        onBack={handleBackFromReplay}
-      />
-    );
-  }
-
-  if (authScreen === 'editUsername') {
-    return (
-      <EditUsernameScreen
-        user={session}
-        onSaved={newUsername => {
-          updateSession({username: newUsername});
-          handleBackToProfile();
-        }}
-        onBack={handleBackToProfile}
-      />
-    );
-  }
-
-  if (authScreen === 'editEmail') {
-    return (
-      <EditEmailScreen
-        user={session}
-        onSaved={newEmail => {
-          updateSession({email: newEmail});
-          handleBackToProfile();
-        }}
-        onBack={handleBackToProfile}
-      />
-    );
-  }
-
-  if (authScreen === 'deposit') {
-    return (
-      <DepositScreen
-        user={session}
-        onBack={handleBackFromWallet}
-        onSuccess={handleBackFromWallet}
-      />
-    );
-  }
-
-  if (authScreen === 'withdraw') {
-    return (
-      <WithdrawScreen
-        user={session}
-        wallet={wallet}
-        lightningAddress={lightningAddress}
-        onBack={handleBackFromWallet}
-        onSuccess={handleBackFromWallet}
-        onRegisterLightningAddress={handleOpenEditLightningAddress}
-      />
-    );
-  }
-
-  if (authScreen === 'walletHistory') {
-    return (
-      <WalletHistoryScreen
-        user={session}
-        onBack={handleBackFromWallet}
-      />
-    );
-  }
-
-  if (authScreen === 'playerProfile' && selectedPlayerProfile) {
-    return (
-      <PlayerProfileScreen
-        session={session}
-        profilePlayerId={selectedPlayerProfile.playerId}
-        profileUsername={selectedPlayerProfile.username}
-        profileAvatarUrl={selectedPlayerProfile.avatarUrl}
-        onBack={handleBackFromPlayerProfile}
-      />
-    );
-  }
-
-  if (authScreen === 'editLightningAddress') {
-    return (
-      <EditLightningAddressScreen
-        user={session}
-        initialAddress={lightningAddress}
-        onSaved={handleLightningAddressSaved}
-        onBack={handleBackToProfile}
-      />
-    );
-  }
-
-  if (authScreen === 'dashboard') {
-    return <DashboardScreen session={session} onBack={handleBackFromDashboard} />;
-  }
-
-  if (authScreen === 'chat') {
-    return (
-      <ChatScreen
-        session={session}
-        onlinePlayers={onlinePlayers}
-        onBack={handleCloseChat}
-      />
-    );
-  }
+  if (!session) {return null;}
 
   return (
     <View style={styles.tabContainer}>
@@ -222,9 +82,7 @@ export function MainNavigator() {
             walletLoading={walletLoading}
             onGameSelect={handleGameSelect}
             onGameCancelled={gameId => {
-              if (pendingGameId === gameId) {
-                setPendingGameId(null);
-              }
+              if (pendingGameId === gameId) {setPendingGameId(null);}
             }}
             onOpenOnlinePlayers={() => setShowOnlinePlayers(true)}
             onDeposit={handleOpenDeposit}
@@ -261,6 +119,253 @@ export function MainNavigator() {
     </View>
   );
 }
+
+// ─── Main Navigator ───────────────────────────────────────────────────────────
+
+export function MainNavigator() {
+  const {t} = useTranslation();
+  const {
+    authScreen,
+    tab,
+    setTab,
+    session,
+    selectedGame,
+    replayGame,
+    selectedPlayerProfile,
+    wallet,
+    lightningAddress,
+    handleWaitingRoomBack,
+    handleCancelWaitingRoom,
+    handleBackFromBoard,
+    handleGameSelect,
+    handleBackToProfile,
+    handleOpenReplay,
+    handleBackFromHistory,
+    handleBackFromReplay,
+    updateSession,
+    handleBackFromWallet,
+    handleBackFromPlayerProfile,
+    handleLightningAddressSaved,
+    handleBackFromDashboard,
+    handleCloseChat,
+    handleOpenEditLightningAddress,
+    onlinePlayers,
+  } = useAppContext();
+
+  // ─── Screen registry ────────────────────────────────────────────────────────
+  // Each entry pairs a render function with its back-navigation handler.
+  // Adding a new screen = adding one entry here.
+
+  const registry: Partial<Record<AuthScreen, ScreenDef>> = {
+    waitingRoom: {
+      render: () =>
+        selectedGame ? (
+          <WaitingRoomScreen
+            game={selectedGame}
+            onBack={handleWaitingRoomBack}
+            onCancelGame={handleCancelWaitingRoom}
+          />
+        ) : null,
+      onBack: handleWaitingRoomBack,
+    },
+
+    checkersBoard: {
+      render: () =>
+        session && selectedGame ? (
+          <CheckersBoardScreen
+            game={selectedGame}
+            session={session}
+            onBack={handleBackFromBoard}
+          />
+        ) : null,
+      onBack: handleBackFromBoard,
+    },
+
+    gameHistory: {
+      render: () =>
+        session ? (
+          <GameHistoryScreen
+            user={session}
+            onReplay={handleOpenReplay}
+            onBack={handleBackFromHistory}
+          />
+        ) : null,
+      onBack: handleBackFromHistory,
+    },
+
+    replay: {
+      render: () =>
+        session && replayGame ? (
+          <ReplayScreen
+            game={replayGame}
+            session={session}
+            onBack={handleBackFromReplay}
+          />
+        ) : null,
+      onBack: handleBackFromReplay,
+    },
+
+    editUsername: {
+      render: () =>
+        session ? (
+          <EditUsernameScreen
+            user={session}
+            onSaved={newUsername => {
+              updateSession({username: newUsername});
+              handleBackToProfile();
+            }}
+            onBack={handleBackToProfile}
+          />
+        ) : null,
+      onBack: handleBackToProfile,
+    },
+
+    editEmail: {
+      render: () =>
+        session ? (
+          <EditEmailScreen
+            user={session}
+            onSaved={newEmail => {
+              updateSession({email: newEmail});
+              handleBackToProfile();
+            }}
+            onBack={handleBackToProfile}
+          />
+        ) : null,
+      onBack: handleBackToProfile,
+    },
+
+    deposit: {
+      render: () =>
+        session ? (
+          <DepositScreen
+            user={session}
+            onBack={handleBackFromWallet}
+            onSuccess={handleBackFromWallet}
+          />
+        ) : null,
+      onBack: handleBackFromWallet,
+    },
+
+    withdraw: {
+      render: () =>
+        session ? (
+          <WithdrawScreen
+            user={session}
+            wallet={wallet}
+            lightningAddress={lightningAddress}
+            onBack={handleBackFromWallet}
+            onSuccess={handleBackFromWallet}
+            onRegisterLightningAddress={handleOpenEditLightningAddress}
+          />
+        ) : null,
+      onBack: handleBackFromWallet,
+    },
+
+    walletHistory: {
+      render: () =>
+        session ? (
+          <WalletHistoryScreen user={session} onBack={handleBackFromWallet} />
+        ) : null,
+      onBack: handleBackFromWallet,
+    },
+
+    playerProfile: {
+      render: () =>
+        session && selectedPlayerProfile ? (
+          <PlayerProfileScreen
+            session={session}
+            profilePlayerId={selectedPlayerProfile.playerId}
+            profileUsername={selectedPlayerProfile.username}
+            profileAvatarUrl={selectedPlayerProfile.avatarUrl}
+            onBack={handleBackFromPlayerProfile}
+          />
+        ) : null,
+      onBack: handleBackFromPlayerProfile,
+    },
+
+    editLightningAddress: {
+      render: () =>
+        session ? (
+          <EditLightningAddressScreen
+            user={session}
+            initialAddress={lightningAddress}
+            onSaved={handleLightningAddressSaved}
+            onBack={handleBackToProfile}
+          />
+        ) : null,
+      onBack: handleBackToProfile,
+    },
+
+    dashboard: {
+      render: () =>
+        session ? (
+          <DashboardScreen session={session} onBack={handleBackFromDashboard} />
+        ) : null,
+      onBack: handleBackFromDashboard,
+    },
+
+    chat: {
+      render: () =>
+        session ? (
+          <ChatScreen
+            session={session}
+            onlinePlayers={onlinePlayers}
+            onBack={handleCloseChat}
+          />
+        ) : null,
+      onBack: handleCloseChat,
+    },
+  };
+
+  // ─── Android back button ────────────────────────────────────────────────────
+
+  useAndroidBack(() => {
+    if (authScreen === 'tabs') {
+      if (tab === 'profile') {
+        // Profile → Home
+        setTab('home');
+        return true;
+      }
+      // Home → confirm exit
+      showMessage({
+        title: t('app.exitTitle'),
+        message: t('app.exitMessage'),
+        type: 'confirm',
+        actions: [
+          {label: t('common.cancel')},
+          {
+            label: t('app.exitConfirm'), 
+            danger: true, onPress: () => BackHandler.exitApp()
+          },
+        ],
+      });
+      return true;
+    }
+
+    const def = registry[authScreen];
+    if (def) {
+      def.onBack();
+      return true;
+    }
+
+    return false;
+  });
+
+  // ─── Render current screen ──────────────────────────────────────────────────
+
+  if (!session) {return null;}
+
+  const def = registry[authScreen];
+  if (def) {
+    const el = def.render();
+    if (el !== null) {return el;}
+  }
+
+  return <TabsView />;
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   tabContainer: {flex: 1, backgroundColor: colors.bg},

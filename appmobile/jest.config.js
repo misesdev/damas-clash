@@ -9,6 +9,7 @@ module.exports = {
     '^react-native-svg$': '<rootDir>/__mocks__/react-native-svg.ts',
     '^react-native-qrcode-svg$': '<rootDir>/__mocks__/react-native-qrcode-svg.ts',
     '^react-native-get-random-values$': '<rootDir>/__mocks__/react-native-get-random-values.ts',
+    '^react-native-vision-camera$': '<rootDir>/__mocks__/react-native-vision-camera.ts',
     // Intercept before any ESM-only library (nostr-fetch, @noble/*) is loaded
     '^.+/utils/nostr$': '<rootDir>/src/utils/__mocks__/nostr.ts',
   },

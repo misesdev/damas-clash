@@ -1,6 +1,7 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   RefreshControl,
   ScrollView,
@@ -293,6 +294,35 @@ function GamesTab({user, pendingGame, liveGames, onGameSelect, onGameCancelled}:
   );
 }
 
+// ─── Live Chat FAB ───────────────────────────────────────────────────────────
+
+function LiveChatFab({onPress}: {onPress: () => void}) {
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {toValue: 1.9, duration: 900, useNativeDriver: true}),
+        Animated.timing(pulse, {toValue: 1, duration: 900, useNativeDriver: true}),
+      ]),
+    ).start();
+  }, [pulse]);
+
+  return (
+    <TouchableOpacity style={styles.fab} onPress={onPress} testID="chat-btn" activeOpacity={0.85}>
+      <View style={styles.fabLiveSection}>
+        <View style={styles.fabLiveDotWrapper}>
+          <Animated.View style={[styles.fabLiveDotRing, {transform: [{scale: pulse}]}]} />
+          <View style={styles.fabLiveDot} />
+        </View>
+        <Text style={styles.fabLiveLabel}>LIVE</Text>
+      </View>
+      <View style={styles.fabDivider} />
+      <Text style={styles.fabChatText}>Chat</Text>
+    </TouchableOpacity>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function HomeScreen({
@@ -363,12 +393,8 @@ export function HomeScreen({
         />
       )}
 
-      {/* Chat FAB */}
-      {onOpenChat && (
-        <TouchableOpacity style={styles.fab} onPress={onOpenChat} testID="chat-btn">
-          <Text style={styles.fabText}>💬</Text>
-        </TouchableOpacity>
-      )}
+      {/* Live Chat FAB */}
+      {onOpenChat && <LiveChatFab onPress={onOpenChat} />}
     </SafeAreaView>
   );
 }

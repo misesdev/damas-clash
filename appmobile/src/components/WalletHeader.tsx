@@ -9,9 +9,8 @@ interface Props {
 }
 
 export function WalletHeader({title, subtitle }: Props) {
-  const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.container, {paddingTop: insets.top}]}>
+    <View style={[styles.container]}>
       <Text style={styles.title}>{title}</Text>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
@@ -24,6 +23,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: colors.bg,
+    marginVertical: 30
   },
   title: {
     fontSize: 32,

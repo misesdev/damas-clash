@@ -26,9 +26,9 @@ export const withdraw = (token: string, invoice: string, amountSats: number, max
     body: JSON.stringify({invoice, amountSats, maxFeeSats}),
   });
 
-export const withdrawToAddress = (token: string, amountSats: number, maxFeeSats: number = 10) =>
+export const withdrawToAddress = (token: string, amountSats: number, targetAddress?: string, maxFeeSats: number = 10) =>
   request<WithdrawResponse>('/api/wallet/withdraw-to-address', {
     method: 'POST',
     headers: auth(token),
-    body: JSON.stringify({amountSats, maxFeeSats}),
+    body: JSON.stringify({amountSats, maxFeeSats, ...(targetAddress ? {targetAddress} : {})}),
   });

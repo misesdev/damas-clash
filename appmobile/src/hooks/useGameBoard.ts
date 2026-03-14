@@ -5,7 +5,7 @@ import {
 import type {HubConnection} from '@microsoft/signalr';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Animated, BackHandler, useWindowDimensions} from 'react-native';
+import {Animated, useWindowDimensions} from 'react-native';
 import {makeMove, resign, skipTurn} from '../api/games';
 import {BASE_URL} from '../api/client';
 import type {Piece, Move, PieceColor} from '../game/checkers';
@@ -278,25 +278,20 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
       : 'light'
     : null;
 
-  // ── Block hardware back during active game ────────────────────────────────
-
-  useEffect(() => {
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Allow back only after game ends, or always for spectators
-      return !winner && !spectator;
-    });
-    return () => sub.remove();
-  }, [winner, spectator]);
-
   // ── Turn timer ────────────────────────────────────────────────────────────
 
   const TURN_TIMEOUT_SEC = 60;
   const [timeLeft, setTimeLeft] = useState(TURN_TIMEOUT_SEC);
 
+  const skipTurnToApiRef = useRef(game.currentTurn);
+  useEffect(() => {
+    skipTurnToApiRef.current = game.currentTurn;
+  }, [game.currentTurn]);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const skipTurnToApi = useCallback(async () => {
     try {
-      const updated = await skipTurn(session.token, initialGame.id);
+      const updated = await skipTurn(session.token, initialGame.id, skipTurnToApiRef.current);
       setGame(updated);
     } catch {
       // ignore — opponent's turn will propagate via SignalR anyway
@@ -319,7 +314,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   }, [game.currentTurn, game.status]);
 
   useEffect(() => {
-    if (timeLeft === 0 && isMyTurnDerived && game.status === 'InProgress') {
+    if (timeLeft === 0 && !spectator && game.status === 'InProgress') {
       skipTurnToApi();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -331,7 +326,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   const opponentColor: PieceColor = myColor === 'dark' ? 'light' : 'dark';
   const isFlipped = myColor === 'dark';
   const isTimerActive = game.status === 'InProgress' && !winner;
-  const isUrgent = isTimerActive && timeLeft <= 10;
+  const isUrgent = isTimerActive && isMyTurnDerived && timeLeft <= 10;
 
   const myUsername =
     myColor === 'dark' ? game.playerBlackUsername : game.playerWhiteUsername;

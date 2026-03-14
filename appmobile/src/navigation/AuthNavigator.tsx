@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, StyleSheet} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {login, resendConfirmation, verifyLogin} from '../api/auth';
 import {ConfirmEmailScreen} from '../screens/ConfirmEmailScreen';
@@ -8,11 +8,32 @@ import {NostrLoginScreen} from '../screens/NostrLoginScreen';
 import {RegisterScreen} from '../screens/RegisterScreen';
 import {colors} from '../theme/colors';
 import {useAppContext} from '../context/AppContext';
+import {useAndroidBack} from './useAndroidBack';
+import type {Screen} from '../hooks/useApp';
+
+// Back destinations for each auth screen.
+// 'login' is absent — back on login lets Android handle it (exits app).
+const AUTH_BACK: Partial<Record<Screen, Screen>> = {
+  register: 'login',
+  confirmEmail: 'login',
+  verifyLogin: 'login',
+  nostrLogin: 'login',
+};
 
 export function AuthNavigator() {
   const {screen, setScreen, pendingEmail, setPendingEmail, handleLogin} =
     useAppContext();
   const {t} = useTranslation();
+
+  // Android back: navigate to parent screen or let system handle (login → exit).
+  useAndroidBack(() => {
+    const target = AUTH_BACK[screen];
+    if (target) {
+      setScreen(target);
+      return true; // consumed
+    }
+    return false; // login screen: let Android exit the app
+  });
 
   if (screen === 'confirmEmail') {
     return (

@@ -4,64 +4,62 @@ import {colors} from '../theme/colors';
 export const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.bg},
   keyboardView: {flex: 1},
-  scroll: {padding: 24},
-  heading: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '800',
-    marginBottom: 8,
-    letterSpacing: -0.5,
+
+  // ─── Scrollable content ───────────────────────────────────────────────────
+  scroll: {
+    padding: 24,
+    paddingBottom: 8,
   },
-  availableText: {
+  sectionLabel: {
     color: colors.textSecondary,
-    fontSize: 13,
-    marginBottom: 24,
-  },
-  labelText: {
-    color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+    //textTransform: 'uppercase',
     marginBottom: 8,
-    marginTop: 16,
   },
-  textArea: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 14,
-    color: colors.text,
+  amountSection: {
+    marginTop: 20,
+  },
+  availableHint: {
+    color: colors.textMuted,
     fontSize: 12,
-    fontFamily: 'monospace',
-    minHeight: 80,
-    textAlignVertical: 'top',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+
+  // ─── Footer ───────────────────────────────────────────────────────────────
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 16,
+    backgroundColor: colors.bg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    gap: 8,
   },
   errorText: {
     color: colors.error,
     fontSize: 13,
     textAlign: 'center',
-    marginTop: 8,
   },
   withdrawBtn: {
     backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 14,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 28,
   },
   withdrawBtnDisabled: {
-    backgroundColor: colors.surfaceRaised,
+    opacity: 0.35,
   },
   withdrawBtnText: {
     color: colors.primaryText,
     fontWeight: '700',
     fontSize: 15,
+    letterSpacing: 0.2,
   },
-  withdrawBtnTextDisabled: {
-    color: colors.textMuted,
-  },
+
+  // ─── Success state ────────────────────────────────────────────────────────
   successContainer: {
     flex: 1,
     alignItems: 'center',
@@ -82,52 +80,18 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  noAddressContainer: {
-    alignItems: 'center',
-    paddingHorizontal: 40,
-    paddingTop: 16,
-    gap: 16,
-  },
-  noAddressIcon: {fontSize: 48, marginBottom: 8},
-  noAddressTitle: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  noAddressHint: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
+
+  // ─── Register-address button (kept for compat) ────────────────────────────
   registerBtn: {
     backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 32,
     alignItems: 'center',
-    marginTop: 8,
   },
   registerBtnText: {
     color: colors.primaryText,
     fontWeight: '700',
     fontSize: 15,
-  },
-  addressTag: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    textAlign: 'center',
-    marginTop: 12,
-  },
-  availableHint: {
-    color: colors.textMuted,
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  footer: {
-    padding: 20,
-    paddingBottom: 8,
   },
 });

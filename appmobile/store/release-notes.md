@@ -4,4 +4,5 @@ What's new in Damas Clash:
 - Bet matches: wager satoshis and win double when you win
 - Nostr login: authenticate with your Nostr key
 - Google Sign-In: sign in instantly with your Google account
+- Online chat with temporary messages
 - Performance improvements and general bug fixes

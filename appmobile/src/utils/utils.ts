@@ -35,3 +35,8 @@ export function hexToBytes(hex: string, hexadecimal: boolean = true): Uint8Array
   return bytes;
 }
 
+export function formatSats(value: number, locale: Locale) {
+  return `${new Intl.NumberFormat(locale).format(value)}`;
+}
+
+export type Locale = "pt"|"en"

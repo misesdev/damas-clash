@@ -39,10 +39,11 @@ export const makeMove = (token: string, gameId: string, move: MakeMoveRequest) =
     body: JSON.stringify(move),
   });
 
-export const skipTurn = (token: string, gameId: string) =>
+export const skipTurn = (token: string, gameId: string, expectedCurrentTurn?: string) =>
   request<GameResponse>(`/api/games/${gameId}/skip-turn`, {
     method: 'POST',
-    headers: auth(token),
+    headers: {...auth(token), 'Content-Type': 'application/json'},
+    body: JSON.stringify({expectedCurrentTurn: expectedCurrentTurn ?? null}),
   });
 
 export const getGame = (token: string, gameId: string) =>

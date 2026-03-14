@@ -7,17 +7,21 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import {useTranslation} from 'react-i18next';
 import {colors} from '../theme/colors';
+import { formatSats, Locale } from '../utils/utils';
 
 interface Props {
   value: string;
+  available?: number;
   onChange: (v: string) => void;
   testID?: string;
 }
 
-export function SatsInput({value, onChange, testID}: Props) {
+export function SatsInput({value, available, onChange, testID}: Props) {
   const inputRef = useRef<TextInput>(null);
   const cursor = useRef(new Animated.Value(1)).current;
+  const {t} = useTranslation()
 
   // Blink cursor
   useEffect(() => {
@@ -38,7 +42,8 @@ export function SatsInput({value, onChange, testID}: Props) {
     return () => clearTimeout(t);
   }, []);
 
-  const display = value === '' ? '0' : Number(value).toLocaleString();
+  const locale = t("common.back").includes("Voltar") ? "pt" : "en"; 
+  const display = value === '' ? '0' : formatSats(parseInt(value), locale);
   const fontSize = display.length > 9 ? 36 : display.length > 6 ? 44 : 56;
 
   return (
@@ -52,6 +57,9 @@ export function SatsInput({value, onChange, testID}: Props) {
         </View>
 
         <Text style={styles.unit}>sats</Text>
+        {available &&
+          <Text style={styles.available}>{t('withdraw.availableLabel', {amount: available.toLocaleString()})}</Text>
+        }
 
         {/* Hidden input to capture keystrokes */}
         <TextInput
@@ -110,6 +118,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 10,
     letterSpacing: 1,
+  },
+  available: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.7,
+    marginVertical: 8
   },
   hiddenInput: {
     position: 'absolute',

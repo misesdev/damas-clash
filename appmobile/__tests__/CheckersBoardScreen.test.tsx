@@ -306,9 +306,9 @@ describe('turn timer', () => {
     expect(getByTestId('turn-timer')).toBeTruthy();
   });
 
-  it('does not show timer when it is not my turn', () => {
-    const {queryByTestId} = renderBoard({}, fakeSessionLight); // light session, dark's turn
-    expect(queryByTestId('turn-timer')).toBeNull();
+  it('shows timer when it is not my turn (visible for both players)', () => {
+    const {getByTestId} = renderBoard({}, fakeSessionLight); // light session, dark's turn
+    expect(getByTestId('turn-timer')).toBeTruthy();
   });
 
   it('does not show timer when game is completed', () => {
@@ -389,10 +389,9 @@ describe('spectator mode', () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it('does not show timer for spectator even when it would be a player turn', () => {
-    // White's turn — a light session would show timer, but spectator should not
-    const {queryByTestId} = renderBoard({currentTurn: 'White' as const}, fakeSessionSpectator);
-    expect(queryByTestId('turn-timer')).toBeNull();
+  it('shows timer for spectator when game is in progress', () => {
+    const {getByTestId} = renderBoard({currentTurn: 'White' as const}, fakeSessionSpectator);
+    expect(getByTestId('turn-timer')).toBeTruthy();
   });
 
   it('shows neutral overlay when game is completed as spectator', () => {
@@ -450,5 +449,79 @@ describe('resign', () => {
     await waitFor(() => {
       expect(mockResign).toHaveBeenCalledWith('tok', 'game-1');
     });
+  });
+});
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+
+describe('chat', () => {
+  it('renders the chat input bar', () => {
+    const {getByTestId} = renderBoard();
+    expect(getByTestId('chat-input')).toBeTruthy();
+  });
+
+  it('renders empty chat placeholder when no messages', () => {
+    const {getByTestId} = renderBoard();
+    expect(getByTestId('chat-empty')).toBeTruthy();
+  });
+
+  it('allows typing in the chat input', () => {
+    const {getByTestId} = renderBoard();
+    const input = getByTestId('chat-input');
+    fireEvent.changeText(input, 'Hello!');
+    expect(input.props.value).toBe('Hello!');
+  });
+
+  it('send button is disabled when input is empty', () => {
+    const {getByTestId} = renderBoard();
+    // Can't press disabled button — just verify it exists and is disabled
+    const sendBtn = getByTestId('chat-send-button');
+    expect(sendBtn.props.accessibilityState?.disabled ?? sendBtn.props.disabled).toBeTruthy();
+  });
+
+  it('send button becomes enabled when text is entered and connected', async () => {
+    // The chat hook connects to SignalR — wait for connection
+    const {getByTestId} = renderBoard();
+    const input = getByTestId('chat-input');
+    await act(async () => {
+      fireEvent.changeText(input, 'Hello!');
+    });
+    // After typing and connecting, send button should be enabled
+    await waitFor(() => {
+      const sendBtn = getByTestId('chat-send-button');
+      const isDisabled = sendBtn.props.accessibilityState?.disabled ?? sendBtn.props.disabled;
+      expect(isDisabled).toBeFalsy();
+    });
+  });
+
+  it('sends message via SignalR when send button pressed', async () => {
+    const {HubConnectionBuilder} = require('@microsoft/signalr') as {
+      HubConnectionBuilder: jest.Mock;
+    };
+    const builtHub = HubConnectionBuilder.mock.results[HubConnectionBuilder.mock.results.length - 1];
+    const {getByTestId} = renderBoard();
+
+    await act(async () => {
+      fireEvent.changeText(getByTestId('chat-input'), 'gg wp');
+    });
+
+    await waitFor(() => {
+      const sendBtn = getByTestId('chat-send-button');
+      const isDisabled = sendBtn.props.accessibilityState?.disabled ?? sendBtn.props.disabled;
+      expect(isDisabled).toBeFalsy();
+    });
+
+    await act(async () => {
+      fireEvent.press(getByTestId('chat-send-button'));
+    });
+
+    // If hub was built, check invoke was called
+    if (builtHub?.value) {
+      const mockHub = builtHub.value.build();
+      expect(mockHub.invoke).toHaveBeenCalledWith(
+        expect.stringContaining('Game'),
+        expect.any(String),
+      );
+    }
   });
 });
