@@ -17,6 +17,7 @@ public static class AppSettings
             builder.Services.AddDistributedMemoryCache();
         builder.Services.AddScoped<IGameCacheService, GameCacheService>();
         builder.Services.AddScoped<IChatService, ChatService>();
+        builder.Services.AddScoped<IGameChatService, GameChatService>();
         builder.Services.AddSingleton<IGameWatcherService, GameWatcherService>();
         builder.Services.AddSingleton<IOnlinePlayerTracker, OnlinePlayerTracker>();
         builder.Services.AddSingleton<IChallengeService, ChallengeService>();

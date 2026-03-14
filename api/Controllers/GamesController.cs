@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using api.DTOs.Games;
+using api.Models.Enums;
 using api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -72,10 +73,11 @@ public class GamesController(IGameService gameService) : ControllerBase
 
     [HttpPost("{id:guid}/skip-turn")]
     [Authorize]
-    public async Task<IActionResult> SkipTurn(Guid id, CancellationToken ct)
+    public async Task<IActionResult> SkipTurn(Guid id, [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] SkipTurnRequest? body, CancellationToken ct)
     {
         var playerId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var result = await gameService.SkipTurnAsync(id, playerId, ct);
+        PieceColor? expected = body?.ExpectedCurrentTurn is string s && Enum.TryParse<PieceColor>(s, out var parsed) ? parsed : null;
+        var result = await gameService.SkipTurnAsync(id, playerId, expected, ct);
 
         if (!result.IsSuccess)
             return result.IsNotFound ? NotFound(result.Error) : BadRequest(result.Error);

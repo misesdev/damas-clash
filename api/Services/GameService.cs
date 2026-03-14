@@ -193,7 +193,7 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         return ServiceResult<GameResponse>.Ok(response);
     }
 
-    public async Task<ServiceResult<GameResponse>> SkipTurnAsync(Guid gameId, Guid playerId, CancellationToken ct = default)
+    public async Task<ServiceResult<GameResponse>> SkipTurnAsync(Guid gameId, Guid playerId, PieceColor? expectedCurrentTurn = null, CancellationToken ct = default)
     {
         var game = await db.Games
             .Include(g => g.PlayerBlack)
@@ -206,15 +206,17 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         if (game.Status != GameStatus.InProgress)
             return ServiceResult<GameResponse>.Fail("Game is not in progress");
 
-        PieceColor playerColor;
-        if (game.PlayerBlackId == playerId) playerColor = PieceColor.Black;
-        else if (game.PlayerWhiteId == playerId) playerColor = PieceColor.White;
-        else return ServiceResult<GameResponse>.Fail("You are not a participant in this game");
+        bool isBlack = game.PlayerBlackId == playerId;
+        bool isWhite = game.PlayerWhiteId == playerId;
+        if (!isBlack && !isWhite)
+            return ServiceResult<GameResponse>.Fail("You are not a participant in this game");
 
-        if (game.CurrentTurn != playerColor)
-            return ServiceResult<GameResponse>.Fail("It is not your turn");
+        // Idempotency: if the expected turn no longer matches, another client already triggered
+        // the skip — return the current state as success without flipping again.
+        if (expectedCurrentTurn.HasValue && game.CurrentTurn != expectedCurrentTurn.Value)
+            return ServiceResult<GameResponse>.Ok(ToResponse(game));
 
-        game.CurrentTurn = playerColor == PieceColor.Black ? PieceColor.White : PieceColor.Black;
+        game.CurrentTurn = game.CurrentTurn == PieceColor.Black ? PieceColor.White : PieceColor.Black;
         game.UpdatedAt = DateTimeOffset.UtcNow;
 
         await db.SaveChangesAsync(ct);

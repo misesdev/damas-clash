@@ -634,7 +634,7 @@ export function AppShell() {
                 top: 0,
                 right: 0,
                 bottom: 0,
-                width: 'min(380px, 100vw)',
+                width: 'min(28vw, 100vw)',
                 zIndex: 50,
                 boxShadow: '-8px 0 40px rgba(0,0,0,0.5)',
                 display: 'flex',

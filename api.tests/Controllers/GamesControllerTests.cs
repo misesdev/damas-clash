@@ -400,19 +400,51 @@ public class GamesControllerTests(CustomWebApplicationFactory factory)
     }
 
     [Fact]
-    public async Task SkipTurn_WrongTurn_Returns400()
+    public async Task SkipTurn_WaitingPlayer_SkipsOpponentTurn()
     {
         var (_, blackToken) = await CreatePlayer("skip_wt_b");
         var (_, whiteToken) = await CreatePlayer("skip_wt_w");
         var game = await CreateGame(blackToken);
         await JoinGame(game.Id, whiteToken);
 
-        // White tries to skip but it's black's turn
+        // White is waiting — calls skip to advance Black's expired turn
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", whiteToken);
         var response = await _client.PostAsync($"/api/games/{game.Id}/skip-turn", null);
         _client.DefaultRequestHeaders.Authorization = null;
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = await response.Content.ReadFromJsonAsync<GameResponse>(JsonOpts);
+        Assert.NotNull(updated);
+        Assert.Equal(api.Models.Enums.PieceColor.White, updated.CurrentTurn);
+    }
+
+    [Fact]
+    public async Task SkipTurn_ExpectedTurnMismatch_ReturnsOkIdempotently()
+    {
+        var (_, blackToken) = await CreatePlayer("skip_idem_b");
+        var (_, whiteToken) = await CreatePlayer("skip_idem_w");
+        var game = await CreateGame(blackToken);
+        await JoinGame(game.Id, whiteToken);
+
+        // Black skips first (self-skip with correct expectedCurrentTurn)
+        var body = JsonContent.Create(new { expectedCurrentTurn = "Black" });
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", blackToken);
+        var first = await _client.PostAsync($"/api/games/{game.Id}/skip-turn", body);
+        _client.DefaultRequestHeaders.Authorization = null;
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+
+        // White sends a delayed skip for "Black" turn — but turn already flipped to White
+        // Backend should return OK without flipping again
+        var body2 = JsonContent.Create(new { expectedCurrentTurn = "Black" });
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", whiteToken);
+        var second = await _client.PostAsync($"/api/games/{game.Id}/skip-turn", body2);
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+        var updated = await second.Content.ReadFromJsonAsync<GameResponse>(JsonOpts);
+        Assert.NotNull(updated);
+        // Turn must still be White (not flipped back to Black)
+        Assert.Equal(api.Models.Enums.PieceColor.White, updated.CurrentTurn);
     }
 
     [Fact]

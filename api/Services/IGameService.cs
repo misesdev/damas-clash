@@ -1,6 +1,7 @@
 using api.DTOs.Games;
 using api.DTOs.Players;
 using api.Models;
+using api.Models.Enums;
 
 namespace api.Services;
 
@@ -15,6 +16,6 @@ public interface IGameService
     Task<IEnumerable<MoveResponse>> GetMovesAsync(Guid gameId, CancellationToken ct = default);
     Task<PlayerStatsResponse> GetPlayerStatsAsync(Guid playerId, CancellationToken ct = default);
     Task<ServiceResult<bool>> CancelAsync(Guid gameId, Guid playerId, CancellationToken ct = default);
-    Task<ServiceResult<GameResponse>> SkipTurnAsync(Guid gameId, Guid playerId, CancellationToken ct = default);
+    Task<ServiceResult<GameResponse>> SkipTurnAsync(Guid gameId, Guid playerId, PieceColor? expectedCurrentTurn = null, CancellationToken ct = default);
     Task<ServiceResult<GameResponse>> ResignAsync(Guid gameId, Guid playerId, CancellationToken ct = default);
 }

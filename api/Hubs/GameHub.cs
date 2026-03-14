@@ -12,6 +12,7 @@ public class GameHub(
     IGameWatcherService watchers,
     IOnlinePlayerTracker tracker,
     IChallengeService challenges,
+    IGameChatService gameChat,
     DamasDbContext db) : Hub
 {
     // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -33,12 +34,44 @@ public class GameHub(
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
 
+        // Track which game this connection is in (used by SendGameMessage)
+        Context.Items["gameId"] = gameId;
+
         if (Guid.TryParse(gameId, out var id))
         {
             var state = await cache.GetBoardStateAsync(id);
             if (state is not null)
                 await Clients.Caller.SendAsync("GameState", state);
         }
+
+        var history = await gameChat.GetHistoryAsync(gameId);
+        if (history.Count > 0)
+            await Clients.Caller.SendAsync("GameChatHistory", history);
+    }
+
+    // ── Game Chat ─────────────────────────────────────────────────────────────────
+
+    /// <summary>Broadcast a chat message to everyone in the game room.</summary>
+    public async Task SendGameMessage(string text)
+    {
+        var callerId = CallerId;
+        if (callerId is null) return;
+
+        var trimmed = text.Trim();
+        if (string.IsNullOrEmpty(trimmed)) return;
+
+        var gameId = Context.Items["gameId"] as string;
+        if (string.IsNullOrEmpty(gameId)) return;
+
+        var avatarUrl = await db.Players
+            .Where(p => p.Id == callerId.Value)
+            .Select(p => p.AvatarUrl)
+            .FirstOrDefaultAsync();
+
+        var message = await gameChat.AddMessageAsync(
+            gameId, callerId.Value, CallerUsername, avatarUrl, trimmed);
+
+        await Clients.Group(gameId).SendAsync("GameMessage", message);
     }
 
     /// <summary>Called by spectators — joins the game room and increments the watcher count.</summary>
