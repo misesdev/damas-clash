@@ -14,6 +14,7 @@ import {getPlayer} from '../api/players';
 import {BASE_URL} from '../api/client';
 import {clearSession, loadSession, saveSession} from '../storage/auth';
 import {clearActiveGameId, loadActiveGameId, saveActiveGameId} from '../storage/game';
+import {saveLightningAddress} from '../storage/lightning';
 import {loadLanguage} from '../storage/language';
 import i18n from '../i18n';
 import type {TabName} from '../components/BottomTabBar';
@@ -23,7 +24,7 @@ import type {WalletResponse} from '../types/wallet';
 import type {OnlinePlayerInfo} from '../types/player';
 
 type Screen = 'login' | 'register' | 'confirmEmail' | 'verifyLogin' | 'nostrLogin';
-type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'deposit' | 'withdraw' | 'editLightningAddress' | 'walletHistory' | 'playerProfile' | 'dashboard';
+type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'deposit' | 'withdraw' | 'editLightningAddress' | 'walletHistory' | 'playerProfile' | 'dashboard' | 'chat';
 
 const REFRESH_BUFFER_MS = 2 * 60 * 1000; // refresh 2 min before expiry
 
@@ -257,6 +258,16 @@ export function useApp() {
           }
         });
 
+        hub.onreconnected(async () => {
+          if (!active) {return;}
+          try {
+            await hub.invoke('JoinLobby');
+            if (pendingGameIdRef.current) {
+              await hub.invoke('WatchGame', pendingGameIdRef.current);
+            }
+          } catch { /* silently ignore */ }
+        });
+
         await hub.start();
         if (!active) {hub.stop(); return;}
 
@@ -295,6 +306,9 @@ export function useApp() {
   const handleLogin = (data: LoginResponse) => {
     saveSession(data);
     setSession(data);
+    if (data.lightningAddress) {
+      saveLightningAddress(data.lightningAddress);
+    }
     setAuthScreen('tabs');
     setTab('home');
   };
@@ -432,6 +446,9 @@ export function useApp() {
   const handleOpenDashboard = () => setAuthScreen('dashboard');
   const handleBackFromDashboard = () => { setAuthScreen('tabs'); };
 
+  const handleOpenChat = () => setAuthScreen('chat');
+  const handleCloseChat = () => setAuthScreen('tabs');
+
   const handleOpenHistory = () => setAuthScreen('gameHistory');
   const handleBackFromHistory = () => {setAuthScreen('tabs'); setTab('profile');};
   const handleOpenReplay = (game: GameResponse) => {setReplayGame(game); setAuthScreen('replay');};
@@ -510,5 +527,7 @@ export function useApp() {
     lightningAddress,
     handleOpenDashboard,
     handleBackFromDashboard,
+    handleOpenChat,
+    handleCloseChat,
   };
 }

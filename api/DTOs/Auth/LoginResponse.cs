@@ -9,4 +9,5 @@ public record LoginResponse(
     string? Email,
     string? AvatarUrl,
     string? NostrPubKey,
-    string Role);
+    string Role,
+    string? LightningAddress);

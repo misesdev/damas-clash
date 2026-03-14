@@ -15,6 +15,7 @@ import {WalletHistoryScreen} from '../screens/wallet/WalletHistoryScreen';
 import {EditLightningAddressScreen} from '../screens/profile/EditLightningAddressScreen';
 import {PlayerProfileScreen} from '../screens/PlayerProfileScreen';
 import {DashboardScreen} from '../screens/DashboardScreen';
+import {ChatScreen} from '../screens/ChatScreen';
 import {CreateGameModal} from '../components/CreateGameModal';
 import {colors} from '../theme/colors';
 import {useAppContext} from '../context/AppContext';
@@ -64,6 +65,9 @@ export function MainNavigator() {
     lightningAddress,
     handleOpenDashboard,
     handleBackFromDashboard,
+    handleOpenChat,
+    handleCloseChat,
+    onlinePlayers,
   } = useAppContext();
 
   if (!session) {
@@ -195,6 +199,16 @@ export function MainNavigator() {
     return <DashboardScreen session={session} onBack={handleBackFromDashboard} />;
   }
 
+  if (authScreen === 'chat') {
+    return (
+      <ChatScreen
+        session={session}
+        onlinePlayers={onlinePlayers}
+        onBack={handleCloseChat}
+      />
+    );
+  }
+
   return (
     <View style={styles.tabContainer}>
       <View style={styles.tabContent}>
@@ -216,6 +230,7 @@ export function MainNavigator() {
             onDeposit={handleOpenDeposit}
             onWithdraw={handleOpenWithdraw}
             onOpenDashboard={handleOpenDashboard}
+            onOpenChat={handleOpenChat}
           />
         ) : (
           <ProfileScreen

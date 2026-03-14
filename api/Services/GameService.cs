@@ -249,6 +249,7 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
 
         game.Status = GameStatus.Completed;
         game.WinnerId = winnerId;
+        game.ResignedByPlayerId = playerId;
         game.UpdatedAt = DateTimeOffset.UtcNow;
 
         await db.SaveChangesAsync(ct);
@@ -372,6 +373,6 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         new(g.Id,
             g.PlayerBlackId, g.PlayerBlack?.Username, g.PlayerBlack?.AvatarUrl,
             g.PlayerWhiteId, g.PlayerWhite?.Username, g.PlayerWhite?.AvatarUrl,
-            g.WinnerId, g.Status, g.BoardState, g.CurrentTurn,
+            g.WinnerId, g.ResignedByPlayerId, g.Status, g.BoardState, g.CurrentTurn,
             g.BetAmountSats, g.CreatedAt, g.UpdatedAt);
 }

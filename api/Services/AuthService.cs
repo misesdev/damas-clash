@@ -72,7 +72,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString()));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString(), player.LightningAddress));
     }
 
     public async Task<ServiceResult<SendLoginCodeResponse>> LoginAsync(LoginRequest req, CancellationToken ct = default)
@@ -116,7 +116,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString()));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString(), player.LightningAddress));
     }
 
     public async Task<ServiceResult<LoginResponse>> RefreshAsync(string refreshToken, CancellationToken ct = default)
@@ -136,7 +136,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, newRefreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString()));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString(), player.LightningAddress));
     }
 
     public async Task<ServiceResult<string>> ResendConfirmationAsync(ResendConfirmationRequest req, CancellationToken ct = default)
@@ -266,7 +266,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString()));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString(), player.LightningAddress));
     }
 
     public async Task<ServiceResult<LoginResponse>> NostrAuthAsync(NostrLoginRequest req, CancellationToken ct = default)
@@ -300,13 +300,19 @@ public class AuthService(
                 Username = username,
                 IsEmailConfirmed = true,
                 AvatarUrl = req.AvatarUrl,
+                LightningAddress = req.LightningAddress,
                 CreatedAt = DateTimeOffset.UtcNow,
             };
             db.Players.Add(player);
         }
-        else if (req.AvatarUrl is not null && player.AvatarUrl != req.AvatarUrl)
+        else
         {
-            player.AvatarUrl = req.AvatarUrl;
+            if (req.AvatarUrl is not null && player.AvatarUrl != req.AvatarUrl)
+                player.AvatarUrl = req.AvatarUrl;
+
+            // Update lightning address from profile if provided and not already set
+            if (req.LightningAddress is not null && player.LightningAddress != req.LightningAddress)
+                player.LightningAddress = req.LightningAddress;
         }
 
         var refreshToken = tokenService.GenerateRefreshToken();
@@ -317,7 +323,7 @@ public class AuthService(
         var tokenResult = tokenService.Generate(player);
         return ServiceResult<LoginResponse>.Ok(
             new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
-                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString()));
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString(), player.LightningAddress));
     }
 
 /// <summary>

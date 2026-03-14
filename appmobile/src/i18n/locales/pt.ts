@@ -135,12 +135,15 @@ const pt = {
     spectatorEnd: {
       title: 'Partida encerrada!',
       message: '{{winner}} venceu a partida.',
+      resignMessage: '{{loser}} desistiu. {{winner}} venceu!',
     },
     participantEnd: {
       winTitle: 'Vitória!',
       lossTitle: 'Derrota',
       winMessage: 'Parabéns! Você venceu a partida.',
+      winByResignMessage: 'Vitória por desistência! {{opponent}} desistiu.',
       lossMessage: '{{opponent}} venceu a partida.',
+      resignedMessage: 'Você desistiu.',
     },
     backToHome: 'Voltar ao início',
     errors: {
@@ -400,6 +403,14 @@ const pt = {
     label: 'Idioma',
     portuguese: 'Português',
     english: 'English',
+  },
+  chat: {
+    title: 'Chat ao Vivo',
+    inputPlaceholder: 'Mensagem... (use @nome para mencionar)',
+    empty: 'Nenhuma mensagem ainda. Seja o primeiro!',
+    you: 'Você',
+    connecting: 'Conectando...',
+    error: 'Erro ao conectar ao chat.',
   },
   nostrLogin: {
     title: 'Entrar com Nostr',

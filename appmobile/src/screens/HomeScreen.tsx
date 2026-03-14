@@ -38,6 +38,7 @@ interface Props {
   onDeposit: () => void;
   onWithdraw: () => void;
   onOpenDashboard?: () => void;
+  onOpenChat?: () => void;
 }
 
 // ─── Transaction row ─────────────────────────────────────────────────────────
@@ -307,6 +308,7 @@ export function HomeScreen({
   onDeposit,
   onWithdraw,
   onOpenDashboard,
+  onOpenChat,
 }: Props) {
   const [homeTab, setHomeTab] = useState<HomeTab>('wallet');
   return (
@@ -359,6 +361,13 @@ export function HomeScreen({
           onGameSelect={onGameSelect}
           onGameCancelled={onGameCancelled}
         />
+      )}
+
+      {/* Chat FAB */}
+      {onOpenChat && (
+        <TouchableOpacity style={styles.fab} onPress={onOpenChat} testID="chat-btn">
+          <Text style={styles.fabText}>💬</Text>
+        </TouchableOpacity>
       )}
     </SafeAreaView>
   );

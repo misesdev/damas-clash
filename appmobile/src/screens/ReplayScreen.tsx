@@ -106,7 +106,7 @@ export function ReplayScreen({game, session, onBack}: Props) {
     <SafeAreaView style={{flex: 1, backgroundColor: '#0c0c0c'}}>
       <View style={{flex: 1, alignItems: 'center', padding: 16, paddingTop: 5, gap: 16}}>
         {/* Back */}
-        <ScreenHeader title={t('replay.backButton')} onBack={onBack}/>
+        <ScreenHeader title="Replay" onBack={onBack}/>
         {/* Players */}
         <View style={{flexDirection: 'row', alignItems: 'center', gap: 14}}>
           <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>

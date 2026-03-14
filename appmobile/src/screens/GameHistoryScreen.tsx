@@ -20,10 +20,6 @@ interface Props {
   onBack: () => void;
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short', year: 'numeric'});
-}
-
 export function GameHistoryScreen({user, onReplay, onBack}: Props) {
   const {t} = useTranslation();
   const [games, setGames] = useState<GameResponse[]>([]);
@@ -41,6 +37,7 @@ export function GameHistoryScreen({user, onReplay, onBack}: Props) {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#0c0c0c' }}>
+      <ScreenHeader title={t('gameHistory.heading')} onBack={onBack}/>
       <FlatList
         data={games}
         keyExtractor={item => item.id}
@@ -48,8 +45,6 @@ export function GameHistoryScreen({user, onReplay, onBack}: Props) {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
-            <ScreenHeader title={t('gameHistory.backButton')} onBack={onBack}/>
-
             {/* Heading */}
             <Text style={{color: '#fff', fontSize: 22, fontWeight: '800', marginBottom: 4}}>{t('gameHistory.heading')}</Text>
             <Text style={{color: '#888', fontSize: 14, marginBottom: 24}}>{t('gameHistory.subtitle')}</Text>

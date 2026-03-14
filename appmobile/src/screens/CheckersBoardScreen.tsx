@@ -66,6 +66,8 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
     isMyTurn,
     spectator,
     timeLeft,
+    isTimerActive,
+    isUrgent,
     winner,
     watchersCount,
     sendingMove,
@@ -135,9 +137,6 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
     if (mustCapture) {return t('checkersBoard.mandatoryCapture');}
     return isMyTurn ? t('checkersBoard.yourTurn') : t('checkersBoard.opponentTurn', {name: opponentUsername ?? 'oponente'});
   };
-
-  const isTimerActive = isMyTurn && !winner && liveGame.status !== 'Completed';
-  const isUrgent = isTimerActive && timeLeft <= 10;
 
   const confirmResign = () => {
     showMessage({
@@ -326,55 +325,72 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
         )}
       </View>
 
-      {/* Resign button — only during active game for participants */}
-      {liveGame.status === 'InProgress' && !winner && !spectator && (
-        <Button
-          label={t('checkersBoard.resignButton')}
-          variant="ghost"
-          onPress={confirmResign}
-          testID="resign-button"
-        />
-      )}
-
-      {/* Leave button — spectators can exit anytime */}
-      {spectator && liveGame.status === 'InProgress' && (
-        <Button
-          label={t('checkersBoard.leaveButton')}
-          variant="ghost"
-          onPress={onBack}
-          testID="leave-button"
-        />
+      {/* Resign / Leave button — pushed to bottom */}
+      {liveGame.status === 'InProgress' && !winner && (
+        <View style={styles.resignWrapper}>
+          {spectator ? (
+            <Button
+              label={t('checkersBoard.leaveButton')}
+              variant="ghost"
+              onPress={onBack}
+              testID="leave-button"
+            />
+          ) : (
+            <Pressable
+              style={({pressed}) => [styles.resignBtn, {opacity: pressed ? 0.7 : 1}]}
+              onPress={confirmResign}
+              testID="resign-button">
+              <Text style={styles.resignBtnText}>{t('checkersBoard.resignButton')}</Text>
+            </Pressable>
+          )}
+        </View>
       )}
 
       {/* Win / loss overlay */}
       {winner && (
         <View style={styles.overlay}>
           <View style={styles.overlayContent}>
-            {spectator ? (
-              <>
-                <Text style={styles.overlayEmoji}>🏆</Text>
-                <Text style={[styles.overlayHeading, styles.winColor]}>{t('checkersBoard.spectatorEnd.title')}</Text>
-                <Text style={styles.overlaySubtitle}>
-                  {t('checkersBoard.spectatorEnd.message', {winner: (liveGame.winnerId === liveGame.playerBlackId
-                    ? liveGame.playerBlackUsername
-                    : liveGame.playerWhiteUsername) ?? 'Jogador'})}
-                </Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.overlayEmoji}>
-                  {winner === myColor ? '🏆' : '💔'}
-                </Text>
-                <Text style={[styles.overlayHeading, winner === myColor ? styles.winColor : styles.lossColor]}>
-                  {winner === myColor ? t('checkersBoard.participantEnd.winTitle') : t('checkersBoard.participantEnd.lossTitle')}
-                </Text>
-                <Text style={styles.overlaySubtitle}>
-                  {winner === myColor
-                    ? t('checkersBoard.participantEnd.winMessage')
-                    : t('checkersBoard.participantEnd.lossMessage', {opponent: opponentUsername ?? 'Adversário'})}
-                </Text>
-              </>
-            )}
+            {spectator ? (() => {
+              const winnerName = (liveGame.winnerId === liveGame.playerBlackId
+                ? liveGame.playerBlackUsername
+                : liveGame.playerWhiteUsername) ?? 'Jogador';
+              const loserName = (liveGame.resignedByPlayerId === liveGame.playerBlackId
+                ? liveGame.playerBlackUsername
+                : liveGame.playerWhiteUsername) ?? 'Jogador';
+              const isResign = !!liveGame.resignedByPlayerId;
+              return (
+                <>
+                  <Text style={styles.overlayEmoji}>🏆</Text>
+                  <Text style={[styles.overlayHeading, styles.winColor]}>{t('checkersBoard.spectatorEnd.title')}</Text>
+                  <Text style={styles.overlaySubtitle}>
+                    {isResign
+                      ? t('checkersBoard.spectatorEnd.resignMessage', {loser: loserName, winner: winnerName})
+                      : t('checkersBoard.spectatorEnd.message', {winner: winnerName})}
+                  </Text>
+                </>
+              );
+            })() : (() => {
+              const iWon = winner === myColor;
+              const iResigned = liveGame.resignedByPlayerId === session.playerId;
+              const opponentResigned = !!liveGame.resignedByPlayerId && !iResigned;
+              return (
+                <>
+                  <Text style={styles.overlayEmoji}>{iWon ? '🏆' : '💔'}</Text>
+                  <Text style={[styles.overlayHeading, iWon ? styles.winColor : styles.lossColor]}>
+                    {iWon ? t('checkersBoard.participantEnd.winTitle') : t('checkersBoard.participantEnd.lossTitle')}
+                  </Text>
+                  <Text style={styles.overlaySubtitle}>
+                    {iWon && opponentResigned
+                      ? t('checkersBoard.participantEnd.winByResignMessage', {opponent: opponentUsername ?? 'Adversário'})
+                      : !iWon && iResigned
+                      ? t('checkersBoard.participantEnd.resignedMessage')
+                      : iWon
+                      ? t('checkersBoard.participantEnd.winMessage')
+                      : t('checkersBoard.participantEnd.lossMessage', {opponent: opponentUsername ?? 'Adversário'})}
+                  </Text>
+                </>
+              );
+            })()}
             <View style={styles.overlayActions}>
               <Button label={t('checkersBoard.backToHome')} onPress={onBack} testID="overlay-back-button" />
             </View>

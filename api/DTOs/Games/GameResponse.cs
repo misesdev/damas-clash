@@ -11,6 +11,7 @@ public record GameResponse(
     string? PlayerWhiteUsername,
     string? PlayerWhiteAvatarUrl,
     Guid? WinnerId,
+    Guid? ResignedByPlayerId,
     GameStatus Status,
     string BoardState,
     PieceColor CurrentTurn,

@@ -20,7 +20,7 @@ import type { OnlinePlayerInfo } from '../types/player';
 import i18n from '../i18n';
 
 type Screen = 'landing' | 'login' | 'register' | 'confirmEmail' | 'verifyLogin' | 'nostrLogin';
-type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'wallet' | 'editLightningAddress' | 'playerProfile' | 'dashboard';
+type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'wallet' | 'editLightningAddress' | 'playerProfile' | 'dashboard' | 'chat';
 
 interface SelectedPlayer {
   playerId: string;
@@ -171,6 +171,16 @@ export function useApp() {
           }
         });
 
+        hub.onreconnected(async () => {
+          if (!active) return;
+          try {
+            await hub.invoke('JoinLobby');
+            if (pendingGameIdRef.current) {
+              await hub.invoke('WatchGame', pendingGameIdRef.current);
+            }
+          } catch { /* silently ignore */ }
+        });
+
         await hub.start();
         if (!active) { hub.stop(); return; }
 
@@ -311,6 +321,9 @@ export function useApp() {
   };
   const handleOpenDashboard = () => setAuthScreen('dashboard');
   const handleBackFromDashboard = () => { setAuthScreen('tabs'); setTab('home'); };
+
+  const handleOpenChat = () => setAuthScreen('chat');
+  const handleCloseChat = () => setAuthScreen('tabs');
   const handleNavigateToEditUsername = () => setAuthScreen('editUsername');
   const handleNavigateToEditEmail = () => setAuthScreen('editEmail');
   const handleNavigateToNostr = () => setScreen('nostrLogin');
@@ -388,5 +401,7 @@ export function useApp() {
     handleLightningAddressSaved,
     handleOpenDashboard,
     handleBackFromDashboard,
+    handleOpenChat,
+    handleCloseChat,
   };
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import {ActivityIndicator, Text, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, KeyboardAvoidingView, Platform, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import {WalletHeader} from '../../components/WalletHeader';
@@ -68,39 +68,43 @@ export function WithdrawScreen({
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader title={t('withdraw.title')} onBack={onBack} />
-      <WalletHeader
-        title={t('withdraw.title')}
-        subtitle={t('withdraw.subtitle')}
-      />
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScreenHeader title={t('withdraw.title')} onBack={onBack} />
+        <WalletHeader
+          title={t('withdraw.title')}
+          subtitle={t('withdraw.subtitle')}
+        />
 
-      <SatsInput
-        value={amountText}
-        onChange={setAmountText}
-        testID="withdraw-amount-display"
-      />
+        <SatsInput
+          value={amountText}
+          onChange={setAmountText}
+          testID="withdraw-amount-display"
+        />
 
-      <Text style={styles.addressTag}>⚡ {lightningAddress}</Text>
-      <Text style={styles.availableHint}>
-        {t('withdraw.availableLabel', {amount: available.toLocaleString()})}
-      </Text>
+        <Text style={styles.addressTag}>⚡ {lightningAddress}</Text>
+        <Text style={styles.availableHint}>
+          {t('withdraw.availableLabel', {amount: available.toLocaleString()})}
+        </Text>
 
-      <View style={styles.footer}>
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        <TouchableOpacity
-          style={[styles.registerBtn, !canWithdraw && styles.withdrawBtnDisabled]}
-          onPress={handleWithdraw}
-          disabled={!canWithdraw}
-          testID="withdraw-submit-btn">
-          {loading ? (
-            <ActivityIndicator color="#000" />
-          ) : (
-            <Text style={[styles.registerBtnText, !canWithdraw && styles.withdrawBtnTextDisabled]}>
-              {t('withdraw.withdrawButton')}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+        <View style={styles.footer}>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <TouchableOpacity
+            style={[styles.registerBtn, !canWithdraw && styles.withdrawBtnDisabled]}
+            onPress={handleWithdraw}
+            disabled={!canWithdraw}
+            testID="withdraw-submit-btn">
+            {loading ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <Text style={[styles.registerBtnText, !canWithdraw && styles.withdrawBtnTextDisabled]}>
+                {t('withdraw.withdrawButton')}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

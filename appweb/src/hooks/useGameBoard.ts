@@ -56,6 +56,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   const engineRef = useRef(engine);
   const pendingMovesRef = useRef(0);
   const gameRef = useRef(game);
+  const runMoveAnimationRef = useRef<((movingPiece: Piece, captureId: string | undefined, nextEngine: GameEngine) => void) | null>(null);
 
   useEffect(() => { engineRef.current = engine; }, [engine]);
   useEffect(() => { gameRef.current = game; }, [game]);
@@ -106,8 +107,23 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
               updatedGame.boardState,
               updatedGame.currentTurn,
             );
-            syncPositionsFromEngine(newEngine);
-            setEngine(newEngine);
+
+            // Detect the piece that moved and any captured piece
+            const currentPieces = engineRef.current.pieces;
+            const movedPiece = newEngine.pieces.find(np => {
+              const old = currentPieces.find(op => op.id === np.id);
+              return old && (old.row !== np.row || old.col !== np.col);
+            });
+            const capturedId = currentPieces.find(op =>
+              !newEngine.pieces.some(np => np.id === op.id),
+            )?.id;
+
+            if (movedPiece && runMoveAnimationRef.current) {
+              runMoveAnimationRef.current(movedPiece, capturedId, newEngine);
+            } else {
+              syncPositionsFromEngine(newEngine);
+              setEngine(newEngine);
+            }
           }
         });
 
@@ -132,22 +148,32 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
 
   // ── Move animation ──────────────────────────────────────────────────────────
 
+  const ANIM_MS = 260;
+
   const runMoveAnimation = useCallback(
     (movingPiece: Piece, captureId: string | undefined, nextEngine: GameEngine) => {
+      // Step 1: enable CSS transitions (animating=true), keep positions unchanged
       setAnimating(true);
-      setPiecePositions(prev => {
-        const next = new Map(prev);
-        const updated = nextEngine.pieces.find(p => p.id === movingPiece.id);
-        if (updated) {
-          next.set(movingPiece.id, { row: updated.row, col: updated.col, opacity: 1 });
-        }
-        if (captureId) {
-          const cap = next.get(captureId);
-          if (cap) next.set(captureId, { ...cap, opacity: 0 });
-        }
-        return next;
+
+      // Step 2: next frame — update positions so CSS transition fires from old → new
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setPiecePositions(prev => {
+            const next = new Map(prev);
+            const updated = nextEngine.pieces.find(p => p.id === movingPiece.id);
+            if (updated) {
+              next.set(movingPiece.id, { row: updated.row, col: updated.col, opacity: 1 });
+            }
+            if (captureId) {
+              const cap = next.get(captureId);
+              if (cap) next.set(captureId, { ...cap, opacity: 0 });
+            }
+            return next;
+          });
+        });
       });
 
+      // Step 3: after animation completes — commit engine state and disable transitions
       setTimeout(() => {
         setEngine(nextEngine);
         setPiecePositions(prev => {
@@ -156,10 +182,12 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
           return next;
         });
         setAnimating(false);
-      }, 220);
+      }, ANIM_MS + 60);
     },
     [],
   );
+
+  runMoveAnimationRef.current = runMoveAnimation;
 
   // ── Cell press ──────────────────────────────────────────────────────────────
 
@@ -245,7 +273,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   const isMyTurnDerived = !spectator && parseApiColor(game.currentTurn) === myColor;
 
   useEffect(() => {
-    if (!isMyTurnDerived || game.status === 'Completed') {
+    if (game.status === 'Completed') {
       setTimeLeft(TURN_TIMEOUT_SEC);
       return;
     }
@@ -255,7 +283,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     }, 1000);
     return () => clearInterval(tick);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMyTurnDerived, game.status]);
+  }, [game.currentTurn, game.status]);
 
   useEffect(() => {
     if (timeLeft === 0 && isMyTurnDerived && game.status === 'InProgress') {
@@ -310,7 +338,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   const myCount = myColor === 'dark' ? darkCount : lightCount;
   const oppCount = myColor === 'dark' ? lightCount : darkCount;
 
-  const isTimerActive = isMyTurn && !winner && game.status !== 'Completed';
+  const isTimerActive = game.status === 'InProgress' && !winner;
   const isUrgent = isTimerActive && timeLeft <= 10;
 
   return {

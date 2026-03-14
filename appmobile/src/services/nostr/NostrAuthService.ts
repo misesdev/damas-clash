@@ -17,12 +17,16 @@ export class NostrAuthService {
       nostrChallenge(),
     ]);
 
+    // Prefer lud16 (Lightning Address format) over lud06 (LNURL bech32)
+    const lightningAddress = profile.lud16 || undefined;
+
     return nostrLogin({
       pubkey,
       sig: signChallenge(challenge, privkey),
       challenge,
       username: profile.name,
       avatarUrl: profile.picture,
+      lightningAddress,
     });
   }
 }

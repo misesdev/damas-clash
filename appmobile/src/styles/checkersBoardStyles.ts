@@ -171,6 +171,24 @@ export const styles = StyleSheet.create({
   // Mandatory-capture ring for pieces that must capture (when multiple pieces can)
   mandatoryRing: {position: 'absolute', borderWidth: 2.5, borderColor: '#E05050'},
 
+  // Resign button (bottom of screen)
+  resignWrapper: {
+    marginTop: 'auto' as const,
+    width: '100%',
+  },
+  resignBtn: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.error,
+    paddingVertical: 14,
+    alignItems: 'center' as const,
+  },
+  resignBtnText: {
+    color: colors.error,
+    fontSize: 15,
+    fontWeight: '700' as const,
+  },
+
   // Win / loss overlay
   overlay: {
     position: 'absolute',

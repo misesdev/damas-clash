@@ -135,12 +135,15 @@ const en = {
     spectatorEnd: {
       title: 'Game over!',
       message: '{{winner}} won the game.',
+      resignMessage: '{{loser}} resigned. {{winner}} wins!',
     },
     participantEnd: {
       winTitle: 'Victory!',
       lossTitle: 'Defeat',
       winMessage: 'Congratulations! You won the game.',
+      winByResignMessage: 'Win by resignation! {{opponent}} resigned.',
       lossMessage: '{{opponent}} won the game.',
+      resignedMessage: 'You resigned.',
     },
     backToHome: 'Back to home',
     errors: {
@@ -400,6 +403,14 @@ const en = {
     label: 'Language',
     portuguese: 'Português',
     english: 'English',
+  },
+  chat: {
+    title: 'Live Chat',
+    inputPlaceholder: 'Message... (use @name to mention)',
+    empty: 'No messages yet. Be the first!',
+    you: 'You',
+    connecting: 'Connecting...',
+    error: 'Failed to connect to chat.',
   },
   nostrLogin: {
     title: 'Sign in with Nostr',

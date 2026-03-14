@@ -33,6 +33,7 @@ export interface LoginResponse {
   avatarUrl?: string | null;
   nostrPubKey?: string | null;
   role?: string;
+  lightningAddress?: string | null;
 }
 
 export interface ConfirmEmailRequest {

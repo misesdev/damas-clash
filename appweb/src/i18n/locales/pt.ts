@@ -160,7 +160,10 @@ const pt = {
   board_yourTurn: 'Sua vez',
   board_opponentTurn: 'Vez de {{opponent}}',
   board_congratulations: 'Parabéns! Você venceu a partida.',
+  board_winByResign: 'Vitória por desistência! {{opponent}} desistiu.',
+  board_youResigned: 'Você desistiu.',
   board_opponentWon: '{{name}} venceu a partida.',
+  board_spectatorResign: '{{loser}} desistiu. {{winner}} venceu!',
   board_backToHome: 'Voltar ao início',
   board_spectator_singular: 'espectador',
   board_spectator_plural: 'espectadores',
@@ -245,6 +248,15 @@ const pt = {
   language: 'Idioma',
   lang_pt: 'PT',
   lang_en: 'EN',
+
+  // Chat
+  chat_title: 'Chat ao Vivo',
+  chat_inputPlaceholder: 'Mensagem... (use @nome para mencionar)',
+  chat_empty: 'Nenhuma mensagem ainda. Seja o primeiro!',
+  chat_connecting: 'Conectando...',
+  chat_connected: 'online',
+  chat_error: 'Erro ao conectar ao chat.',
+  chat_open: 'Chat',
 
   // Nostr Login
   nostrLogin_button: 'Entrar com Nostr',

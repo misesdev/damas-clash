@@ -18,6 +18,7 @@ interface Props {
   onOpenOnlinePlayers?: () => void;
   onOpenWallet?: () => void;
   onOpenDashboard?: () => void;
+  onOpenChat?: () => void;
 }
 
 type FilterTab = Exclude<GameStatus, 'Completed'>;
@@ -33,6 +34,7 @@ export function HomeScreen({
   onOpenOnlinePlayers,
   onOpenWallet,
   onOpenDashboard,
+  onOpenChat,
 }: Props) {
   const { t } = useTranslation();
   const {
@@ -101,6 +103,31 @@ export function HomeScreen({
           </div>
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {onOpenChat && (
+            <button
+              onClick={onOpenChat}
+              title={t('chat_open')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 10px',
+                borderRadius: 20,
+                border: '1px solid var(--border)',
+                background: 'var(--surface2)',
+                flexShrink: 0,
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                transition: 'border-color 0.15s',
+              }}
+              onMouseOver={e => (e.currentTarget.style.borderColor = 'var(--text-muted)')}
+              onMouseOut={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+            >
+              💬 {t('chat_open')}
+            </button>
+          )}
           {user.role === 'Admin' && onOpenDashboard && (
             <button
               onClick={onOpenDashboard}

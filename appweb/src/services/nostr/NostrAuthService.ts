@@ -46,21 +46,31 @@ export class NostrAuthService {
       nostrChallenge(),
     ]);
 
+    console.log(profile)
     return nostrLogin({
       pubkey,
       sig: key.signChallenge(challenge),
       challenge,
       username: profile?.name,
       avatarUrl: profile?.picture,
+      lightningAddress: profile?.lud16 || undefined,
     });
   }
 
-  private static async fetchProfile(pubkey: string): Promise<{ name?: string; picture?: string }> {
+  private static async fetchProfile(pubkey: string): Promise<{ name?: string; picture?: string; lud16?: string }> {
     const RELAYS = [
+      'wss://nostr.mom',
       'wss://relay.damus.io',
       'wss://nos.lol',
+      'wss://nostr.land',
       'wss://relay.snort.social',
       'wss://relay.nostr.band',
+      'wss://relay.primal.net',
+      'wss://relay.noswhere.com',
+      'wss://relay.nostr.bg',
+      'wss://nostr.wine',
+      'wss://nostr.bitcoiner.social',
+      'wss://relay.0xchat.com'
     ];
 
     for (const relay of RELAYS) {
@@ -74,7 +84,7 @@ export class NostrAuthService {
     return {};
   }
 
-  private static fetchFromRelay(relay: string, pubkey: string): Promise<{ name?: string; picture?: string } | null> {
+  private static fetchFromRelay(relay: string, pubkey: string): Promise<{ name?: string; picture?: string; lud16?: string } | null> {
     return new Promise(resolve => {
       const timeout = setTimeout(() => { ws.close(); resolve(null); }, 3000);
       const ws = new WebSocket(relay);
@@ -90,7 +100,11 @@ export class NostrAuthService {
             const meta = JSON.parse(msg[2].content);
             clearTimeout(timeout);
             ws.close();
-            resolve({ name: meta.name || meta.display_name, picture: meta.picture || meta.image });
+            resolve({
+              name: meta.name || meta.display_name,
+              picture: meta.picture || meta.image,
+              lud16: meta.lud16 || undefined,
+            });
           } else if (msg[0] === 'EOSE') {
             clearTimeout(timeout);
             ws.close();

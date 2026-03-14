@@ -10,6 +10,7 @@ export interface GameResponse {
   playerWhiteUsername: string | null;
   playerWhiteAvatarUrl: string | null;
   winnerId: string | null;
+  resignedByPlayerId: string | null;
   status: GameStatus;
   boardState: string;
   currentTurn: PieceColorApi;

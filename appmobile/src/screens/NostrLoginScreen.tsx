@@ -23,7 +23,6 @@ export function NostrLoginScreen({onLogin, onBack}: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <ScreenHeader title={t('nostrLogin.title')} onBack={onBack} />
-
       <KeyboardAvoidingView
         style={styles.body}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -62,7 +61,6 @@ export function NostrLoginScreen({onLogin, onBack}: Props) {
             testID="nostr-login-button"
           />
         </View>
-
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

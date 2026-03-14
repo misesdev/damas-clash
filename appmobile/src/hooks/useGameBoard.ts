@@ -306,7 +306,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   const isMyTurnDerived = !spectator && parseApiColor(game.currentTurn) === myColor;
 
   useEffect(() => {
-    if (!isMyTurnDerived || game.status === 'Completed') {
+    if (game.status === 'Completed') {
       setTimeLeft(TURN_TIMEOUT_SEC);
       return;
     }
@@ -316,7 +316,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     }, 1000);
     return () => clearInterval(tick);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMyTurnDerived, game.status]);
+  }, [game.currentTurn, game.status]);
 
   useEffect(() => {
     if (timeLeft === 0 && isMyTurnDerived && game.status === 'InProgress') {
@@ -330,6 +330,8 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   const isMyTurn = isMyTurnDerived;
   const opponentColor: PieceColor = myColor === 'dark' ? 'light' : 'dark';
   const isFlipped = myColor === 'dark';
+  const isTimerActive = game.status === 'InProgress' && !winner;
+  const isUrgent = isTimerActive && timeLeft <= 10;
 
   const myUsername =
     myColor === 'dark' ? game.playerBlackUsername : game.playerWhiteUsername;
@@ -382,6 +384,8 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     lightCount,
     myAvatarUrl,
     opponentAvatarUrl,
+    isTimerActive,
+    isUrgent,
     handleCellPress,
     handleResign,
   };

@@ -23,6 +23,7 @@ import { EditLightningAddressScreen } from '../screens/EditLightningAddressScree
 import { WalletScreen } from '../screens/WalletScreen';
 import { PlayerProfileScreen } from '../screens/PlayerProfileScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
+import { ChatScreen } from '../screens/ChatScreen';
 import { NewGameModal } from './NewGameModal';
 import { useApp } from '../hooks/useApp';
 import { OnlinePlayersModal } from './OnlinePlayersModal';
@@ -332,10 +333,13 @@ export function AppShell() {
     handleLightningAddressSaved,
     handleOpenDashboard,
     handleBackFromDashboard,
+    handleOpenChat,
+    handleCloseChat,
   } = useApp();
 
   // Full-screen screens (no sidebar/tabs)
   const isFullScreen = authScreen === 'checkersBoard' || authScreen === 'waitingRoom' || authScreen === 'gameHistory' || authScreen === 'replay' || authScreen === 'wallet' || authScreen === 'editLightningAddress' || authScreen === 'playerProfile' || authScreen === 'dashboard';
+  const showChat = authScreen === 'chat';
 
   const renderContent = () => {
     if (loading) {
@@ -483,6 +487,7 @@ export function AppShell() {
                 onOpenOnlinePlayers={() => setShowOnlinePlayers(true)}
                 onOpenWallet={handleOpenWallet}
                 onOpenDashboard={handleOpenDashboard}
+                onOpenChat={handleOpenChat}
               />
             ) : (
               <ProfileScreen
@@ -594,6 +599,7 @@ export function AppShell() {
           flexDirection: 'column',
           overflow: isLanding ? 'visible' : 'hidden',
           background: 'var(--bg)',
+          position: 'relative',
         }}
       >
         {/* Board / waiting room: full screen without nav */}
@@ -605,6 +611,43 @@ export function AppShell() {
           <div className="flex flex-1 overflow-hidden">
             {renderContent()}
           </div>
+        )}
+
+        {/* ── Chat panel ── floating drawer over content */}
+        {session && showChat && (
+          <>
+            {/* Backdrop */}
+            <div
+              onClick={handleCloseChat}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.45)',
+                backdropFilter: 'blur(2px)',
+                zIndex: 40,
+              }}
+            />
+            {/* Panel */}
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                width: 'min(380px, 100vw)',
+                zIndex: 50,
+                boxShadow: '-8px 0 40px rgba(0,0,0,0.5)',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <ChatScreen
+                session={session}
+                onlinePlayers={onlinePlayers}
+                onClose={handleCloseChat}
+              />
+            </div>
+          </>
         )}
       </div>
     </MessageBoxProvider>

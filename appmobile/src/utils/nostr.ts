@@ -5,6 +5,8 @@ import {RelayPool} from '../services/nostr/RelayPool';
 export interface NostrProfile {
   name?: string;
   picture?: string;
+  lud16?: string;
+  lud06?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -66,8 +68,10 @@ export async function fetchNostrProfile(
     if (!event) return {};
     const meta = JSON.parse(event.content) as Record<string, string>;
     return {
-      name: meta.name || meta.display_name,
+      name: meta.name || meta.display_name || meta.displayName,
       picture: meta.picture || meta.image,
+      lud16: meta.lud16 || undefined,
+      lud06: meta.lud06 || undefined,
     };
   } catch {
     return {};

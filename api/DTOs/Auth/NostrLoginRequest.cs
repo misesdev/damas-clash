@@ -7,5 +7,6 @@ public record NostrLoginRequest(
     [Required] string Sig,
     [Required] string Challenge,
     string? Username,
-    string? AvatarUrl
+    string? AvatarUrl,
+    string? LightningAddress
 );

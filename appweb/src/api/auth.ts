@@ -75,6 +75,7 @@ export interface NostrLoginRequest {
   challenge: string;
   username?: string;
   avatarUrl?: string;
+  lightningAddress?: string;
 }
 
 export function nostrLogin(data: NostrLoginRequest): Promise<LoginResponse> {

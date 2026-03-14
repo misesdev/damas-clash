@@ -160,7 +160,10 @@ const en = {
   board_yourTurn: 'Your turn',
   board_opponentTurn: "{{opponent}}'s turn",
   board_congratulations: 'Congratulations! You won the game.',
+  board_winByResign: 'Win by resignation! {{opponent}} resigned.',
+  board_youResigned: 'You resigned.',
   board_opponentWon: '{{name}} won the game.',
+  board_spectatorResign: '{{loser}} resigned. {{winner}} wins!',
   board_backToHome: 'Back to home',
   board_spectator_singular: 'spectator',
   board_spectator_plural: 'spectators',
@@ -245,6 +248,15 @@ const en = {
   language: 'Language',
   lang_pt: 'PT',
   lang_en: 'EN',
+
+  // Chat
+  chat_title: 'Live Chat',
+  chat_inputPlaceholder: 'Message... (use @name to mention)',
+  chat_empty: 'No messages yet. Be the first!',
+  chat_connecting: 'Connecting...',
+  chat_connected: 'online',
+  chat_error: 'Failed to connect to chat.',
+  chat_open: 'Chat',
 
   // Nostr Login
   nostrLogin_button: 'Sign in with Nostr',

@@ -1,5 +1,5 @@
 import React from 'react';
-import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import {useTranslation} from 'react-i18next';
@@ -73,32 +73,36 @@ export function DepositScreen({user, onBack, onSuccess}: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader title={t('deposit.title')} onBack={onBack} />
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScreenHeader title={t('deposit.title')} onBack={onBack} />
 
-      <WalletHeader
-        title={t('deposit.title')}
-        subtitle={t('deposit.subtitle')}
-      />
+        <WalletHeader
+          title={t('deposit.title')}
+          subtitle={t('deposit.subtitle')}
+        />
 
-      <SatsInput
-        value={amountText}
-        onChange={setAmountText}
-      />
+        <SatsInput
+          value={amountText}
+          onChange={setAmountText}
+        />
 
-      <View style={styles.footer}>
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        <TouchableOpacity
-          style={styles.copyBtn}
-          onPress={handleSubmitAmount}
-          disabled={loading}
-          testID="deposit-submit-btn">
-          {loading ? (
-            <ActivityIndicator color="#000" />
-          ) : (
-            <Text style={styles.copyBtnText}>{t('deposit.continueButton')}</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+        <View style={styles.footer}>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <TouchableOpacity
+            style={styles.copyBtn}
+            onPress={handleSubmitAmount}
+            disabled={loading}
+            testID="deposit-submit-btn">
+            {loading ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <Text style={styles.copyBtnText}>{t('deposit.continueButton')}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

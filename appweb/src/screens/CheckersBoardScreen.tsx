@@ -249,6 +249,10 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
           const opacity = pos?.opacity ?? 1;
           const isSelected = piece.id === activeId;
           const isMandatory = !isSelected && capturingSet.has(piece.id);
+          // Mirror piece colors when flipped so the player always sees their pieces as white
+          const visColor = isFlipped
+            ? (piece.color === 'dark' ? 'light' : 'dark')
+            : piece.color;
 
           return (
             <div
@@ -260,7 +264,9 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
                 left: displayCol * cellSize,
                 top: displayRow * cellSize,
                 opacity,
-                transition: animating ? 'left 0.22s ease, top 0.22s ease, opacity 0.2s ease' : 'none',
+                transition: animating
+                  ? `left 0.26s cubic-bezier(0.4,0,0.2,1), top 0.26s cubic-bezier(0.4,0,0.2,1), opacity 0.22s ease`
+                  : 'none',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -296,15 +302,15 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
                     width: pieceSize,
                     height: pieceSize,
                     borderRadius: '50%',
-                    background: piece.color === 'dark'
+                    background: visColor === 'dark'
                       ? 'radial-gradient(circle at 35% 35%, #3a3f4f, #0d0f18)'
                       : 'radial-gradient(circle at 35% 35%, #ffffff, #d8d0c4)',
-                    boxShadow: piece.color === 'dark'
+                    boxShadow: visColor === 'dark'
                       ? '0 3px 8px rgba(0,0,0,0.7), inset 0 1px 3px rgba(255,255,255,0.1)'
                       : '0 3px 8px rgba(0,0,0,0.3), inset 0 1px 3px rgba(255,255,255,0.9)',
                     border: isSelected
                       ? '2px solid #d4a843'
-                      : piece.color === 'dark' ? '2px solid #0d0f18' : '2px solid #c8bca8',
+                      : visColor === 'dark' ? '2px solid #0d0f18' : '2px solid #c8bca8',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -314,7 +320,7 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
                     <span
                       style={{
                         fontSize: pieceSize * 0.45,
-                        color: piece.color === 'dark' ? '#c9a84c' : '#7a5a18',
+                        color: visColor === 'dark' ? '#c9a84c' : '#7a5a18',
                         lineHeight: 1,
                         userSelect: 'none',
                       }}
@@ -332,9 +338,15 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
   );
 
   // ── Win overlay ─────────────────────────────────────────────────────────────
-  const winnerName = liveGame.winnerId === liveGame.playerBlackId
+  const winnerName = (liveGame.winnerId === liveGame.playerBlackId
     ? liveGame.playerBlackUsername
-    : liveGame.playerWhiteUsername;
+    : liveGame.playerWhiteUsername) ?? t('board_defaultPlayer');
+  const loserName = (liveGame.resignedByPlayerId === liveGame.playerBlackId
+    ? liveGame.playerBlackUsername
+    : liveGame.playerWhiteUsername) ?? t('board_defaultPlayer');
+  const isResignGame = !!liveGame.resignedByPlayerId;
+  const iResigned = liveGame.resignedByPlayerId === session.playerId;
+  const opponentResigned = isResignGame && !iResigned;
 
   const winOverlay = winner ? (
     <div
@@ -357,7 +369,9 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
               {t('board_gameOver')}
             </h2>
             <p style={{ fontSize: 16, color: '#888888' }}>
-              {t('board_spectatorWonDetail', { name: winnerName ?? t('board_defaultPlayer') })}
+              {isResignGame
+                ? t('board_spectatorResign', { loser: loserName, winner: winnerName })
+                : t('board_spectatorWonDetail', { name: winnerName })}
             </p>
           </>
         ) : (
@@ -367,7 +381,11 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
               {winner === myColor ? t('board_victory') : t('board_defeat')}
             </h2>
             <p style={{ fontSize: 16, color: '#888888' }}>
-              {winner === myColor
+              {winner === myColor && opponentResigned
+                ? t('board_winByResign', { opponent: opponentUsername ?? t('board_opponent') })
+                : winner !== myColor && iResigned
+                ? t('board_youResigned')
+                : winner === myColor
                 ? t('board_congratulations')
                 : t('board_opponentWon', { name: opponentUsername ?? t('board_opponent') })}
             </p>
@@ -526,44 +544,47 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
             )}
           </div>
 
-          {/* Resign or leave: mobile only */}
-          {liveGame.status === 'InProgress' && !winner && !spectator && (
-            <button
-              className="flex md:hidden"
-              onClick={confirmResign}
-              disabled={sendingMove}
-              style={{
-                background: 'transparent',
-                color: 'var(--danger)',
-                border: '1px solid rgba(255,69,58,0.4)',
-                borderRadius: 12,
-                padding: '8px 24px',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: sendingMove ? 'not-allowed' : 'pointer',
-                opacity: sendingMove ? 0.5 : 1,
-              }}
-            >
-              {t('board_resign')}
-            </button>
-          )}
-          {spectator && liveGame.status === 'InProgress' && (
-            <button
-              className="flex md:hidden"
-              onClick={onBack}
-              style={{
-                background: 'transparent',
-                color: 'var(--text-muted)',
-                border: '1px solid var(--border)',
-                borderRadius: 12,
-                padding: '8px 24px',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {t('board_leave')}
-            </button>
+          {/* Resign or leave: mobile only, pinned to bottom */}
+          {liveGame.status === 'InProgress' && !winner && (
+            <div className="flex md:hidden" style={{ marginTop: 'auto', width: '100%' }}>
+              {spectator ? (
+                <button
+                  onClick={onBack}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    color: 'var(--text-muted)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 14,
+                    padding: '14px 24px',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('board_leave')}
+                </button>
+              ) : (
+                <button
+                  onClick={confirmResign}
+                  disabled={sendingMove}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    color: 'var(--danger)',
+                    border: '1px solid var(--danger)',
+                    borderRadius: 14,
+                    padding: '14px 24px',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    cursor: sendingMove ? 'not-allowed' : 'pointer',
+                    opacity: sendingMove ? 0.5 : 1,
+                  }}
+                >
+                  {t('board_resign')}
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -601,47 +622,48 @@ export function CheckersBoardScreen({ game, session, onBack }: CheckersBoardScre
           <div style={{ flex: 1 }} />
 
           {/* Resign or leave button — desktop */}
-          {liveGame.status === 'InProgress' && !winner && !spectator && (
-            <button
-              onClick={confirmResign}
-              disabled={sendingMove}
-              style={{
-                background: 'transparent',
-                color: 'var(--danger)',
-                border: '1px solid rgba(255,69,58,0.4)',
-                borderRadius: 12,
-                padding: '10px 16px',
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: sendingMove ? 'not-allowed' : 'pointer',
-                opacity: sendingMove ? 0.5 : 1,
-                transition: 'background 0.15s',
-              }}
-              onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,69,58,0.08)')}
-              onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
-            >
-              {t('board_resignDesktop')}
-            </button>
-          )}
-          {spectator && liveGame.status === 'InProgress' && (
-            <button
-              onClick={onBack}
-              style={{
-                background: 'transparent',
-                color: 'var(--text-muted)',
-                border: '1px solid var(--border)',
-                borderRadius: 12,
-                padding: '10px 16px',
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'background 0.15s',
-              }}
-              onMouseOver={e => (e.currentTarget.style.background = 'var(--surface2)')}
-              onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
-            >
-              {t('board_leaveDesktop')}
-            </button>
+          {liveGame.status === 'InProgress' && !winner && (
+            spectator ? (
+              <button
+                onClick={onBack}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 12,
+                  padding: '10px 16px',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'background 0.15s',
+                }}
+                onMouseOver={e => (e.currentTarget.style.background = 'var(--surface2)')}
+                onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+              >
+                {t('board_leaveDesktop')}
+              </button>
+            ) : (
+              <button
+                onClick={confirmResign}
+                disabled={sendingMove}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--danger)',
+                  border: '1px solid var(--danger)',
+                  borderRadius: 12,
+                  padding: '10px 16px',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: sendingMove ? 'not-allowed' : 'pointer',
+                  opacity: sendingMove ? 0.5 : 1,
+                  transition: 'background 0.15s',
+                }}
+                onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,69,58,0.08)')}
+                onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+              >
+                {t('board_resignDesktop')}
+              </button>
+            )
           )}
         </div>
       </div>

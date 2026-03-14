@@ -3,6 +3,7 @@ import {colors} from '../theme/colors';
 
 export const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.bg},
+  keyboardView: {flex: 1},
   scroll: {padding: 24},
   heading: {
     color: colors.text,
