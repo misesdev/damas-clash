@@ -97,14 +97,21 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     let hub: HubConnection;
     let active = true;
 
+    const joinGameRoom = async () => {
+      try {
+        await hub.invoke('JoinGameRoom', initialGame.id);
+      } catch { /* retry on next reconnect */ }
+    };
+
     (async () => {
       try {
         hub = new HubConnectionBuilder()
           .withUrl(`${BASE_URL}/hubs/game`, {
             transport: HttpTransportType.WebSockets,
             skipNegotiation: true,
+            accessTokenFactory: () => session.token,
           })
-          .withAutomaticReconnect()
+          .withAutomaticReconnect([0, 1000, 2000, 5000, 10000, 30000])
           .build();
 
         hub.on('MoveMade', (updatedGame: GameResponse) => {
@@ -130,12 +137,18 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
           setWatchersCount(count);
         });
 
+        // Re-join game room after every reconnect
+        hub.onreconnected(async () => {
+          if (!active) {return;}
+          await joinGameRoom();
+        });
+
         await hub.start();
         if (!active) {hub.stop(); return;}
 
-        await hub.invoke('JoinGameRoom', initialGame.id);
+        await joinGameRoom();
       } catch {
-        // Connection failed — silently ignore
+        // Connection failed — withAutomaticReconnect will retry
       }
     })();
 

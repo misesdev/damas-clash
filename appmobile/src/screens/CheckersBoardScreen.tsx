@@ -388,7 +388,7 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
       {/* Chat + input (keyboard-aware) */}
       <KeyboardAvoidingView
         style={{flex: 1}}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
         {/* Chat messages */}
         <FlatList<ChatMessage>

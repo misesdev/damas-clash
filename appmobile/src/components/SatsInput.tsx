@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Animated,
   StyleSheet,
@@ -20,11 +20,17 @@ interface Props {
 
 export function SatsInput({value, available, onChange, testID}: Props) {
   const inputRef = useRef<TextInput>(null);
-  const cursor = useRef(new Animated.Value(1)).current;
-  const {t} = useTranslation()
+  const cursor = useRef(new Animated.Value(0)).current;
+  const {t} = useTranslation();
+  const [focused, setFocused] = useState(false);
 
-  // Blink cursor
+  // Blink cursor — only when focused
   useEffect(() => {
+    if (!focused) {
+      cursor.setValue(0);
+      return;
+    }
+    cursor.setValue(1);
     const anim = Animated.loop(
       Animated.sequence([
         Animated.timing(cursor, {toValue: 0, duration: 500, useNativeDriver: true}),
@@ -34,12 +40,12 @@ export function SatsInput({value, available, onChange, testID}: Props) {
     anim.start();
     return () => anim.stop();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [focused]);
 
   // Auto focus on mount
   useEffect(() => {
-    const t = setTimeout(() => inputRef.current?.focus(), 100);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => inputRef.current?.focus(), 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const locale = t("common.back").includes("Voltar") ? "pt" : "en"; 
@@ -47,7 +53,7 @@ export function SatsInput({value, available, onChange, testID}: Props) {
   const fontSize = display.length > 9 ? 36 : display.length > 6 ? 44 : 56;
 
   return (
-    <TouchableWithoutFeedback onPress={() => inputRef.current?.focus()}>
+    <TouchableWithoutFeedback onPress={() => { inputRef.current?.focus(); }}>
       <View style={styles.container}>
         <View style={styles.amountRow}>
           <Text style={[styles.amount, {fontSize}]} testID={testID ?? 'sats-display'}>
@@ -74,6 +80,8 @@ export function SatsInput({value, available, onChange, testID}: Props) {
           keyboardType="number-pad"
           style={styles.hiddenInput}
           caretHidden
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           testID="deposit-amount-input"
         />
       </View>
