@@ -135,9 +135,9 @@ services:
       Google__ClientId: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
       LightningGateway__BaseUrl: http://lnd-gateway:8080
       LightningGateway__ApiKey: ${GATEWAY_API_KEY}
-      GOOGLE_APPLICATION_CREDENTIALS: /firebase-service-account.json
+      GOOGLE_APPLICATION_CREDENTIALS: /app/firebase.json
     volumes:                                                                                                                                      
-      - /firebase-service-account.json:/firebase-service-account.json
+      - ./secrets/firebase.json:/app/firebase.json:ro
     ports:
       - "8080:8080"
     networks:
@@ -159,6 +159,11 @@ services:
     networks:
       - backend
     restart: unless-stopped
+    # logging:
+    #   driver: "json-file"
+    #   options:
+    #     max-size: "10m"
+    #     max-file: "3"
 
 volumes:
   postgres_data:
