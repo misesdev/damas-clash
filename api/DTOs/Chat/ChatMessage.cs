@@ -8,4 +8,5 @@ public record ChatMessage(
     string Text,
     DateTimeOffset SentAt,
     DateTimeOffset? EditedAt = null,
-    bool IsDeleted = false);
+    bool IsDeleted = false,
+    ChatMessageReply? ReplyTo = null);

@@ -3,6 +3,8 @@ import {Pressable, Text, View} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {chatStyles as styles} from '../../styles/chatStyles';
 import type {ChatMessage} from '../../hooks/useChatScreen';
+import Ionicons from "react-native-vector-icons/Ionicons"
+import { colors } from '../../theme/colors';
 
 interface Props {
   message: ChatMessage;
@@ -15,7 +17,8 @@ export function EditBanner({message, onCancel}: Props) {
     <View style={styles.editBanner} testID="chat-edit-banner">
       <View style={styles.editBannerBar} />
       <View style={styles.editBannerIconWrap}>
-        <Text style={styles.editBannerIcon}>✏️</Text>
+        <Ionicons name='create' size={18} color={colors.text}/>
+        {/* <Text style={styles.editBannerIcon}>✏️</Text> */}
       </View>
       <View style={styles.editBannerContent}>
         <Text style={styles.editBannerLabel}>{t('chat.editingLabel')}</Text>

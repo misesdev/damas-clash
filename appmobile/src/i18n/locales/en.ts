@@ -414,6 +414,7 @@ const en = {
   },
   chat: {
     title: 'Live Chat',
+    messageOptionsTitle: "Message",
     inputPlaceholder: 'Message...',
     empty: 'No messages yet. Be the first!',
     you: 'You',
@@ -428,6 +429,8 @@ const en = {
     deleteConfirmTitle: 'Delete message',
     deleteConfirmMessage: 'Are you sure you want to delete this message?',
     deleteConfirmYes: 'Delete',
+    replyingLabel: 'Replying to',
+    replyDeleted: 'Message deleted',
   },
   nostrLogin: {
     title: 'Sign in with Nostr',

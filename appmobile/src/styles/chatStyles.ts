@@ -14,6 +14,44 @@ export const chatStyles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
+
+  // ─── Contextual action header (active when a message is selected) ─────────
+  actionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#2A3A5C',
+    backgroundColor: '#111827',
+    gap: 2,
+  },
+  actionHeaderClose: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+  },
+  actionHeaderCloseText: {
+    color: colors.text,
+    fontSize: 18,
+    lineHeight: 20,
+  },
+  actionHeaderLabel: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  actionHeaderBtn: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+  },
   headerLeft: {
     flex: 1,
     flexDirection: 'row',
@@ -84,7 +122,8 @@ export const chatStyles = StyleSheet.create({
 
   // ─── Bubbles ─────────────────────────────────────────────────────────────────
   msgBubble: {
-    maxWidth: '78%',
+    maxWidth: '90%',
+    minWidth: "35%",
     backgroundColor: colors.surfaceRaised,
     borderRadius: 18,
     borderBottomLeftRadius: 4,
@@ -133,6 +172,12 @@ export const chatStyles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
     fontStyle: 'italic',
+  },
+  msgSelectedOverlay: {
+    backgroundColor: 'rgba(91,156,246,0.13)',
+    borderRadius: 12,
+    marginHorizontal: -6,
+    padding: 6,
   },
 
   // ─── Edit mode banner (above input bar) ──────────────────────────────────────
@@ -186,137 +231,103 @@ export const chatStyles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // ─── Action sheet ─────────────────────────────────────────────────────────────
-  actionSheetBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
-  },
-  actionSheet: {
+  // ─── Reply banner (above input bar, when replying) ───────────────────────────
+  replyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     backgroundColor: colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 32,
-    overflow: 'hidden',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    gap: 10,
   },
-  actionSheetHandle: {
-    width: 40,
-    height: 4,
+  replyBannerBar: {
+    width: 3,
+    alignSelf: 'stretch',
     borderRadius: 2,
-    backgroundColor: colors.border,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 8,
+    backgroundColor: '#25D366',
   },
-
-  // preview strip (message text at top of sheet)
-  actionSheetPreviewWrap: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    marginBottom: 6,
+  replyBannerIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(37,211,102,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  actionSheetPreview: {
+  replyBannerContent: {flex: 1, minWidth: 0},
+  replyBannerLabel: {
+    color: '#25D366',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 1,
+  },
+  replyBannerPreview: {
     color: colors.textSecondary,
     fontSize: 13,
-    fontStyle: 'italic',
+  },
+  replyBannerCancel: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  replyBannerCancelText: {
+    color: colors.textSecondary,
+    fontSize: 16,
     lineHeight: 18,
   },
 
-  // action rows
-  actionSheetItem: {
+  // ─── Swipe-to-reply container + arrow ────────────────────────────────────────
+  // swipeContainer is position:relative so the icon can be absolutely placed to
+  // the left of the bubble without consuming layout space.
+  swipeContainer: {
+    position: 'relative',
+  },
+  swipeReplyIconWrap: {
+    position: 'absolute',
+    left: -36,
+    top: 0,
+    bottom: 0,
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ─── Reply quote inside a message bubble ─────────────────────────────────────
+  replyQuote: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  actionSheetIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.surfaceRaised,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionSheetIconDanger: {
-    backgroundColor: 'rgba(255,69,58,0.12)',
-  },
-  actionSheetIcon: {fontSize: 18},
-  actionSheetItemText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  actionSheetDanger: {
-    color: colors.error,
-  },
-  actionSheetDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginHorizontal: 20,
-  },
-
-  // cancel button (bottom, pill-shaped)
-  actionSheetCancelButton: {
-    marginHorizontal: 16,
-    marginTop: 10,
-    paddingVertical: 16,
-    borderRadius: 14,
-    backgroundColor: colors.surfaceRaised,
-    alignItems: 'center',
-  },
-  actionSheetCancelButtonText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-
-  // delete confirmation
-  actionSheetConfirmHeader: {
-    alignItems: 'center',
-    paddingHorizontal: 28,
-    paddingTop: 8,
-    paddingBottom: 20,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderRadius: 8,
+    overflow: 'hidden',
     marginBottom: 6,
+    backgroundColor: 'rgba(0,0,0,0.18)',
   },
-  actionSheetConfirmIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,69,58,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
+  replyQuoteBar: {
+    width: 3,
+    backgroundColor: '#25D366',
   },
-  actionSheetConfirmIconText: {fontSize: 26},
-  actionSheetConfirmTitle: {
-    color: colors.text,
-    fontSize: 17,
+  replyQuoteBody: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  replyQuoteUsername: {
+    color: '#25D366',
+    fontSize: 12,
     fontWeight: '700',
-    marginBottom: 6,
-    textAlign: 'center',
+    marginBottom: 2,
   },
-  actionSheetConfirmBody: {
+  replyQuoteText: {
     color: colors.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
+    fontSize: 12,
   },
-  actionSheetDeleteButton: {
-    marginHorizontal: 16,
-    marginBottom: 8,
-    paddingVertical: 16,
-    borderRadius: 14,
-    backgroundColor: colors.error,
-    alignItems: 'center',
+  replyQuoteDeleted: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontStyle: 'italic',
   },
-  actionSheetDeleteButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+
 });

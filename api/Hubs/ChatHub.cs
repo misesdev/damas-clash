@@ -25,7 +25,7 @@ public class ChatHub(IChatService chatService, DamasDbContext db) : Hub
         await base.OnConnectedAsync();
     }
 
-    public async Task SendMessage(string text)
+    public async Task SendMessage(string text, string? replyToId = null)
     {
         var callerId = CallerId;
         if (callerId is null) return;
@@ -41,7 +41,7 @@ public class ChatHub(IChatService chatService, DamasDbContext db) : Hub
             .FirstOrDefaultAsync();
 
         var message = await chatService.AddMessageAsync(
-            callerId.Value, CallerUsername, avatarUrl, trimmed);
+            callerId.Value, CallerUsername, avatarUrl, trimmed, replyToId);
 
         await Clients.Group("chat").SendAsync("NewMessage", message);
     }

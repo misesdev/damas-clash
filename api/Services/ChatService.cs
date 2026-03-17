@@ -17,17 +17,28 @@ public class ChatService(IDistributedCache cache) : IChatService
         => await LoadAsync(ct);
 
     public async Task<ChatMessage> AddMessageAsync(
-        Guid playerId, string username, string? avatarUrl, string text, CancellationToken ct = default)
+        Guid playerId, string username, string? avatarUrl, string text, string? replyToId = null, CancellationToken ct = default)
     {
+        var messages = await LoadAsync(ct);
+
+        ChatMessageReply? replyTo = null;
+        if (replyToId is not null)
+        {
+            var original = messages.FirstOrDefault(m => m.Id == replyToId);
+            if (original is not null)
+                replyTo = new ChatMessageReply(original.Id, original.Username,
+                    original.IsDeleted ? string.Empty : original.Text);
+        }
+
         var message = new ChatMessage(
             Guid.NewGuid().ToString(),
             playerId.ToString(),
             username,
             avatarUrl,
             text,
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow,
+            ReplyTo: replyTo);
 
-        var messages = await LoadAsync(ct);
         messages.Add(message);
         if (messages.Count > MaxMessages)
             messages = messages[^MaxMessages..];

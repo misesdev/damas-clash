@@ -10,6 +10,12 @@ import {BASE_URL} from '../api/client';
 import type {LoginResponse} from '../types/auth';
 import type {OnlinePlayerInfo} from '../types/player';
 
+export interface ChatMessageReply {
+  id: string;
+  username: string;
+  text: string;
+}
+
 export interface ChatMessage {
   id: string;
   playerId: string;
@@ -19,6 +25,7 @@ export interface ChatMessage {
   sentAt: string;
   editedAt?: string | null;
   isDeleted?: boolean;
+  replyTo?: ChatMessageReply | null;
 }
 
 export function useChatScreen(
@@ -33,6 +40,7 @@ export function useChatScreen(
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
 
   const hubRef = useRef<HubConnection | null>(null);
   const listRef = useRef<FlatList<ChatMessage>>(null);
@@ -106,7 +114,10 @@ export function useChatScreen(
         .catch(() => {});
       setEditingMessage(null);
     } else {
-      hubRef.current.invoke('SendMessage', trimmed).catch(() => {});
+      hubRef.current
+        .invoke('SendMessage', trimmed, replyingTo?.id ?? null)
+        .catch(() => {});
+      setReplyingTo(null);
     }
 
     setText('');
@@ -123,6 +134,15 @@ export function useChatScreen(
     setEditingMessage(null);
     setText('');
     Keyboard.dismiss();
+  }, []);
+
+  const handleStartReply = useCallback((msg: ChatMessage) => {
+    setReplyingTo(msg);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, []);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyingTo(null);
   }, []);
 
   const handleDelete = useCallback(
@@ -179,12 +199,15 @@ export function useChatScreen(
     filteredPlayers,
     canSend,
     editingMessage,
+    replyingTo,
     hubRef,
     listRef,
     inputRef,
     handleSend,
     handleStartEdit,
     handleCancelEdit,
+    handleStartReply,
+    handleCancelReply,
     handleDelete,
     handleTextChange,
     insertMention,

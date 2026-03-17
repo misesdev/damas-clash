@@ -1,5 +1,6 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
+  BackHandler,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -13,8 +14,9 @@ import {chatStyles as styles} from '../styles/chatStyles';
 import {ChatHeader} from '../components/chat/ChatHeader';
 import {ChatMessageItem} from '../components/chat/ChatMessageItem';
 import {EditBanner} from '../components/chat/EditBanner';
-import {MessageActionSheet} from '../components/chat/MessageActionSheet';
+import {ReplyBanner} from '../components/chat/ReplyBanner';
 import {ChatInputBar} from '../components/ChatInputBar';
+import {showMessage} from '../components/MessageBox';
 import type {ChatMessage} from '../hooks/useChatScreen';
 import type {LoginResponse} from '../types/auth';
 import type {OnlinePlayerInfo} from '../types/player';
@@ -27,7 +29,7 @@ interface Props {
 
 export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
   const {t} = useTranslation();
-  const [actionSheetMessage, setActionSheetMessage] = useState<ChatMessage | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
 
   const {
     reversedMessages,
@@ -38,19 +40,66 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
     filteredPlayers,
     canSend,
     editingMessage,
+    replyingTo,
     listRef,
     inputRef,
     handleSend,
     handleStartEdit,
     handleCancelEdit,
+    handleStartReply,
+    handleCancelReply,
     handleDelete,
     handleTextChange,
     insertMention,
   } = useChatScreen(session, onlinePlayers);
 
+  // Android back: deselect message first, then allow navigation
+  useEffect(() => {
+    const handler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (selectedMessage) {
+        setSelectedMessage(null);
+        return true;
+      }
+      return false;
+    });
+    return () => handler.remove();
+  }, [selectedMessage]);
+
+  const handleEditSelected = () => {
+    if (!selectedMessage) {return;}
+    handleStartEdit(selectedMessage);
+    setSelectedMessage(null);
+  };
+
+  const handleDeleteSelected = () => {
+    const msg = selectedMessage;
+    if (!msg) {return;}
+    setSelectedMessage(null);
+    showMessage({
+      title: t('chat.deleteConfirmTitle'),
+      message: t('chat.deleteConfirmMessage'),
+      type: 'confirm',
+      actions: [
+        {label: t('chat.actionCancel')},
+        {
+          label: t('chat.deleteConfirmYes'),
+          danger: true,
+          onPress: () => handleDelete(msg.id),
+        },
+      ],
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <ChatHeader connected={connected} onlinePlayers={onlinePlayers} />
+      <ChatHeader
+        connected={connected}
+        onlinePlayers={onlinePlayers}
+        selectedMessage={selectedMessage}
+        onClearSelection={() => setSelectedMessage(null)}
+        onEditSelected={handleEditSelected}
+        onDeleteSelected={handleDeleteSelected}
+      />
 
       {!!error && (
         <View style={styles.errorBanner} testID="chat-error-banner">
@@ -76,7 +125,9 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
                 item={item}
                 myPlayerId={session.playerId}
                 myUsername={session.username}
-                onLongPress={setActionSheetMessage}
+                isSelected={selectedMessage?.id === item.id}
+                onLongPress={setSelectedMessage}
+                onReply={handleStartReply}
               />
             )}
             contentContainerStyle={styles.list}
@@ -88,6 +139,10 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
 
         {editingMessage && (
           <EditBanner message={editingMessage} onCancel={handleCancelEdit} />
+        )}
+
+        {replyingTo && !editingMessage && (
+          <ReplyBanner message={replyingTo} onCancel={handleCancelReply} />
         )}
 
         <ChatInputBar
@@ -102,21 +157,6 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
           onInsertMention={insertMention}
         />
       </KeyboardAvoidingView>
-
-      {actionSheetMessage && (
-        <MessageActionSheet
-          message={actionSheetMessage}
-          onEdit={() => {
-            handleStartEdit(actionSheetMessage);
-            setActionSheetMessage(null);
-          }}
-          onDelete={() => {
-            handleDelete(actionSheetMessage.id);
-            setActionSheetMessage(null);
-          }}
-          onDismiss={() => setActionSheetMessage(null)}
-        />
-      )}
     </SafeAreaView>
   );
 }

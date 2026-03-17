@@ -414,6 +414,7 @@ const pt = {
   },
   chat: {
     title: 'Chat ao Vivo',
+    messageOptionsTitle: "Mensagem",
     inputPlaceholder: 'Mensagem...',
     empty: 'Nenhuma mensagem ainda. Seja o primeiro!',
     you: 'Você',
@@ -428,6 +429,8 @@ const pt = {
     deleteConfirmTitle: 'Excluir mensagem',
     deleteConfirmMessage: 'Tem certeza que deseja excluir esta mensagem?',
     deleteConfirmYes: 'Excluir',
+    replyingLabel: 'Respondendo a',
+    replyDeleted: 'Mensagem apagada',
   },
   nostrLogin: {
     title: 'Entrar com Nostr',
