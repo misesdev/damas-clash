@@ -432,6 +432,13 @@ const en = {
     replyingLabel: 'Replying to',
     replyDeleted: 'Message deleted',
   },
+  notifications: {
+    mentionTitle: '@{{username}} mentioned you',
+    openChat: 'Open chat',
+    gameCreatedTitle: '{{username}} is looking for an opponent!',
+    gameCreatedBody: 'Tap to join the game',
+    openGames: 'View games',
+  },
   nostrLogin: {
     title: 'Sign in with Nostr',
     connectingRelays: 'Connecting to main relays...',

@@ -11,7 +11,7 @@ import {cancelGame, createGame, getGame} from '../api/games';
 import {refreshAccessToken} from '../api/auth';
 import {getWallet} from '../api/wallet';
 import {getPlayer} from '../api/players';
-import {BASE_URL} from '../api/client';
+import {ApiError, BASE_URL} from '../api/client';
 import {clearSession, loadSession, saveSession} from '../storage/auth';
 import {clearActiveGameId, loadActiveGameId, saveActiveGameId} from '../storage/game';
 import {saveLightningAddress} from '../storage/lightning';
@@ -22,6 +22,16 @@ import type {LoginResponse} from '../types/auth';
 import type {GameResponse} from '../types/game';
 import type {WalletResponse} from '../types/wallet';
 import type {OnlinePlayerInfo} from '../types/player';
+import {
+  requestNotificationPermission,
+  getFCMToken,
+  setupForegroundHandler,
+  setupNotificationOpenedHandler,
+  getInitialNotification,
+  setupTokenRefreshHandler,
+  type NotificationPayload,
+} from '../services/pushNotifications';
+import {registerFCMToken, unregisterFCMToken} from '../api/notifications';
 
 export type Screen = 'login' | 'register' | 'confirmEmail' | 'verifyLogin' | 'nostrLogin';
 export type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'deposit' | 'withdraw' | 'editLightningAddress' | 'walletHistory' | 'playerProfile' | 'dashboard' | 'chat';
@@ -50,6 +60,83 @@ export function useApp() {
   const [lightningAddress, setLightningAddress] = useState<string | null>(null);
   const [selectedPlayerProfile, setSelectedPlayerProfile] = useState<{playerId: string; username: string; avatarUrl?: string | null} | null>(null);
 
+  // ── Push Notifications ───────────────────────────────────────────────────
+
+  const initPushNotifications = useCallback(async (authToken: string) => {
+    try {
+      const granted = await requestNotificationPermission();
+      if (!granted) {return;}
+      const token = await getFCMToken();
+      if (token) {
+        await registerFCMToken(token, authToken);
+      }
+    } catch { /* silently ignore — notifications are non-critical */ }
+  }, []);
+
+  // Navigate based on notification type (tap from background or killed state)
+  const handleNotificationOpen = useCallback((payload: NotificationPayload) => {
+    if (payload.type === 'game_created') {
+      setAuthScreen('tabs');
+      setTab('home');
+    } else if (payload.type === 'chat_mention') {
+      setAuthScreen('chat');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Background tap handler: app was suspended, user tapped the notification
+  useEffect(() => {
+    if (!session) {return;}
+    return setupNotificationOpenedHandler(handleNotificationOpen);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.playerId]);
+
+  // Foreground FCM handler: show in-app alert when a notification arrives while app is open
+  useEffect(() => {
+    if (!session) {return;}
+    return setupForegroundHandler((payload) => {
+      if (payload.type === 'chat_mention') {
+        showMessage({
+          title: t('notifications.mentionTitle', {username: payload.data.senderUsername}),
+          message: payload.data.messageText,
+          type: 'info',
+          actions: [
+            {label: t('common.ok')},
+            {
+              label: t('notifications.openChat'),
+              primary: true,
+              onPress: () => setAuthScreen('chat'),
+            },
+          ],
+        });
+      } else if (payload.type === 'game_created') {
+        showMessage({
+          title: t('notifications.gameCreatedTitle', {username: payload.data.creatorUsername}),
+          message: t('notifications.gameCreatedBody'),
+          type: 'info',
+          actions: [
+            {label: t('common.ok')},
+            {
+              label: t('notifications.openGames'),
+              primary: true,
+              onPress: () => { setAuthScreen('tabs'); setTab('home'); },
+            },
+          ],
+        });
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.playerId]);
+
+  // FCM token rotation: re-register with the backend whenever Firebase rotates the token
+  useEffect(() => {
+    if (!session) {return;}
+    return setupTokenRefreshHandler(newToken => {
+      registerFCMToken(newToken, sessionRef.current?.token ?? '').catch(() => {});
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.playerId]);
+
   // ── Wallet ────────────────────────────────────────────────────────────────
 
   const fetchWallet = useCallback(async () => {
@@ -64,6 +151,11 @@ export function useApp() {
   }, [session]);
 
   useEffect(() => { fetchWallet(); }, [fetchWallet]);
+
+  // Always-current session ref — lets the hub's accessTokenFactory return the
+  // latest token without needing to recreate the hub on every token refresh.
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
 
   // Refs to avoid stale closures in async callbacks
   const authScreenRef = useRef<AuthScreen>('tabs');
@@ -88,6 +180,10 @@ export function useApp() {
         if (cancelled) {return;}
         if (saved) {
           setSession(saved);
+
+          // Check if the app was opened by tapping a notification (killed state)
+          const initialNotif = await getInitialNotification();
+
           const gameId = await loadActiveGameId();
           if (gameId && !cancelled) {
             try {
@@ -101,6 +197,12 @@ export function useApp() {
             } catch {
               clearActiveGameId();
             }
+          }
+
+          // Apply notification deep-link after active game check
+          // (active game takes priority; if no active game, route to notification target)
+          if (initialNotif && !cancelled && authScreenRef.current !== 'checkersBoard') {
+            handleNotificationOpen(initialNotif);
           }
         }
 
@@ -133,8 +235,13 @@ export function useApp() {
         const updated = {...session, ...renewed};
         saveSession(updated);
         setSession(updated);
-      } catch {
-        handleLogout();
+      } catch (err) {
+        // Only force logout on explicit auth errors (token revoked / expired).
+        // Network failures are transient — keep the session alive so the user
+        // remains logged in and the next app launch will retry.
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+          handleLogout();
+        }
       }
     }, delay);
 
@@ -156,9 +263,17 @@ export function useApp() {
           .withUrl(`${BASE_URL}/hubs/game`, {
             transport: HttpTransportType.WebSockets,
             skipNegotiation: true,
-            accessTokenFactory: () => session.token,
+            // Always read from ref so a refreshed token is used automatically
+            // on reconnect without recreating the entire hub.
+            accessTokenFactory: () => sessionRef.current?.token ?? '',
           })
-          .withAutomaticReconnect()
+          .withAutomaticReconnect({
+            // Retry indefinitely: 0 → 2 s → 5 s → 10 s → 30 s → 60 s forever
+            nextRetryDelayInMilliseconds: ctx => {
+              const delays = [0, 2000, 5000, 10000, 30000];
+              return delays[Math.min(ctx.previousRetryCount, delays.length - 1)];
+            },
+          })
           .build();
 
         hub.on('GameListUpdated', (games: GameResponse[]) => {
@@ -287,8 +402,11 @@ export function useApp() {
       hubRef.current = null;
       hub?.stop();
     };
+    // Depend on playerId (not token) so the hub is only recreated on login/
+    // logout — not on every token refresh. The accessTokenFactory reads from
+    // sessionRef so it always supplies the latest token on reconnect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.token]);
+  }, [session?.playerId]);
 
   // ── Watch game when pendingGameId changes ─────────────────────────────────
 
@@ -311,9 +429,15 @@ export function useApp() {
     }
     setAuthScreen('tabs');
     setTab('home');
+    // Fire-and-forget: request permission + register FCM token with the backend
+    initPushNotifications(data.token);
   };
 
   const handleLogout = () => {
+    // Unregister FCM tokens before clearing the session token
+    if (sessionRef.current) {
+      unregisterFCMToken(sessionRef.current.token).catch(() => {});
+    }
     clearSession();
     clearActiveGameId();
     setSession(null);

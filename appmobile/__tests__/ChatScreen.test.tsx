@@ -121,17 +121,27 @@ let mockHub: {
   invoke: jest.Mock;
 };
 
+// Deferred hub.start() so we can resolve/reject it inside act() and avoid
+// "not wrapped in act" warnings from the setConnected(true) state update.
+let resolveHubStart: () => void = () => {};
+let rejectHubStart: (err: Error) => void = () => {};
+
 function setupMockHub(startResolves = true) {
   capturedHandlers = {};
   mockHub = {
     on: jest.fn((event: string, handler: Function) => {
       capturedHandlers[event] = handler;
     }),
-    start: startResolves
-      ? jest.fn().mockResolvedValue(undefined)
-      : jest.fn().mockRejectedValue(new Error('Connection failed')),
+    start: jest.fn().mockImplementation(() =>
+      startResolves
+        ? new Promise<void>(r => { resolveHubStart = r; })
+        : new Promise<void>((_, rej) => { rejectHubStart = rej; }),
+    ),
     stop: jest.fn().mockResolvedValue(undefined),
     invoke: jest.fn().mockResolvedValue(undefined),
+    onreconnected: jest.fn(),
+    onreconnecting: jest.fn(),
+    onclose: jest.fn(),
   };
 
   const signalr = require('@microsoft/signalr');
@@ -159,7 +169,10 @@ function renderScreen(
 
 async function renderConnected(onlinePlayers: OnlinePlayerInfo[] = []) {
   const result = renderScreen(onlinePlayers);
-  await act(async () => {}); // flush hub.start() + setConnected(true)
+  await act(async () => {
+    resolveHubStart();
+    await Promise.resolve(); // flush setConnected(true) continuation
+  });
   return result;
 }
 
@@ -201,7 +214,10 @@ describe('ChatScreen — error state', () => {
   it('shows error banner when connection fails', async () => {
     setupMockHub(false);
     renderScreen();
-    await act(async () => {});
+    await act(async () => {
+      rejectHubStart(new Error('Connection failed'));
+      await Promise.resolve(); // flush setError() continuation
+    });
     expect(screen.getByTestId('chat-error-banner')).toBeTruthy();
     expect(screen.getByText('Erro ao conectar ao chat.')).toBeTruthy();
   });

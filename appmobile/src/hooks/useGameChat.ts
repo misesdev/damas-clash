@@ -37,20 +37,29 @@ export function useGameChat(session: LoginResponse, game: GameResponse) {
   ].filter(p => p.playerId !== session.playerId && p.username.length > 0),
   [game.playerBlackId, game.playerBlackUsername, game.playerWhiteId, game.playerWhiteUsername, game.id, session.playerId]);
 
+  // Always-current token ref: the hub's accessTokenFactory reads from here so
+  // a refreshed token is used on reconnect without recreating the connection.
+  const sessionTokenRef = useRef(session.token);
+  sessionTokenRef.current = session.token;
+
   useEffect(() => {
     let hub: HubConnection;
     let active = true;
 
     (async () => {
       try {
-        const token = session.token;
         hub = new HubConnectionBuilder()
           .withUrl(`${BASE_URL}/hubs/game`, {
             transport: HttpTransportType.WebSockets,
             skipNegotiation: true,
-            accessTokenFactory: () => token,
+            accessTokenFactory: () => sessionTokenRef.current,
           })
-          .withAutomaticReconnect()
+          .withAutomaticReconnect({
+            nextRetryDelayInMilliseconds: ctx => {
+              const delays = [0, 2000, 5000, 10000, 30000];
+              return delays[Math.min(ctx.previousRetryCount, delays.length - 1)];
+            },
+          })
           .build();
 
         hub.on('GameMessage', (msg: ChatMessage) => {
@@ -61,6 +70,24 @@ export function useGameChat(session: LoginResponse, game: GameResponse) {
         hub.on('GameChatHistory', (history: ChatMessage[]) => {
           if (!active) {return;}
           setMessages(history);
+        });
+
+        hub.onreconnected(async () => {
+          if (!active) {return;}
+          try {
+            await hub.invoke('JoinGameRoom', game.id);
+            setConnected(true);
+          } catch { /* silently ignore */ }
+        });
+
+        hub.onreconnecting(() => {
+          if (!active) {return;}
+          setConnected(false);
+        });
+
+        hub.onclose(() => {
+          if (!active) {return;}
+          setConnected(false);
         });
 
         await hub.start();
@@ -78,7 +105,9 @@ export function useGameChat(session: LoginResponse, game: GameResponse) {
       hub?.stop();
       hubRef.current = null;
     };
-  }, [game.id, session.token]);
+    // game.id triggers reconnect when switching games; session.token is read
+    // from sessionTokenRef so it doesn't need to be a dependency.
+  }, [game.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSend = useCallback(() => {
     const trimmed = text.trim();

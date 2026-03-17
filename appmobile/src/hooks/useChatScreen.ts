@@ -46,6 +46,11 @@ export function useChatScreen(
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const inputRef = useRef<TextInput>(null);
 
+  // Always-current token ref: lets the hub use the refreshed token on
+  // reconnect without recreating the connection.
+  const sessionTokenRef = useRef(session.token);
+  sessionTokenRef.current = session.token;
+
   useEffect(() => {
     let hub: HubConnection;
     let active = true;
@@ -56,9 +61,14 @@ export function useChatScreen(
           .withUrl(`${BASE_URL}/hubs/chat`, {
             transport: HttpTransportType.WebSockets,
             skipNegotiation: true,
-            accessTokenFactory: () => session.token,
+            accessTokenFactory: () => sessionTokenRef.current,
           })
-          .withAutomaticReconnect()
+          .withAutomaticReconnect({
+            nextRetryDelayInMilliseconds: ctx => {
+              const delays = [0, 2000, 5000, 10000, 30000];
+              return delays[Math.min(ctx.previousRetryCount, delays.length - 1)];
+            },
+          })
           .build();
 
         hub.on('ChatHistory', (history: ChatMessage[]) => {
@@ -87,6 +97,21 @@ export function useChatScreen(
           );
         });
 
+        hub.onreconnected(() => {
+          if (!active) {return;}
+          setConnected(true);
+        });
+
+        hub.onreconnecting(() => {
+          if (!active) {return;}
+          setConnected(false);
+        });
+
+        hub.onclose(() => {
+          if (!active) {return;}
+          setConnected(false);
+        });
+
         await hub.start();
         if (!active) {hub.stop(); return;}
         hubRef.current = hub;
@@ -101,8 +126,10 @@ export function useChatScreen(
       hub?.stop();
       hubRef.current = null;
     };
+    // The hub is created once per mount. The accessTokenFactory reads from
+    // sessionTokenRef so a refreshed token is used automatically on reconnect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.token]);
+  }, []);
 
   const handleSend = useCallback(() => {
     const trimmed = text.trim();

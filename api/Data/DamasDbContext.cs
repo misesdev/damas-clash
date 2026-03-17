@@ -12,6 +12,7 @@ public class DamasDbContext(DbContextOptions<DamasDbContext> options) : DbContex
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<LightningPayment> LightningPayments => Set<LightningPayment>();
     public DbSet<AccountDeletionLog> AccountDeletionLogs => Set<AccountDeletionLog>();
+    public DbSet<PlayerFcmToken> PlayerFcmTokens => Set<PlayerFcmToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -102,6 +103,19 @@ public class DamasDbContext(DbContextOptions<DamasDbContext> options) : DbContex
         {
             e.HasKey(a => a.Id);
             e.Property(a => a.OccurredAt).IsRequired();
+        });
+
+        modelBuilder.Entity<PlayerFcmToken>(e =>
+        {
+            e.HasKey(t => t.Id);
+            // One device token is unique across all players (device re-registration scenario)
+            e.HasIndex(t => t.Token).IsUnique();
+            e.Property(t => t.Token).IsRequired().HasMaxLength(4096);
+            e.Property(t => t.Platform).IsRequired().HasMaxLength(10);
+            e.HasOne(t => t.Player)
+                .WithMany()
+                .HasForeignKey(t => t.PlayerId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -3,6 +3,8 @@ using api.Config;
 using api.Data;
 using api.Hubs;
 using api.Services;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +31,26 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
+// Initialize Firebase Admin SDK (optional — notifications are degraded when unconfigured).
+// Provide credentials via ONE of:
+//   • Firebase__ServiceAccountJson  — JSON content of the service-account key file
+//   • GOOGLE_APPLICATION_CREDENTIALS — path to the service-account key file (ADC)
+try
+{
+    var firebaseJson = builder.Configuration["Firebase:ServiceAccountJson"];
+    GoogleCredential firebaseCredential = !string.IsNullOrWhiteSpace(firebaseJson)
+        ? GoogleCredential.FromJson(firebaseJson)
+        : GoogleCredential.GetApplicationDefault();
+
+    FirebaseApp.Create(new AppOptions { Credential = firebaseCredential });
+}
+catch (Exception ex)
+{
+    // Log but do not crash — the app starts without push notifications.
+    Console.Error.WriteLine($"[Firebase] Initialization skipped: {ex.Message}");
+}
 
 var app = builder.Build();
 

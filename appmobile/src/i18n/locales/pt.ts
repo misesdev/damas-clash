@@ -432,6 +432,13 @@ const pt = {
     replyingLabel: 'Respondendo a',
     replyDeleted: 'Mensagem apagada',
   },
+  notifications: {
+    mentionTitle: '@{{username}} te mencionou',
+    openChat: 'Abrir chat',
+    gameCreatedTitle: '{{username}} está procurando adversário!',
+    gameCreatedBody: 'Toque para entrar na partida',
+    openGames: 'Ver partidas',
+  },
   nostrLogin: {
     title: 'Entrar com Nostr',
     connectingRelays: 'Conectando aos principais Relays...',

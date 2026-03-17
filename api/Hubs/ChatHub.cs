@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using api.Data;
 using api.Services;
 using Microsoft.AspNetCore.SignalR;
@@ -6,7 +7,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace api.Hubs;
 
-public class ChatHub(IChatService chatService, DamasDbContext db) : Hub
+public class ChatHub(
+    IChatService chatService,
+    DamasDbContext db,
+    INotificationService notificationService) : Hub
 {
     private const int MaxTextLength = 500;
 
@@ -44,7 +48,28 @@ public class ChatHub(IChatService chatService, DamasDbContext db) : Hub
             callerId.Value, CallerUsername, avatarUrl, trimmed, replyToId);
 
         await Clients.Group("chat").SendAsync("NewMessage", message);
+
+        // Send FCM push notifications to each distinct mentioned player
+        // (fire-and-forget — do not await so the hub response is not delayed)
+        _ = SendMentionNotificationsAsync(trimmed, CallerUsername);
     }
+
+    private async Task SendMentionNotificationsAsync(string text, string senderUsername)
+    {
+        var mentioned = ExtractMentions(text);
+        foreach (var username in mentioned)
+        {
+            if (!string.Equals(username, senderUsername, StringComparison.OrdinalIgnoreCase))
+                await notificationService.SendMentionNotificationAsync(username, senderUsername, text);
+        }
+    }
+
+    private static readonly Regex MentionRegex = new(@"@(\w+)", RegexOptions.Compiled);
+
+    private static IEnumerable<string> ExtractMentions(string text) =>
+        MentionRegex.Matches(text)
+            .Select(m => m.Groups[1].Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
 
     public async Task EditMessage(string messageId, string newText)
     {

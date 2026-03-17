@@ -67,3 +67,5 @@ keystore.properties
 backup/
 
 lnd-gateway/tls.cert
+secrets/firebase-service-account.json
+firebase-service-account.json

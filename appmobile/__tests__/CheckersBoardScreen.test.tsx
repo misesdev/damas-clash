@@ -112,6 +112,9 @@ const mockMakeMove = gamesApi.makeMove as jest.MockedFunction<typeof gamesApi.ma
 const mockSkipTurn = gamesApi.skipTurn as jest.MockedFunction<typeof gamesApi.skipTurn>;
 const mockResign = gamesApi.resign as jest.MockedFunction<typeof gamesApi.resign>;
 
+// Deferred hub.start() — resolved inside act() to avoid "not wrapped in act" warnings.
+let resolveHubStart: () => void = () => {};
+
 // ── Setup ──────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
@@ -123,9 +126,12 @@ beforeEach(() => {
   const mockHub = {
     on: jest.fn(),
     off: jest.fn(),
-    start: jest.fn().mockResolvedValue(undefined),
+    start: jest.fn().mockImplementation(() => new Promise<void>(r => { resolveHubStart = r; })),
     stop: jest.fn().mockResolvedValue(undefined),
     invoke: jest.fn().mockResolvedValue(undefined),
+    onreconnected: jest.fn(),
+    onreconnecting: jest.fn(),
+    onclose: jest.fn(),
   };
   HubConnectionBuilder.mockReturnValue({
     withUrl: jest.fn().mockReturnThis(),
@@ -158,6 +164,16 @@ const renderBoard = (overrides: Partial<typeof fakeGame> = {}, session = fakeSes
   const utils = render(<CheckersBoardScreen game={game} session={session} onBack={onBack} />);
   return {...utils, onBack};
 };
+
+// Resolves hub.start() and flushes the two microtask hops needed for
+// useGameChat to reach setConnected(true): hub.start() → JoinGameRoom → connected.
+async function connectHub() {
+  await act(async () => {
+    resolveHubStart();
+    await Promise.resolve(); // flush JoinGameRoom invoke
+    await Promise.resolve(); // flush setConnected(true)
+  });
+}
 
 const pressCell = async (
   getByTestId: ReturnType<typeof render>['getByTestId'],
@@ -480,13 +496,9 @@ describe('chat', () => {
   });
 
   it('send button becomes enabled when text is entered and connected', async () => {
-    // The chat hook connects to SignalR — wait for connection
     const {getByTestId} = renderBoard();
-    const input = getByTestId('chat-input');
-    await act(async () => {
-      fireEvent.changeText(input, 'Hello!');
-    });
-    // After typing and connecting, send button should be enabled
+    await connectHub(); // resolve hub.start() + JoinGameRoom → setConnected(true)
+    fireEvent.changeText(getByTestId('chat-input'), 'Hello!');
     await waitFor(() => {
       const sendBtn = getByTestId('chat-send-button');
       const isDisabled = sendBtn.props.accessibilityState?.disabled ?? sendBtn.props.disabled;
@@ -500,10 +512,9 @@ describe('chat', () => {
     };
     const builtHub = HubConnectionBuilder.mock.results[HubConnectionBuilder.mock.results.length - 1];
     const {getByTestId} = renderBoard();
+    await connectHub();
 
-    await act(async () => {
-      fireEvent.changeText(getByTestId('chat-input'), 'gg wp');
-    });
+    fireEvent.changeText(getByTestId('chat-input'), 'gg wp');
 
     await waitFor(() => {
       const sendBtn = getByTestId('chat-send-button');

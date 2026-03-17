@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace api.Services;
 
-public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCacheService cache, IOnlinePlayerTracker tracker, ISettlementService settlement) : IGameService
+public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCacheService cache, IOnlinePlayerTracker tracker, ISettlementService settlement, INotificationService notifications) : IGameService
 {
     public async Task<ServiceResult<GameResponse>> CreateAsync(Guid playerId, long betAmountSats = 0, CancellationToken ct = default)
     {
@@ -53,6 +53,10 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         await db.Entry(game).Reference(g => g.PlayerBlack).LoadAsync(ct);
 
         await BroadcastGameListAsync(ct);
+
+        // Fire-and-forget: notify past opponents that the creator is looking for a game
+        _ = notifications.SendGameCreatedNotificationAsync(
+            playerId, game.PlayerBlack!.Username!, game.Id);
 
         return ServiceResult<GameResponse>.Ok(ToResponse(game));
     }

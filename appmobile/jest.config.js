@@ -1,5 +1,6 @@
 module.exports = {
   preset: 'react-native',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     '^@env$': '<rootDir>/__mocks__/@env.ts',
     '^react-native-keychain$': '<rootDir>/__mocks__/react-native-keychain.ts',
@@ -10,6 +11,8 @@ module.exports = {
     '^react-native-qrcode-svg$': '<rootDir>/__mocks__/react-native-qrcode-svg.ts',
     '^react-native-get-random-values$': '<rootDir>/__mocks__/react-native-get-random-values.ts',
     '^react-native-vision-camera$': '<rootDir>/__mocks__/react-native-vision-camera.ts',
+    '^@react-native-firebase/app$': '<rootDir>/__mocks__/@react-native-firebase/app.ts',
+    '^@react-native-firebase/messaging$': '<rootDir>/__mocks__/@react-native-firebase/messaging.ts',
     // Intercept before any ESM-only library (nostr-fetch, @noble/*) is loaded
     '^.+/utils/nostr$': '<rootDir>/src/utils/__mocks__/nostr.ts',
   },

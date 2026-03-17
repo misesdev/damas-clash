@@ -135,6 +135,9 @@ services:
       Google__ClientId: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
       LightningGateway__BaseUrl: http://lnd-gateway:8080
       LightningGateway__ApiKey: ${GATEWAY_API_KEY}
+      GOOGLE_APPLICATION_CREDENTIALS: /firebase-service-account.json
+    volumes:                                                                                                                                      
+      - /firebase-service-account.json:/firebase-service-account.json
     ports:
       - "8080:8080"
     networks:
