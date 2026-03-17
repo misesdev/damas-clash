@@ -15,12 +15,20 @@ public class NotificationService(DamasDbContext db, ILogger<NotificationService>
         string senderUsername,
         string messageText)
     {
+        logger.LogInformation("FCM: SendMention → looking up tokens for @{Mentioned}", mentionedUsername);
+
         var tokens = await db.PlayerFcmTokens
             .Where(t => t.Player.Username == mentionedUsername)
             .Select(t => t.Token)
             .ToListAsync();
 
-        if (tokens.Count == 0) return;
+        if (tokens.Count == 0)
+        {
+            logger.LogInformation("FCM: No tokens found for @{Mentioned} — skipping", mentionedUsername);
+            return;
+        }
+
+        logger.LogInformation("FCM: Sending mention to @{Mentioned} via {Count} token(s)", mentionedUsername, tokens.Count);
 
         var body = messageText.Length > MaxBodyLength
             ? string.Concat(messageText.AsSpan(0, MaxBodyLength), "…")
@@ -29,14 +37,12 @@ public class NotificationService(DamasDbContext db, ILogger<NotificationService>
         var multicast = new MulticastMessage
         {
             Tokens = tokens,
-            // Data payload — consumed by the app in the foreground handler
             Data = new Dictionary<string, string>
             {
                 ["type"] = "chat_mention",
                 ["senderUsername"] = senderUsername,
                 ["messageText"] = body,
             },
-            // Notification payload — shown by the OS when the app is in the background/killed
             Notification = new Notification
             {
                 Title = $"@{senderUsername} te mencionou",
@@ -64,22 +70,32 @@ public class NotificationService(DamasDbContext db, ILogger<NotificationService>
         var instance = FirebaseMessaging.DefaultInstance;
         if (instance is null)
         {
-            logger.LogDebug("FCM: Firebase not initialized — skipping mention notification to @{Username}", mentionedUsername);
+            logger.LogWarning("FCM: FirebaseMessaging.DefaultInstance is null — Firebase not initialized");
             return;
         }
 
         try
         {
             var result = await instance.SendEachForMulticastAsync(multicast);
+            logger.LogInformation(
+                "FCM: Mention sent — success={Success} failure={Failure}",
+                result.SuccessCount, result.FailureCount);
 
             if (result.FailureCount > 0)
-                logger.LogWarning(
-                    "FCM: {FailureCount}/{Total} tokens failed for mention to @{Username}",
-                    result.FailureCount, tokens.Count, mentionedUsername);
+            {
+                for (var i = 0; i < result.Responses.Count; i++)
+                {
+                    var r = result.Responses[i];
+                    if (!r.IsSuccess)
+                        logger.LogWarning(
+                            "FCM: Token[{Index}] failed — {Code}: {Message}",
+                            i, r.Exception?.MessagingErrorCode, r.Exception?.Message);
+                }
+            }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "FCM: Failed to send mention notification to @{Username}", mentionedUsername);
+            logger.LogError(ex, "FCM: Exception sending mention notification to @{Username}", mentionedUsername);
         }
     }
 
@@ -88,7 +104,8 @@ public class NotificationService(DamasDbContext db, ILogger<NotificationService>
         string creatorUsername,
         Guid gameId)
     {
-        // Find all players who have previously played against the creator
+        logger.LogInformation("FCM: SendGameCreated → finding past opponents of @{Creator}", creatorUsername);
+
         var opponentIds = await db.Games
             .Where(g => g.Status == GameStatus.Completed &&
                        (g.PlayerBlackId == creatorPlayerId || g.PlayerWhiteId == creatorPlayerId))
@@ -98,14 +115,28 @@ public class NotificationService(DamasDbContext db, ILogger<NotificationService>
             .Distinct()
             .ToListAsync();
 
-        if (opponentIds.Count == 0) return;
+        if (opponentIds.Count == 0)
+        {
+            logger.LogInformation("FCM: No past opponents for @{Creator} — skipping", creatorUsername);
+            return;
+        }
 
         var tokens = await db.PlayerFcmTokens
             .Where(t => opponentIds.Contains(t.PlayerId))
             .Select(t => t.Token)
             .ToListAsync();
 
-        if (tokens.Count == 0) return;
+        if (tokens.Count == 0)
+        {
+            logger.LogInformation(
+                "FCM: Found {Count} opponent(s) for @{Creator} but none have FCM tokens — skipping",
+                opponentIds.Count, creatorUsername);
+            return;
+        }
+
+        logger.LogInformation(
+            "FCM: Sending game-created to {TokenCount} device(s) for {OpponentCount} opponent(s) of @{Creator}",
+            tokens.Count, opponentIds.Count, creatorUsername);
 
         var multicast = new MulticastMessage
         {
@@ -143,22 +174,32 @@ public class NotificationService(DamasDbContext db, ILogger<NotificationService>
         var instance = FirebaseMessaging.DefaultInstance;
         if (instance is null)
         {
-            logger.LogDebug("FCM: Firebase not initialized — skipping game-created notification for @{Username}", creatorUsername);
+            logger.LogWarning("FCM: FirebaseMessaging.DefaultInstance is null — Firebase not initialized");
             return;
         }
 
         try
         {
             var result = await instance.SendEachForMulticastAsync(multicast);
+            logger.LogInformation(
+                "FCM: GameCreated sent by @{Creator} — success={Success} failure={Failure}",
+                creatorUsername, result.SuccessCount, result.FailureCount);
 
             if (result.FailureCount > 0)
-                logger.LogWarning(
-                    "FCM: {FailureCount}/{Total} tokens failed for game-created notification by @{Username}",
-                    result.FailureCount, tokens.Count, creatorUsername);
+            {
+                for (var i = 0; i < result.Responses.Count; i++)
+                {
+                    var r = result.Responses[i];
+                    if (!r.IsSuccess)
+                        logger.LogWarning(
+                            "FCM: Token[{Index}] failed — {Code}: {Message}",
+                            i, r.Exception?.MessagingErrorCode, r.Exception?.Message);
+                }
+            }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "FCM: Failed to send game-created notification for @{Username}", creatorUsername);
+            logger.LogError(ex, "FCM: Exception sending game-created notification for @{Username}", creatorUsername);
         }
     }
 }

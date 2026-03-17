@@ -40,11 +40,25 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 try
 {
     var firebaseJson = builder.Configuration["Firebase:ServiceAccountJson"];
-    GoogleCredential firebaseCredential = !string.IsNullOrWhiteSpace(firebaseJson)
-        ? GoogleCredential.FromJson(firebaseJson)
-        : GoogleCredential.GetApplicationDefault();
+    string credentialSource;
+    GoogleCredential firebaseCredential;
+
+    if (!string.IsNullOrWhiteSpace(firebaseJson))
+    {
+        firebaseCredential = GoogleCredential.FromJson(firebaseJson);
+        credentialSource = "Firebase:ServiceAccountJson (config value)";
+    }
+    else
+    {
+        var adcPath = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+        firebaseCredential = GoogleCredential.GetApplicationDefault();
+        credentialSource = string.IsNullOrEmpty(adcPath)
+            ? "ADC (no GOOGLE_APPLICATION_CREDENTIALS set — using metadata server or well-known file)"
+            : $"GOOGLE_APPLICATION_CREDENTIALS={adcPath}";
+    }
 
     FirebaseApp.Create(new AppOptions { Credential = firebaseCredential });
+    Console.WriteLine($"[Firebase] Initialized via {credentialSource}");
 }
 catch (Exception ex)
 {

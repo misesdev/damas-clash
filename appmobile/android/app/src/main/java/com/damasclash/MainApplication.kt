@@ -1,6 +1,9 @@
 package com.damasclash
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
@@ -23,5 +26,34 @@ class MainApplication : Application(), ReactApplication {
   override fun onCreate() {
     super.onCreate()
     loadReactNative(this)
+    createNotificationChannels()
+  }
+
+  private fun createNotificationChannels() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+
+    val manager = getSystemService(NotificationManager::class.java) ?: return
+
+    manager.createNotificationChannel(
+      NotificationChannel(
+        "chat_mentions",
+        "Menções no chat",
+        NotificationManager.IMPORTANCE_HIGH,
+      ).apply {
+        description = "Notificações quando alguém te menciona no chat"
+        enableVibration(true)
+      }
+    )
+
+    manager.createNotificationChannel(
+      NotificationChannel(
+        "game_invites",
+        "Convites de partida",
+        NotificationManager.IMPORTANCE_HIGH,
+      ).apply {
+        description = "Notificações quando um adversário está procurando partida"
+        enableVibration(true)
+      }
+    )
   }
 }
