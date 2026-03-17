@@ -1,4 +1,15 @@
-import messaging from '@react-native-firebase/messaging';
+import {
+  getMessaging,
+  onMessage as fcmOnMessage,
+  onNotificationOpenedApp as fcmOnNotificationOpenedApp,
+  getInitialNotification as fcmGetInitialNotification,
+  onTokenRefresh as fcmOnTokenRefresh,
+  requestPermission as fcmRequestPermission,
+  getToken as fcmGetToken,
+  isDeviceRegisteredForRemoteMessages,
+  registerDeviceForRemoteMessages,
+  AuthorizationStatus,
+} from '@react-native-firebase/messaging';
 import {Platform} from 'react-native';
 
 export interface MentionNotificationData {
@@ -21,10 +32,10 @@ export type NotificationPayload =
  * Returns true if permission was granted (AUTHORIZED or PROVISIONAL).
  */
 export async function requestNotificationPermission(): Promise<boolean> {
-  const authStatus = await messaging().requestPermission();
+  const authStatus = await fcmRequestPermission(getMessaging());
   return (
-    authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-    authStatus === messaging.AuthorizationStatus.PROVISIONAL
+    authStatus === AuthorizationStatus.AUTHORIZED ||
+    authStatus === AuthorizationStatus.PROVISIONAL
   );
 }
 
@@ -35,10 +46,11 @@ export async function requestNotificationPermission(): Promise<boolean> {
  */
 export async function getFCMToken(): Promise<string | null> {
   try {
-    if (Platform.OS === 'ios' && !messaging().isDeviceRegisteredForRemoteMessages) {
-      await messaging().registerDeviceForRemoteMessages();
+    const m = getMessaging();
+    if (Platform.OS === 'ios' && !isDeviceRegisteredForRemoteMessages(m)) {
+      await registerDeviceForRemoteMessages(m);
     }
-    return await messaging().getToken();
+    return await fcmGetToken(m);
   } catch {
     return null;
   }
@@ -84,7 +96,7 @@ function parsePayload(data?: Record<string, string>): NotificationPayload | null
 export function setupForegroundHandler(
   onNotification: (payload: NotificationPayload) => void,
 ): () => void {
-  return messaging().onMessage(async remoteMessage => {
+  return fcmOnMessage(getMessaging(), async remoteMessage => {
     const payload = parsePayload(remoteMessage.data as Record<string, string> | undefined);
     if (payload) {
       onNotification(payload);
@@ -99,7 +111,7 @@ export function setupForegroundHandler(
 export function setupNotificationOpenedHandler(
   onOpen: (payload: NotificationPayload) => void,
 ): () => void {
-  return messaging().onNotificationOpenedApp(remoteMessage => {
+  return fcmOnNotificationOpenedApp(getMessaging(), remoteMessage => {
     const payload = parsePayload(remoteMessage.data as Record<string, string> | undefined);
     if (payload) {
       onOpen(payload);
@@ -113,7 +125,7 @@ export function setupNotificationOpenedHandler(
  */
 export async function getInitialNotification(): Promise<NotificationPayload | null> {
   try {
-    const remoteMessage = await messaging().getInitialNotification();
+    const remoteMessage = await fcmGetInitialNotification(getMessaging());
     return parsePayload(remoteMessage?.data as Record<string, string> | undefined);
   } catch {
     return null;
@@ -128,5 +140,5 @@ export async function getInitialNotification(): Promise<NotificationPayload | nu
 export function setupTokenRefreshHandler(
   onRefresh: (newToken: string) => void,
 ): () => void {
-  return messaging().onTokenRefresh(onRefresh);
+  return fcmOnTokenRefresh(getMessaging(), onRefresh);
 }

@@ -51,7 +51,7 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
     handleDelete,
     handleTextChange,
     insertMention,
-  } = useChatScreen(session, onlinePlayers);
+  } = useChatScreen(session);
 
   // Android back: deselect message first, then allow navigation
   useEffect(() => {

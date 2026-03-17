@@ -11,12 +11,12 @@ import {
 import {Icon} from './Icon';
 import {colors} from '../theme/colors';
 import {chatInputBarStyles as s} from '../styles/chatInputBarStyles';
-import type {OnlinePlayerInfo} from '../types/player';
+import type {MentionCandidate} from '../hooks/useChatScreen';
 
 // ─── Mention suggestions panel (WhatsApp-style) ────────────────────────────
 
 interface MentionSuggestionsProps {
-  players: OnlinePlayerInfo[];
+  players: MentionCandidate[];
   onSelect: (username: string) => void;
 }
 
@@ -40,7 +40,7 @@ function MentionRow({
   player,
   onSelect,
 }: {
-  player: OnlinePlayerInfo;
+  player: MentionCandidate;
   onSelect: (username: string) => void;
 }) {
   const initial = player.username[0].toUpperCase();
@@ -53,7 +53,6 @@ function MentionRow({
         <Text style={s.mentionName}>{player.username}</Text>
         <Text style={s.mentionHandle}>@{player.username}</Text>
       </View>
-      <View style={s.mentionOnlineDot} />
     </View>
   );
 
@@ -82,7 +81,7 @@ interface Props {
   text: string;
   canSend: boolean;
   showMentions: boolean;
-  filteredPlayers: OnlinePlayerInfo[];
+  filteredPlayers: MentionCandidate[];
   inputRef: React.RefObject<TextInput>;
   placeholder: string;
   onChangeText: (val: string) => void;

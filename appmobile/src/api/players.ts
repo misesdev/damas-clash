@@ -15,6 +15,9 @@ export const getPlayer = (token: string, playerId: string) =>
     headers: auth(token),
   });
 
+export const listPlayers = (token: string) =>
+  request<PlayerProfile[]>('/api/players', {headers: auth(token)});
+
 export const updateLightningAddress = (token: string, playerId: string, address: string | null) =>
   request<PlayerProfile>(`/api/players/${playerId}/lightning-address`, {
     method: 'PUT',

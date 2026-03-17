@@ -7,8 +7,13 @@ import {
 import type {HubConnection} from '@microsoft/signalr';
 import {useTranslation} from 'react-i18next';
 import {BASE_URL} from '../api/client';
+import {listPlayers} from '../api/players';
 import type {LoginResponse} from '../types/auth';
-import type {OnlinePlayerInfo} from '../types/player';
+
+export interface MentionCandidate {
+  playerId: string;
+  username: string;
+}
 
 export interface ChatMessageReply {
   id: string;
@@ -28,10 +33,7 @@ export interface ChatMessage {
   replyTo?: ChatMessageReply | null;
 }
 
-export function useChatScreen(
-  session: LoginResponse,
-  onlinePlayers: OnlinePlayerInfo[],
-) {
+export function useChatScreen(session: LoginResponse) {
   const {t} = useTranslation();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState('');
@@ -41,6 +43,7 @@ export function useChatScreen(
   const [mentionQuery, setMentionQuery] = useState('');
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+  const [allPlayers, setAllPlayers] = useState<MentionCandidate[]>([]);
 
   const hubRef = useRef<HubConnection | null>(null);
   const listRef = useRef<FlatList<ChatMessage>>(null);
@@ -50,6 +53,16 @@ export function useChatScreen(
   // reconnect without recreating the connection.
   const sessionTokenRef = useRef(session.token);
   sessionTokenRef.current = session.token;
+
+  // Fetch all players once for the mention autocomplete
+  useEffect(() => {
+    listPlayers(session.token)
+      .then(players =>
+        setAllPlayers(players.map(p => ({playerId: p.id, username: p.username}))),
+      )
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let hub: HubConnection;
@@ -182,9 +195,27 @@ export function useChatScreen(
 
   const handleTextChange = useCallback((val: string) => {
     setText(val);
-    const lastWord = val.split(/\s/).pop() ?? '';
-    if (lastWord.startsWith('@') && lastWord.length > 1) {
-      setMentionQuery(lastWord.slice(1).toLowerCase());
+
+    // Walk backward to find the last @ that is NOT inside a completed @[...] mention
+    let anchorIdx = -1;
+    for (let i = val.length - 1; i >= 0; i--) {
+      if (val[i] !== '@') {continue;}
+      const after = val.slice(i + 1);
+      // If this @ opens a completed bracket mention (e.g. @[Name]) skip it
+      if (after.startsWith('[') && after.includes(']')) {break;}
+      anchorIdx = i;
+      break;
+    }
+
+    if (anchorIdx === -1) {
+      setShowMentions(false);
+      setMentionQuery('');
+      return;
+    }
+
+    const query = val.slice(anchorIdx + 1);
+    if (query.length > 0) {
+      setMentionQuery(query.toLowerCase());
       setShowMentions(true);
     } else {
       setShowMentions(false);
@@ -194,9 +225,11 @@ export function useChatScreen(
 
   const insertMention = useCallback(
     (username: string) => {
-      const words = text.split(/(\s+)/);
-      words[words.length - 1] = `@${username} `;
-      setText(words.join(''));
+      const lastAt = text.lastIndexOf('@');
+      const before = text.slice(0, lastAt);
+      // Use bracket notation for usernames that contain spaces
+      const mention = username.includes(' ') ? `@[${username}]` : `@${username}`;
+      setText(`${before}${mention} `);
       setShowMentions(false);
       setMentionQuery('');
       inputRef.current?.focus();
@@ -204,13 +237,17 @@ export function useChatScreen(
     [text],
   );
 
-  const filteredPlayers = onlinePlayers
-    .filter(
-      p =>
-        p.playerId !== session.playerId &&
-        p.username.toLowerCase().startsWith(mentionQuery),
-    )
-    .slice(0, 5);
+  const filteredPlayers = useMemo(
+    () =>
+      allPlayers
+        .filter(
+          p =>
+            p.playerId !== session.playerId &&
+            p.username.toLowerCase().includes(mentionQuery),
+        )
+        .slice(0, 5),
+    [allPlayers, mentionQuery, session.playerId],
+  );
 
   const canSend = text.trim().length > 0 && connected;
 

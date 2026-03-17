@@ -64,11 +64,13 @@ public class ChatHub(
         }
     }
 
-    private static readonly Regex MentionRegex = new(@"@(\w+)", RegexOptions.Compiled);
+    // Matches @[username with spaces] (group 1) or @word (group 2)
+    private static readonly Regex MentionRegex =
+        new(@"@\[([^\]]+)\]|@(\w+)", RegexOptions.Compiled);
 
     private static IEnumerable<string> ExtractMentions(string text) =>
         MentionRegex.Matches(text)
-            .Select(m => m.Groups[1].Value)
+            .Select(m => m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value)
             .Distinct(StringComparer.OrdinalIgnoreCase);
 
     public async Task EditMessage(string messageId, string newText)

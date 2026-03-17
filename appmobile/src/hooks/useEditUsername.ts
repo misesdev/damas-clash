@@ -9,13 +9,14 @@ export function useEditUsername(user: LoginResponse, onSaved: (newUsername: stri
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const valid = username.trim().length >= 3 && username.trim().length <= 50 && username.trim() !== user.username;
+  const trimmedUsername = username.trim();
+  const valid = trimmedUsername.length >= 3 && trimmedUsername.length <= 30 && trimmedUsername !== user.username;
 
   const handleSave = async () => {
     setLoading(true);
     setError('');
     try {
-      await updateUsername(user.token, user.playerId, username.trim());
+      await updateUsername(user.token, user.playerId, trimmedUsername);
       onSaved(username.trim());
     } catch (e: any) {
       setError(e.message ?? t('editUsername.errors.saveFailed'));

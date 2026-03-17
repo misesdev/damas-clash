@@ -62,6 +62,12 @@ export function useApp() {
 
   // ── Push Notifications ───────────────────────────────────────────────────
 
+  // Request permission on every app open. On Android the system dialog only
+  // appears once; subsequent calls return the current status silently.
+  useEffect(() => {
+    requestNotificationPermission().catch(() => {});
+  }, []);
+
   const initPushNotifications = useCallback(async (authToken: string) => {
     try {
       const granted = await requestNotificationPermission();
