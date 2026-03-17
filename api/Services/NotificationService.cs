@@ -2,10 +2,11 @@ using api.Data;
 using api.Models.Enums;
 using FirebaseAdmin.Messaging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace api.Services;
 
-public class NotificationService(DamasDbContext db, ILogger<NotificationService> logger)
+public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<NotificationService> logger)
     : INotificationService
 {
     private const int MaxBodyLength = 120;
@@ -16,6 +17,9 @@ public class NotificationService(DamasDbContext db, ILogger<NotificationService>
         string messageText)
     {
         logger.LogInformation("FCM: SendMention → looking up tokens for @{Mentioned}", mentionedUsername);
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
 
         var tokens = await db.PlayerFcmTokens
             .Where(t => t.Player.Username == mentionedUsername)
@@ -105,6 +109,9 @@ public class NotificationService(DamasDbContext db, ILogger<NotificationService>
         Guid gameId)
     {
         logger.LogInformation("FCM: SendGameCreated → finding past opponents of @{Creator}", creatorUsername);
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
 
         var opponentIds = await db.Games
             .Where(g => g.Status == GameStatus.Completed &&
