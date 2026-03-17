@@ -114,70 +114,73 @@ export const chatStyles = StyleSheet.create({
   emptyText: {color: colors.textMuted, fontSize: 14},
 
   // ─── Message list ────────────────────────────────────────────────────────────
-  list: {paddingHorizontal: 12, paddingVertical: 16, gap: 12},
+  list: {paddingHorizontal: 10, paddingVertical: 12, gap: 6},
 
   // ─── Message row ─────────────────────────────────────────────────────────────
-  msgRow: {flexDirection: 'row', alignItems: 'flex-end', gap: 8},
+  // alignItems: 'flex-end' so avatar sits at the bottom of the bubble
+  msgRow: {flexDirection: 'row', alignItems: 'flex-end', gap: 6},
   msgRowMe: {justifyContent: 'flex-end'},
 
   // ─── Bubbles ─────────────────────────────────────────────────────────────────
+  // NO minWidth (was causing unnecessary line breaks on short messages).
+  // NO maxWidth here — constraint lives on swipeContainer (direct child of msgRow),
+  // so the percentage is reliably relative to the row/screen width.
   msgBubble: {
-    maxWidth: '90%',
-    minWidth: "35%",
-    backgroundColor: colors.surfaceRaised,
-    borderRadius: 18,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 16,
     borderBottomLeftRadius: 4,
-    paddingHorizontal: 13,
+    paddingHorizontal: 11,
     paddingTop: 7,
-    paddingBottom: 6,
+    paddingBottom: 5,
   },
   msgBubbleMe: {
-    backgroundColor: '#1F1F1F',
-    borderRadius: 18,
-    borderBottomLeftRadius: 18,
+    backgroundColor: '#14213D',
+    borderRadius: 16,
+    borderBottomLeftRadius: 16,
     borderBottomRightRadius: 4,
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#1E3158',
   },
   msgUsername: {
     color: '#5B9EF5',
     fontSize: 12,
     fontWeight: '700',
-    marginBottom: 3,
+    marginBottom: 2,
     letterSpacing: 0.1,
   },
   msgTime: {
-    color: colors.textMuted,
+    color: '#555555',
     fontSize: 10,
-    alignSelf: 'flex-end',
-    marginTop: 4,
+    letterSpacing: 0.1,
   },
 
-  // ─── Message meta row (time + edited) ────────────────────────────────────────
+  // ─── Message meta row (time + edited label) ───────────────────────────────────
+  // marginTop: 2 keeps the time close to the text (WhatsApp-like tightness).
   msgMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: 4,
-    marginTop: 4,
+    gap: 3,
+    marginTop: 2,
   },
 
   // ─── Edited / Deleted indicators ─────────────────────────────────────────────
   msgEdited: {
-    color: colors.textMuted,
+    color: '#555555',
     fontSize: 10,
     fontStyle: 'italic',
   },
   msgDeleted: {
-    color: colors.textMuted,
+    color: '#555555',
     fontSize: 13,
     fontStyle: 'italic',
   },
   msgSelectedOverlay: {
-    backgroundColor: 'rgba(91,156,246,0.13)',
-    borderRadius: 12,
-    marginHorizontal: -6,
-    padding: 6,
+    backgroundColor: 'rgba(91,156,246,0.10)',
+    borderRadius: 10,
+    marginHorizontal: -4,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
 
   // ─── Edit mode banner (above input bar) ──────────────────────────────────────
@@ -282,28 +285,34 @@ export const chatStyles = StyleSheet.create({
   },
 
   // ─── Swipe-to-reply container + arrow ────────────────────────────────────────
-  // swipeContainer is position:relative so the icon can be absolutely placed to
-  // the left of the bubble without consuming layout space.
+  // maxWidth here is relative to msgRow (fills the screen), so 76% ≈ screen*0.76.
+  // The remaining ~24% accommodates the avatar (32px) + gap (6px) + breathing room.
   swipeContainer: {
     position: 'relative',
+    maxWidth: '76%',
   },
   swipeReplyIconWrap: {
     position: 'absolute',
-    left: -36,
+    left: -34,
     top: 0,
     bottom: 0,
-    width: 28,
+    width: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   // ─── Reply quote inside a message bubble ─────────────────────────────────────
+  // Applied to the bubble itself when it contains a reply quote — ensures the
+  // quote block never collapses to the width of a short reply like "oi".
+  msgBubbleWithReply: {
+    minWidth: 150,
+  },
   replyQuote: {
     flexDirection: 'row',
     borderRadius: 8,
     overflow: 'hidden',
-    marginBottom: 6,
-    backgroundColor: 'rgba(0,0,0,0.18)',
+    marginBottom: 5,
+    backgroundColor: 'rgba(0,0,0,0.25)',
   },
   replyQuoteBar: {
     width: 3,
@@ -312,20 +321,21 @@ export const chatStyles = StyleSheet.create({
   replyQuoteBody: {
     flex: 1,
     paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingVertical: 4,
   },
   replyQuoteUsername: {
     color: '#25D366',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   replyQuoteText: {
-    color: colors.textSecondary,
+    color: '#888888',
     fontSize: 12,
+    lineHeight: 16,
   },
   replyQuoteDeleted: {
-    color: colors.textMuted,
+    color: '#555555',
     fontSize: 12,
     fontStyle: 'italic',
   },

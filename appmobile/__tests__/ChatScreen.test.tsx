@@ -535,7 +535,7 @@ describe('ChatScreen — delete message', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('msg-deleted-msg-2')).toBeTruthy();
-      expect(screen.getByText('🚫 Mensagem apagada')).toBeTruthy();
+      expect(screen.getByText('Mensagem apagada')).toBeTruthy();
     });
   });
 

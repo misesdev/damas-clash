@@ -149,7 +149,7 @@ export function ChatMessageItem({
             }
             delayLongPress={350}
             testID={`chat-message-${item.id}`}>
-            <View style={[styles.msgBubble, isMe && styles.msgBubbleMe]}>
+            <View style={[styles.msgBubble, isMe && styles.msgBubbleMe, item.replyTo && styles.msgBubbleWithReply]}>
               {!isMe && (
                 <Text style={styles.msgUsername}>{item.username}</Text>
               )}
@@ -167,7 +167,7 @@ export function ChatMessageItem({
                 <Text
                   style={styles.msgDeleted}
                   testID={`msg-deleted-${item.id}`}>
-                  🚫 {t('chat.deleted')}
+                  {t('chat.deleted')}
                 </Text>
               ) : (
                 <MentionText text={item.text} myUsername={myUsername} />
