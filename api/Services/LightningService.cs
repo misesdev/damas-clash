@@ -130,9 +130,9 @@ public class LightningService(
     public async Task<ServiceResult<WithdrawResponse>> WithdrawAsync(
         Guid playerId, string invoice, long amountSats, long maxFeeSats, CancellationToken ct = default)
     {
-        // Check sufficient balance (including max fee buffer)
+        // Check sufficient balance — routing fees are absorbed by the platform, not the user
         var walletData = await wallet.GetOrCreateAsync(playerId, ct);
-        if (walletData.AvailableBalanceSats < amountSats + maxFeeSats)
+        if (walletData.AvailableBalanceSats < amountSats)
             return ServiceResult<WithdrawResponse>.Fail("Insufficient balance");
 
         // Create pending outgoing payment record
@@ -162,11 +162,10 @@ public class LightningService(
         }
 
         var g = payResult.Value!;
-        var totalDeducted = amountSats + g.FeePaidSats;
 
-        // Debit wallet
+        // Debit only the requested amount — routing fee is absorbed by the platform
         var debitResult = await wallet.DebitAsync(
-            playerId, totalDeducted, LedgerEntryType.Withdrawal,
+            playerId, amountSats, LedgerEntryType.Withdrawal,
             paymentId: payment.Id, ct: ct);
 
         if (!debitResult.IsSuccess)
@@ -179,7 +178,7 @@ public class LightningService(
         }
 
         payment.PaymentHash = g.PaymentHash;
-        payment.AmountSats = totalDeducted;
+        payment.AmountSats = amountSats;
         payment.Status = PaymentStatus.Paid;
         payment.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
@@ -198,9 +197,9 @@ public class LightningService(
         if (string.IsNullOrEmpty(player.LightningAddress))
             return ServiceResult<WithdrawResponse>.Fail("no_lightning_address");
 
-        // Check balance up-front
+        // Check balance up-front — routing fees are absorbed by the platform, not the user
         var walletData = await wallet.GetOrCreateAsync(playerId, ct);
-        if (walletData.AvailableBalanceSats < amountSats + maxFeeSats)
+        if (walletData.AvailableBalanceSats < amountSats)
             return ServiceResult<WithdrawResponse>.Fail("insufficient_balance");
 
         // Resolve LNURL pay info

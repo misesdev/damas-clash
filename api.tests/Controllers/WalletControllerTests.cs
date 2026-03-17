@@ -334,8 +334,8 @@ public class WalletControllerTests(CustomWebApplicationFactory factory)
         ClearAuth();
 
         var wallet = (await walletResp.Content.ReadFromJsonAsync<WalletResponse>(JsonOpts))!;
-        // Deducted: 1000 amount + 3 fee = 1003
-        Assert.Equal(5000 - 1003, wallet.BalanceSats);
+        // Platform absorbs the routing fee — user is only charged the requested amount
+        Assert.Equal(5000 - 1000, wallet.BalanceSats);
     }
 
     [Fact]
@@ -350,6 +350,27 @@ public class WalletControllerTests(CustomWebApplicationFactory factory)
         ClearAuth();
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Withdraw_FullBalance_SucceedsAndLeavesZero()
+    {
+        // User should be able to withdraw their entire balance; routing fee is not charged to them
+        var (playerId, token) = await CreatePlayer("withdraw_full");
+        await CreditWalletDirectly(playerId, 1000);
+        _gateway.PaymentHashToReturn = "pay_full";
+        _gateway.FeePaidSatsToReturn = 5;
+        _gateway.ShouldPaymentFail = false;
+
+        Auth(token);
+        var response = await _client.PostAsJsonAsync("/api/wallet/withdraw",
+            new WithdrawRequest("lnbcrt1_full", 1000, 10));
+        var walletResp = await _client.GetAsync("/api/wallet");
+        ClearAuth();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var wallet = (await walletResp.Content.ReadFromJsonAsync<WalletResponse>(JsonOpts))!;
+        Assert.Equal(0, wallet.BalanceSats);
     }
 
     [Fact]

@@ -7,4 +7,4 @@ What's new in Damas Clash:
 - Online chat with temporary messages
 - Performance improvements and general bug fixes
 - Chat ao vivo  nas partidas and fora delas
-- Design improvements
+- UI improvements

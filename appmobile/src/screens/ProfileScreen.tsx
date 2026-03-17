@@ -242,7 +242,7 @@ export function ProfileScreen({
           </View>
         </View>
 
-        <Text style={styles.version}>{t('profile.version', {version: '2.0'})}</Text>
+        <Text style={styles.version}>{t('profile.version', {version: '2.2'})}</Text>
       </ScrollView>
     </SafeAreaView>
   );
