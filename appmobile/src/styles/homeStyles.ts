@@ -153,6 +153,11 @@ export const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  segmentTabInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   segmentLabel: {
     fontSize: 13,
     fontWeight: '500',
@@ -161,6 +166,12 @@ export const styles = StyleSheet.create({
   segmentLabelActive: {
     color: colors.text,
     fontWeight: '700',
+  },
+  segmentBadgeDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#4CAF50',
   },
 
   // ─── Shared tab content wrapper ───────────────────────────────────────────

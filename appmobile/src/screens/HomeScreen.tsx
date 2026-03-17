@@ -81,10 +81,11 @@ function TxRow({entry}: {entry: LedgerEntryResponse}) {
 
 interface SegmentTabsProps {
   active: HomeTab;
+  hasWaiting: boolean;
   onChange: (tab: HomeTab) => void;
 }
 
-function SegmentTabs({active, onChange}: SegmentTabsProps) {
+function SegmentTabs({active, hasWaiting, onChange}: SegmentTabsProps) {
   const {t} = useTranslation();
   return (
     <View style={styles.segment}>
@@ -100,9 +101,14 @@ function SegmentTabs({active, onChange}: SegmentTabsProps) {
         style={[styles.segmentTab, active === 'games' && styles.segmentTabActive]}
         onPress={() => onChange('games')}
         testID="segment-games">
-        <Text style={[styles.segmentLabel, active === 'games' && styles.segmentLabelActive]}>
-          {t('home.gamesTab')}
-        </Text>
+        <View style={styles.segmentTabInner}>
+          <Text style={[styles.segmentLabel, active === 'games' && styles.segmentLabelActive]}>
+            {t('home.gamesTab')}
+          </Text>
+          {hasWaiting && active !== 'games' && (
+            <View style={styles.segmentBadgeDot} />
+          )}
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -341,6 +347,7 @@ export function HomeScreen({
   onOpenChat,
 }: Props) {
   const [homeTab, setHomeTab] = useState<HomeTab>('wallet');
+  const hasWaiting = (liveGames ?? []).some(g => g.status === 'WaitingForPlayers');
   return (
     <SafeAreaView style={styles.container}>
       {/* Top bar */}
@@ -372,7 +379,7 @@ export function HomeScreen({
       </View>
 
       {/* Segment tabs */}
-      <SegmentTabs active={homeTab} onChange={setHomeTab} />
+      <SegmentTabs active={homeTab} hasWaiting={hasWaiting} onChange={setHomeTab} />
 
       {/* Content */}
       {homeTab === 'wallet' ? (

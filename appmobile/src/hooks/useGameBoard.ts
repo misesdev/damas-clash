@@ -20,8 +20,8 @@ export interface PieceAnim {
   opacity: Animated.Value;
 }
 
-const MOVE_MS = 220;
-const FADE_MS = 200;
+const MOVE_MS = 260;
+const FADE_MS = 220;
 
 const cellPos = (row: number, col: number, size: number) => ({
   x: col * size,
@@ -63,6 +63,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
   const animsRef = useRef(initAnimsFromEngine(initialEngine, cellSize));
   const engineRef = useRef(engine);
   const pendingMovesRef = useRef(0);
+  const opponentAnimRef = useRef<(cur: GameEngine, next: GameEngine) => void>(() => {});
 
   useEffect(() => {
     engineRef.current = engine;
@@ -122,13 +123,12 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
             // Own move confirmed — engine already applied locally
             pendingMovesRef.current--;
           } else {
-            // Opponent's move — sync engine from API board state
+            // Opponent's move — animate from current position to new position
             const newEngine = boardStateToEngine(
               updatedGame.boardState,
               updatedGame.currentTurn,
             );
-            animsRef.current = initAnimsFromEngine(newEngine, cellSizeRef.current);
-            setEngine(newEngine);
+            opponentAnimRef.current(engineRef.current, newEngine);
           }
         });
 
@@ -158,7 +158,7 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     };
   }, [initialGame.id, session.token]);
 
-  // ── Move animation ────────────────────────────────────────────────────────
+  // ── Move animation (own moves) ────────────────────────────────────────────
 
   const runMoveAnimation = useCallback(
     (movingPiece: Piece, move: Move, nextEngine: GameEngine) => {
@@ -196,6 +196,78 @@ export function useGameBoard(initialGame: GameResponse, session: LoginResponse) 
     },
     [getAnim],
   );
+
+  // ── Move animation (opponent moves) ──────────────────────────────────────
+  //
+  // Piece IDs are position-based (e.g. "d-2-3"), so after a move the piece
+  // gets a brand-new ID at its destination. We diff old vs new piece lists
+  // to find what moved, animate the OLD piece's anim to the new cell, then
+  // swap to the new engine once the animation completes.
+
+  const runOpponentMoveAnimation = useCallback(
+    (currentEngine: GameEngine, newEngine: GameEngine) => {
+      const oldPieces = currentEngine.pieces;
+      const newPieces = newEngine.pieces;
+
+      const newPosSet = new Set(newPieces.map(p => `${p.row}-${p.col}`));
+      const oldPosSet = new Set(oldPieces.map(p => `${p.row}-${p.col}`));
+
+      // The piece that left its old cell
+      const movedFrom = oldPieces.find(p => !newPosSet.has(`${p.row}-${p.col}`));
+      // The cell that has a new occupant
+      const movedTo = newPieces.find(p => !oldPosSet.has(`${p.row}-${p.col}`));
+      // Opponent's piece that was captured (present in old, absent in new)
+      const captured = movedFrom
+        ? oldPieces.find(
+            p => p.color !== movedFrom.color && !newPosSet.has(`${p.row}-${p.col}`),
+          )
+        : undefined;
+
+      if (!movedFrom || !movedTo) {
+        // Cannot determine move — fall back to instant sync
+        animsRef.current = initAnimsFromEngine(newEngine, cellSizeRef.current);
+        setEngine(newEngine);
+        return;
+      }
+
+      setAnimating(true);
+
+      // Animate the OLD piece (still in current engine) to the destination cell
+      const movingAnim = getAnim(movedFrom);
+      const capturedAnim = captured ? animsRef.current.get(captured.id) : undefined;
+
+      const anims: Animated.CompositeAnimation[] = [
+        Animated.timing(movingAnim.pos, {
+          toValue: cellPos(movedTo.row, movedTo.col, cellSizeRef.current),
+          duration: MOVE_MS,
+          useNativeDriver: false,
+        }),
+      ];
+
+      if (capturedAnim) {
+        anims.push(
+          Animated.timing(capturedAnim.opacity, {
+            toValue: 0,
+            duration: FADE_MS,
+            useNativeDriver: false,
+          }),
+        );
+      }
+
+      Animated.parallel(anims).start(() => {
+        // Re-initialise all anims at their correct final positions
+        animsRef.current = initAnimsFromEngine(newEngine, cellSizeRef.current);
+        setEngine(newEngine);
+        setAnimating(false);
+      });
+    },
+    [getAnim],
+  );
+
+  // Keep the ref up-to-date so the hub closure always calls the latest version
+  useEffect(() => {
+    opponentAnimRef.current = runOpponentMoveAnimation;
+  }, [runOpponentMoveAnimation]);
 
   // ── Cell press handler ────────────────────────────────────────────────────
 

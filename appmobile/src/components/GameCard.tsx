@@ -1,8 +1,26 @@
-import React from 'react';
-import {ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import React, {useEffect, useRef} from 'react';
+import {ActivityIndicator, Animated, Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {colors} from '../theme/colors';
 import type {GameResponse} from '../types/game';
+
+function PulsingDot() {
+  const ring = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(ring, {toValue: 2.2, duration: 800, useNativeDriver: true}),
+        Animated.timing(ring, {toValue: 1, duration: 800, useNativeDriver: true}),
+      ]),
+    ).start();
+  }, [ring]);
+  return (
+    <View style={styles.pulseWrapper}>
+      <Animated.View style={[styles.pulseRing, {transform: [{scale: ring}]}]} />
+      <View style={styles.pulseDot} />
+    </View>
+  );
+}
 
 interface Props {
   game: GameResponse;
@@ -46,7 +64,7 @@ export function GameCard({game, currentPlayerId, onPress, onCancel, loading, can
   }[game.status];
 
   const statusColor = {
-    WaitingForPlayers: colors.textSecondary,
+    WaitingForPlayers: '#4CAF50',
     InProgress: '#4CAF50',
     Completed: colors.textMuted,
   }[game.status];
@@ -69,7 +87,11 @@ export function GameCard({game, currentPlayerId, onPress, onCancel, loading, can
       <View style={styles.info}>
         <Text style={styles.creator} numberOfLines={1}>{creatorName}</Text>
         <View style={styles.statusRow}>
-          <View style={[styles.statusDot, {backgroundColor: statusColor}]} />
+          {game.status === 'WaitingForPlayers' ? (
+            <PulsingDot />
+          ) : (
+            <View style={[styles.statusDot, {backgroundColor: statusColor}]} />
+          )}
           <Text style={[styles.status, {color: statusColor}]}>{statusLabel}</Text>
         </View>
         {game.betAmountSats > 0 ? (
@@ -136,6 +158,13 @@ const styles = StyleSheet.create({
   creator: {color: colors.text, fontSize: 15, fontWeight: '600', marginBottom: 4},
   statusRow: {flexDirection: 'row', alignItems: 'center', gap: 6},
   statusDot: {width: 6, height: 6, borderRadius: 3},
+  pulseWrapper: {width: 12, height: 12, alignItems: 'center', justifyContent: 'center'},
+  pulseRing: {
+    position: 'absolute',
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: 'rgba(76,175,80,0.35)',
+  },
+  pulseDot: {width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#4CAF50'},
   status: {fontSize: 13},
   cancelBtn: {
     borderWidth: 1,
