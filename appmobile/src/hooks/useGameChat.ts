@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {FlatList, TextInput} from 'react-native';
+import {FlatList, Keyboard, TextInput} from 'react-native';
 import {HubConnectionBuilder, HttpTransportType} from '@microsoft/signalr';
 import type {HubConnection} from '@microsoft/signalr';
 import {BASE_URL} from '../api/client';
@@ -86,6 +86,8 @@ export function useGameChat(session: LoginResponse, game: GameResponse) {
     hubRef.current.invoke('SendGameMessage', trimmed).catch(() => {});
     setText('');
     setShowMentions(false);
+    inputRef.current?.blur();
+    Keyboard.dismiss();
   }, [text, connected]);
 
   const handleTextChange = useCallback((val: string) => {

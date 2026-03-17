@@ -1,8 +1,8 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   Animated,
   FlatList,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
   StyleSheet,
@@ -24,6 +24,7 @@ import {colors} from '../theme/colors';
 import type {ChatMessage} from '../hooks/useGameChat';
 import type {LoginResponse} from '../types/auth';
 import type {GameResponse} from '../types/game';
+import { ChatMessageItem } from '../components/chat/ChatMessageItem';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -178,29 +179,24 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
     return true;
   });
 
-  const myUsernameStr = myUsername ?? '';
-  const showResignBar = liveGame.status === 'InProgress' && !winner;
-
-  const renderMessage = ({item}: {item: ChatMessage}) => {
-    const isMe = item.playerId === session.playerId;
-    return (
-      <View style={[styles.msgRow, isMe && styles.msgRowMe]}>
-        {!isMe && <Avatar username={item.username} avatarUrl={item.avatarUrl} size={26} />}
-        <View style={[styles.msgBubble, isMe && styles.msgBubbleMe]}>
-          {!isMe && <Text style={styles.msgUsername}>{item.username}</Text>}
-          <MentionText
-            text={item.text}
-            myUsername={myUsernameStr}
-            textStyle={{fontSize: 13, lineHeight: 18, color: isMe ? colors.text : colors.text}}
-            mentionStyle={{color: '#5B9CF6', fontWeight: '700', fontSize: 13}}
-            myMentionStyle={{color: '#FFD700', fontWeight: '700', fontSize: 13}}
-          />
-          <Text style={styles.msgTime}>{formatTime(item.sentAt)}</Text>
-        </View>
-        {isMe && <Avatar username={item.username} avatarUrl={item.avatarUrl} size={26} />}
-      </View>
+  // Track keyboard height on both platforms.
+  // adjustNothing in AndroidManifest means the OS never resizes the window,
+  // so we control the layout manually via keyboard events on both platforms.
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [inputBarHeight, setInputBarHeight] = useState(60);
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      e => setKeyboardHeight(e.endCoordinates.height + 12),
     );
-  };
+    const hide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0),
+    );
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+
+  const showResignBar = liveGame.status === 'InProgress' && !winner;
 
   return (
     <View style={styles.container} testID="game-screen">
@@ -385,32 +381,38 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
         </View>
       </View>
 
-      {/* Chat + input (keyboard-aware) */}
-      <KeyboardAvoidingView
-        style={{flex: 1}}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Chat messages — fills remaining space, padded so content isn't hidden behind input bar */}
+      <FlatList<ChatMessage>
+        ref={listRef}
+        inverted
+        data={reversedMessages}
+        keyExtractor={item => item.id}
+        style={styles.chatSection}
+        contentContainerStyle={[styles.chatList, {paddingTop: inputBarHeight}]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={
+          <View style={styles.chatEmpty}>
+            <Text style={styles.chatEmptyText} testID="chat-empty">
+              {t('chat.empty')}
+            </Text>
+          </View>
+        }
+        renderItem={item => 
+          <ChatMessageItem
+            item={item.item}
+            myPlayerId={session.playerId}
+            myUsername={session.username}
+          />
+        }
+      />
 
-        {/* Chat messages */}
-        <FlatList<ChatMessage>
-          ref={listRef}
-          inverted
-          data={reversedMessages}
-          keyExtractor={item => item.id}
-          style={styles.chatSection}
-          contentContainerStyle={styles.chatList}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          ListEmptyComponent={
-            <View style={styles.chatEmpty}>
-              <Text style={styles.chatEmptyText} testID="chat-empty">
-                {t('chat.empty')}
-              </Text>
-            </View>
-          }
-          renderItem={renderMessage}
-        />
+      {/* Input bar — absolutely positioned, floats above keyboard */}
+      <View
+        style={[styles.inputBar, {bottom: keyboardHeight}]}
+        onLayout={e => setInputBarHeight(e.nativeEvent.layout.height)}>
 
-        {/* Resign / Leave — sits naturally above the input bar */}
+        {/* Resign / Leave */}
         {showResignBar && (
           <View style={styles.resignBar}>
             {spectator ? (
@@ -443,7 +445,7 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
           onSend={handleSend}
           onInsertMention={insertMention}
         />
-      </KeyboardAvoidingView>
+      </View>
 
       {/* Win / loss overlay */}
       {winner && (

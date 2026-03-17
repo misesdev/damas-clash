@@ -6,4 +6,6 @@ public record ChatMessage(
     string Username,
     string? AvatarUrl,
     string Text,
-    DateTimeOffset SentAt);
+    DateTimeOffset SentAt,
+    DateTimeOffset? EditedAt = null,
+    bool IsDeleted = false);

@@ -1,5 +1,5 @@
 import React from 'react';
-import {Alert, BackHandler, StyleSheet, View} from 'react-native';
+import {BackHandler, StyleSheet, View} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {BottomTabBar} from '../components/BottomTabBar';
 import {CheckersBoardScreen} from '../screens/CheckersBoardScreen';

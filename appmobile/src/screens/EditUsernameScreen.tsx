@@ -1,5 +1,5 @@
 import React from 'react';
-import {KeyboardAvoidingView, Platform, Text, View} from 'react-native';
+import {KeyboardAvoidingView, ScrollView, Platform, Text, View} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Button} from '../components/Button';
@@ -28,8 +28,14 @@ export function EditUsernameScreen({user, onSaved, onBack}: Props) {
 
       <KeyboardAvoidingView
         style={styles.body}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={styles.form}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <Input
             label={t('editUsername.inputLabel')}
             value={username}
@@ -39,7 +45,7 @@ export function EditUsernameScreen({user, onSaved, onBack}: Props) {
             error={error}
           />
           <Text style={styles.hint}>{t('editUsername.hint')}</Text>
-        </View>
+        </ScrollView>
         <View style={styles.footer}>
           <Button label={t('editUsername.saveButton')} loading={loading} onPress={handleSave} disabled={!valid} />
         </View>

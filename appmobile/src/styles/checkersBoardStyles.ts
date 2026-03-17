@@ -286,13 +286,21 @@ export const styles = StyleSheet.create({
     marginTop: 3,
   },
 
-  // ─── Resign / Leave bar (above input) ─────────────────────────────────────
+  // ─── Input bar (absolute, floats above keyboard) ──────────────────────────
+  inputBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0, 0.6)'
+  },
+
+  // ─── Resign / Leave bar (above input, semi-transparent) ───────────────────
   resignBar: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    paddingVertical: 6,
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   resignPill: {
     paddingHorizontal: 32,
@@ -300,6 +308,7 @@ export const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.error,
+    backgroundColor: 'transparent',
   },
   resignPillText: {
     color: colors.error,

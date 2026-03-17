@@ -45,4 +45,31 @@ public class ChatHub(IChatService chatService, DamasDbContext db) : Hub
 
         await Clients.Group("chat").SendAsync("NewMessage", message);
     }
+
+    public async Task EditMessage(string messageId, string newText)
+    {
+        var callerId = CallerId;
+        if (callerId is null) return;
+
+        var trimmed = newText.Trim();
+        if (string.IsNullOrEmpty(trimmed)) return;
+        if (trimmed.Length > MaxTextLength)
+            trimmed = trimmed[..MaxTextLength];
+
+        var updated = await chatService.EditMessageAsync(callerId.Value, messageId, trimmed);
+        if (updated is null) return;
+
+        await Clients.Group("chat").SendAsync("MessageEdited", updated);
+    }
+
+    public async Task DeleteMessage(string messageId)
+    {
+        var callerId = CallerId;
+        if (callerId is null) return;
+
+        var deleted = await chatService.DeleteMessageAsync(callerId.Value, messageId);
+        if (deleted is null) return;
+
+        await Clients.Group("chat").SendAsync("MessageDeleted", messageId);
+    }
 }

@@ -6,5 +6,16 @@ export const styles = StyleSheet.create({
   body: {flex: 1},
   form: {padding: 20},
   hint: {color: colors.textMuted, fontSize: 12, marginTop: 8},
-  footer: {padding: 20},
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 16,
+    backgroundColor: colors.bg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  scroll: {
+    padding: 24,
+    paddingBottom: 16,
+  },
 });

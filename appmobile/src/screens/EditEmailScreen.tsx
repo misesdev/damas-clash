@@ -1,5 +1,5 @@
 import React from 'react';
-import {KeyboardAvoidingView, Platform, Text, View} from 'react-native';
+import {KeyboardAvoidingView, ScrollView, Platform, Text, View} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Button} from '../components/Button';
@@ -38,10 +38,16 @@ export function EditEmailScreen({user, onSaved, onBack}: Props) {
 
       <KeyboardAvoidingView
         style={styles.body}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
         {phase === 'input' ? (
           <>
-            <View style={styles.form}>
+            <ScrollView
+              contentContainerStyle={styles.scroll}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
               <Text style={styles.current}>{t('editEmail.currentEmail', {email: user.email})}</Text>
               <Input
                 label={t('editEmail.newEmailLabel')}
@@ -55,7 +61,7 @@ export function EditEmailScreen({user, onSaved, onBack}: Props) {
               <Text style={styles.hint}>
                 {t('editEmail.hint')}
               </Text>
-            </View>
+            </ScrollView>
             <View style={styles.footer}>
               <Button
                 label={t('editEmail.continueButton')}
@@ -67,14 +73,18 @@ export function EditEmailScreen({user, onSaved, onBack}: Props) {
           </>
         ) : (
           <>
-            <View style={styles.form}>
+            <ScrollView
+              contentContainerStyle={styles.scroll}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
               <Text style={styles.instruction}>
                 {t('editEmail.codeInstruction')}{'\n'}
                 <Text style={styles.emailHighlight}>{newEmail}</Text>
               </Text>
               <OtpInput value={code} onChange={setCode} error={!!error} testID="code-input" />
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            </View>
+            </ScrollView>
             <View style={styles.footer}>
               <Button
                 label={t('editEmail.confirmButton')}

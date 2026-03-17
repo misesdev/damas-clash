@@ -15,6 +15,14 @@
  *  - Mention suggestions exclude self
  *  - Mention suggestions filtered by query
  *  - Error banner shown on connection failure
+ *  - Long-press own message opens action sheet
+ *  - Long-press other's message does NOT open action sheet
+ *  - Edit option pre-fills input and shows edit banner
+ *  - Sending while editing invokes EditMessage hub method
+ *  - Cancel edit clears input and hides banner
+ *  - Delete option shows confirmation, then invokes DeleteMessage
+ *  - MessageEdited event updates message text in place
+ *  - MessageDeleted event shows deleted placeholder
  */
 
 import React from 'react';
@@ -147,6 +155,12 @@ async function renderConnected(onlinePlayers: OnlinePlayerInfo[] = []) {
   return result;
 }
 
+async function renderWithHistory(messages: ChatMessage[] = [MSG_FROM_ALICE, MSG_FROM_SELF]) {
+  await renderConnected();
+  act(() => { capturedHandlers['ChatHistory'](messages); });
+  await waitFor(() => expect(screen.getByTestId('chat-message-list')).toBeTruthy());
+}
+
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
@@ -199,12 +213,8 @@ describe('ChatScreen — messages', () => {
 
   it('appends new messages via NewMessage event', async () => {
     await renderConnected();
-    act(() => {
-      capturedHandlers['ChatHistory']([MSG_FROM_ALICE]);
-    });
-    act(() => {
-      capturedHandlers['NewMessage'](MSG_FROM_SELF);
-    });
+    act(() => { capturedHandlers['ChatHistory']([MSG_FROM_ALICE]); });
+    act(() => { capturedHandlers['NewMessage'](MSG_FROM_SELF); });
     await waitFor(() => {
       expect(screen.getByText('Hello everyone!')).toBeTruthy();
       expect(screen.getByText(/Hey/)).toBeTruthy();
@@ -213,9 +223,7 @@ describe('ChatScreen — messages', () => {
 
   it('renders message sender username for others', async () => {
     await renderConnected();
-    act(() => {
-      capturedHandlers['ChatHistory']([MSG_FROM_ALICE]);
-    });
+    act(() => { capturedHandlers['ChatHistory']([MSG_FROM_ALICE]); });
     await waitFor(() => {
       expect(screen.getByText('alice')).toBeTruthy();
     });
@@ -223,9 +231,7 @@ describe('ChatScreen — messages', () => {
 
   it('does not render own username in bubble', async () => {
     await renderConnected();
-    act(() => {
-      capturedHandlers['ChatHistory']([MSG_FROM_SELF]);
-    });
+    act(() => { capturedHandlers['ChatHistory']([MSG_FROM_SELF]); });
     await waitFor(() => {
       expect(screen.queryByText('myuser')).toBeNull();
     });
@@ -239,7 +245,6 @@ describe('ChatScreen — send button', () => {
   });
 
   it('send button is disabled when not connected', () => {
-    // Don't wait for hub to connect
     renderScreen();
     fireEvent.changeText(screen.getByTestId('chat-input'), 'hello');
     const btn = screen.getByTestId('chat-send-button');
@@ -311,7 +316,6 @@ describe('ChatScreen — @mention suggestions', () => {
   it('excludes self from mention suggestions', async () => {
     await renderConnected([ALICE, SELF_PLAYER]);
     fireEvent.changeText(screen.getByTestId('chat-input'), '@');
-    // only alice and self match '@' but self (myuser) should be excluded
     await waitFor(() => {
       expect(screen.queryByTestId('chat-mention-myuser')).toBeNull();
     });
@@ -352,5 +356,149 @@ describe('ChatScreen — online players badge', () => {
   it('hides badge when no online players', async () => {
     await renderConnected([]);
     expect(screen.queryByText(/^\d+$/)).toBeNull();
+  });
+});
+
+describe('ChatScreen — edit message', () => {
+  it('long-press on own message opens action sheet', async () => {
+    await renderWithHistory();
+    fireEvent(screen.getByTestId('chat-message-msg-2'), 'longPress');
+    await waitFor(() =>
+      expect(screen.getByTestId('action-sheet-edit')).toBeTruthy(),
+    );
+  });
+
+  it('long-press on other player message does NOT open action sheet', async () => {
+    await renderWithHistory();
+    fireEvent(screen.getByTestId('chat-message-msg-1'), 'longPress');
+    await waitFor(() =>
+      expect(screen.queryByTestId('action-sheet-edit')).toBeNull(),
+    );
+  });
+
+  it('tapping Edit in action sheet shows edit banner and pre-fills input', async () => {
+    await renderWithHistory();
+    fireEvent(screen.getByTestId('chat-message-msg-2'), 'longPress');
+    await waitFor(() => expect(screen.getByTestId('action-sheet-edit')).toBeTruthy());
+
+    fireEvent.press(screen.getByTestId('action-sheet-edit'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-edit-banner')).toBeTruthy();
+      expect(screen.getByTestId('chat-input').props.value).toBe('Hey @alice!');
+    });
+  });
+
+  it('sending while editing invokes EditMessage with correct args', async () => {
+    await renderWithHistory();
+    fireEvent(screen.getByTestId('chat-message-msg-2'), 'longPress');
+    await waitFor(() => expect(screen.getByTestId('action-sheet-edit')).toBeTruthy());
+    fireEvent.press(screen.getByTestId('action-sheet-edit'));
+
+    await waitFor(() => expect(screen.getByTestId('chat-edit-banner')).toBeTruthy());
+
+    fireEvent.changeText(screen.getByTestId('chat-input'), 'Updated text');
+    fireEvent.press(screen.getByTestId('chat-send-button'));
+
+    expect(mockHub.invoke).toHaveBeenCalledWith('EditMessage', 'msg-2', 'Updated text');
+    expect(mockHub.invoke).not.toHaveBeenCalledWith('SendMessage', expect.anything());
+  });
+
+  it('cancelling edit hides banner and clears input', async () => {
+    await renderWithHistory();
+    fireEvent(screen.getByTestId('chat-message-msg-2'), 'longPress');
+    await waitFor(() => expect(screen.getByTestId('action-sheet-edit')).toBeTruthy());
+    fireEvent.press(screen.getByTestId('action-sheet-edit'));
+    await waitFor(() => expect(screen.getByTestId('chat-edit-banner')).toBeTruthy());
+
+    fireEvent.press(screen.getByTestId('edit-banner-cancel'));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('chat-edit-banner')).toBeNull();
+      expect(screen.getByTestId('chat-input').props.value).toBe('');
+    });
+  });
+
+  it('MessageEdited event updates message text in list', async () => {
+    await renderWithHistory();
+
+    act(() => {
+      capturedHandlers['MessageEdited']({
+        ...MSG_FROM_SELF,
+        text: 'Edited content',
+        editedAt: new Date().toISOString(),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Edited content')).toBeTruthy();
+      expect(screen.queryByText('Hey @alice!')).toBeNull();
+    });
+  });
+
+  it('shows (editado) label after message is edited', async () => {
+    await renderWithHistory();
+
+    act(() => {
+      capturedHandlers['MessageEdited']({
+        ...MSG_FROM_SELF,
+        text: 'Edited content',
+        editedAt: new Date().toISOString(),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('msg-edited-msg-2')).toBeTruthy();
+    });
+  });
+});
+
+describe('ChatScreen — delete message', () => {
+  it('Delete option in action sheet shows inline confirmation step', async () => {
+    await renderWithHistory();
+    fireEvent(screen.getByTestId('chat-message-msg-2'), 'longPress');
+    await waitFor(() => expect(screen.getByTestId('action-sheet-delete')).toBeTruthy());
+
+    fireEvent.press(screen.getByTestId('action-sheet-delete'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Excluir mensagem')).toBeTruthy();
+      expect(screen.getByTestId('action-sheet-delete-confirm')).toBeTruthy();
+    });
+  });
+
+  it('confirming delete invokes DeleteMessage hub method', async () => {
+    await renderWithHistory();
+    fireEvent(screen.getByTestId('chat-message-msg-2'), 'longPress');
+    await waitFor(() => expect(screen.getByTestId('action-sheet-delete')).toBeTruthy());
+
+    fireEvent.press(screen.getByTestId('action-sheet-delete'));
+    await waitFor(() => expect(screen.getByTestId('action-sheet-delete-confirm')).toBeTruthy());
+
+    fireEvent.press(screen.getByTestId('action-sheet-delete-confirm'));
+
+    expect(mockHub.invoke).toHaveBeenCalledWith('DeleteMessage', 'msg-2');
+  });
+
+  it('MessageDeleted event shows deleted placeholder', async () => {
+    await renderWithHistory();
+
+    act(() => {
+      capturedHandlers['MessageDeleted']('msg-2');
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('msg-deleted-msg-2')).toBeTruthy();
+      expect(screen.getByText('🚫 Mensagem apagada')).toBeTruthy();
+    });
+  });
+
+  it('long-press on deleted own message does not open action sheet', async () => {
+    await renderWithHistory([{...MSG_FROM_SELF, isDeleted: true, text: ''}]);
+
+    fireEvent(screen.getByTestId('chat-message-msg-2'), 'longPress');
+    await waitFor(() =>
+      expect(screen.queryByTestId('action-sheet-edit')).toBeNull(),
+    );
   });
 });

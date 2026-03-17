@@ -113,4 +113,210 @@ export const chatStyles = StyleSheet.create({
     alignSelf: 'flex-end',
     marginTop: 4,
   },
+
+  // ─── Message meta row (time + edited) ────────────────────────────────────────
+  msgMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    marginTop: 4,
+  },
+
+  // ─── Edited / Deleted indicators ─────────────────────────────────────────────
+  msgEdited: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontStyle: 'italic',
+  },
+  msgDeleted: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontStyle: 'italic',
+  },
+
+  // ─── Edit mode banner (above input bar) ──────────────────────────────────────
+  editBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: colors.surface,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    gap: 10,
+  },
+  editBannerBar: {
+    width: 3,
+    alignSelf: 'stretch',
+    borderRadius: 2,
+    backgroundColor: '#5B9CF6',
+  },
+  editBannerIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(91,156,246,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editBannerIcon: {fontSize: 15},
+  editBannerContent: {flex: 1, minWidth: 0},
+  editBannerLabel: {
+    color: '#5B9CF6',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 1,
+  },
+  editBannerPreview: {
+    color: colors.textSecondary,
+    fontSize: 13,
+  },
+  editBannerCancel: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editBannerCancelText: {
+    color: colors.textSecondary,
+    fontSize: 16,
+    lineHeight: 18,
+  },
+
+  // ─── Action sheet ─────────────────────────────────────────────────────────────
+  actionSheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  actionSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 32,
+    overflow: 'hidden',
+  },
+  actionSheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+
+  // preview strip (message text at top of sheet)
+  actionSheetPreviewWrap: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    marginBottom: 6,
+  },
+  actionSheetPreview: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+
+  // action rows
+  actionSheetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  actionSheetIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionSheetIconDanger: {
+    backgroundColor: 'rgba(255,69,58,0.12)',
+  },
+  actionSheetIcon: {fontSize: 18},
+  actionSheetItemText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  actionSheetDanger: {
+    color: colors.error,
+  },
+  actionSheetDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginHorizontal: 20,
+  },
+
+  // cancel button (bottom, pill-shaped)
+  actionSheetCancelButton: {
+    marginHorizontal: 16,
+    marginTop: 10,
+    paddingVertical: 16,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceRaised,
+    alignItems: 'center',
+  },
+  actionSheetCancelButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // delete confirmation
+  actionSheetConfirmHeader: {
+    alignItems: 'center',
+    paddingHorizontal: 28,
+    paddingTop: 8,
+    paddingBottom: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    marginBottom: 6,
+  },
+  actionSheetConfirmIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,69,58,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  actionSheetConfirmIconText: {fontSize: 26},
+  actionSheetConfirmTitle: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  actionSheetConfirmBody: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  actionSheetDeleteButton: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 16,
+    borderRadius: 14,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+  },
+  actionSheetDeleteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });

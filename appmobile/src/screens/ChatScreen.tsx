@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -9,18 +9,15 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import {useChatScreen} from '../hooks/useChatScreen';
-import {ChatInputBar} from '../components/ChatInputBar';
 import {chatStyles as styles} from '../styles/chatStyles';
+import {ChatHeader} from '../components/chat/ChatHeader';
+import {ChatMessageItem} from '../components/chat/ChatMessageItem';
+import {EditBanner} from '../components/chat/EditBanner';
+import {MessageActionSheet} from '../components/chat/MessageActionSheet';
+import {ChatInputBar} from '../components/ChatInputBar';
 import type {ChatMessage} from '../hooks/useChatScreen';
 import type {LoginResponse} from '../types/auth';
 import type {OnlinePlayerInfo} from '../types/player';
-import { Avatar } from '../components/chat/Avatar';
-import { MentionText } from '../components/chat/MentionText';
-
-
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-}
 
 interface Props {
   session: LoginResponse;
@@ -30,6 +27,8 @@ interface Props {
 
 export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
   const {t} = useTranslation();
+  const [actionSheetMessage, setActionSheetMessage] = useState<ChatMessage | null>(null);
+
   const {
     reversedMessages,
     text,
@@ -38,52 +37,21 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
     showMentions,
     filteredPlayers,
     canSend,
+    editingMessage,
     listRef,
     inputRef,
     handleSend,
+    handleStartEdit,
+    handleCancelEdit,
+    handleDelete,
     handleTextChange,
     insertMention,
   } = useChatScreen(session, onlinePlayers);
 
-  const renderMessage = ({item}: {item: ChatMessage}) => {
-    const isMe = item.playerId === session.playerId;
-    return (
-      <View
-        style={[styles.msgRow, isMe && styles.msgRowMe]}
-        testID={`chat-message-${item.id}`}>
-        {!isMe && <Avatar username={item.username} />}
-        <View style={[styles.msgBubble, isMe && styles.msgBubbleMe]}>
-          {!isMe && <Text style={styles.msgUsername}>{item.username}</Text>}
-          <MentionText text={item.text} myUsername={session.username} />
-          <Text style={styles.msgTime}>{formatTime(item.sentAt)}</Text>
-        </View>
-        {isMe && <Avatar username={item.username} />}
-      </View>
-    );
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <View style={[styles.headerDot, connected ? styles.headerDotOn : styles.headerDotOff]} />
-          <View>
-            <Text style={styles.headerTitle}>{t('chat.title')}</Text>
-            <Text style={styles.headerSub} testID="chat-conn-status">
-              {connected ? 'online' : t('chat.connecting')}
-            </Text>
-          </View>
-        </View>
-        {onlinePlayers.length > 0 && (
-          <View style={styles.onlineBadge}>
-            <View style={styles.onlineDot} />
-            <Text style={styles.onlineCount}>{onlinePlayers.length}</Text>
-          </View>
-        )}
-      </View>
+      <ChatHeader connected={connected} onlinePlayers={onlinePlayers} />
 
-      {/* Error banner */}
       {!!error && (
         <View style={styles.errorBanner} testID="chat-error-banner">
           <Text style={styles.errorText}>{error}</Text>
@@ -93,7 +61,6 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        {/* Messages / empty */}
         {reversedMessages.length === 0 ? (
           <View style={styles.emptyContainer} testID="chat-empty">
             <Text style={styles.emptyIcon}>💬</Text>
@@ -104,7 +71,14 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
             ref={listRef}
             data={reversedMessages}
             keyExtractor={item => item.id}
-            renderItem={renderMessage}
+            renderItem={({item}) => (
+              <ChatMessageItem
+                item={item}
+                myPlayerId={session.playerId}
+                myUsername={session.username}
+                onLongPress={setActionSheetMessage}
+              />
+            )}
             contentContainerStyle={styles.list}
             inverted
             showsVerticalScrollIndicator={false}
@@ -112,7 +86,10 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
           />
         )}
 
-        {/* Input bar with @mention suggestions */}
+        {editingMessage && (
+          <EditBanner message={editingMessage} onCancel={handleCancelEdit} />
+        )}
+
         <ChatInputBar
           text={text}
           canSend={canSend}
@@ -125,6 +102,21 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
           onInsertMention={insertMention}
         />
       </KeyboardAvoidingView>
+
+      {actionSheetMessage && (
+        <MessageActionSheet
+          message={actionSheetMessage}
+          onEdit={() => {
+            handleStartEdit(actionSheetMessage);
+            setActionSheetMessage(null);
+          }}
+          onDelete={() => {
+            handleDelete(actionSheetMessage.id);
+            setActionSheetMessage(null);
+          }}
+          onDismiss={() => setActionSheetMessage(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }
