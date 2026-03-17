@@ -39,6 +39,12 @@ jest.mock('@microsoft/signalr', () => ({
   HttpTransportType: {WebSockets: 4},
 }));
 
+// ─── Players API mock (for mention autocomplete) ──────────────────────────────
+
+jest.mock('../src/api/players', () => ({
+  listPlayers: jest.fn().mockResolvedValue([]),
+}));
+
 // ─── MessageBox mock ──────────────────────────────────────────────────────────
 
 const mockShowMessage = jest.fn();
@@ -168,10 +174,23 @@ function renderScreen(
 }
 
 async function renderConnected(onlinePlayers: OnlinePlayerInfo[] = []) {
+  // Seed listPlayers mock so mention suggestions come from the given players
+  const {listPlayers} = require('../src/api/players');
+  listPlayers.mockResolvedValue(
+    onlinePlayers.map(p => ({
+      id: p.playerId,
+      username: p.username,
+      avatarUrl: p.avatarUrl,
+      lightningAddress: null,
+      createdAt: new Date().toISOString(),
+    })),
+  );
+
   const result = renderScreen(onlinePlayers);
   await act(async () => {
     resolveHubStart();
-    await Promise.resolve(); // flush setConnected(true) continuation
+    await Promise.resolve(); // flush setConnected(true) + listPlayers continuations
+    await Promise.resolve();
   });
   return result;
 }

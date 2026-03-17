@@ -81,6 +81,8 @@ export function useApp() {
 
   // Navigate based on notification type (tap from background or killed state)
   const handleNotificationOpen = useCallback((payload: NotificationPayload) => {
+    // Never navigate away while the user is actively playing
+    if (authScreenRef.current === 'checkersBoard') {return;}
     if (payload.type === 'game_created') {
       setAuthScreen('tabs');
       setTab('home');
@@ -101,6 +103,8 @@ export function useApp() {
   useEffect(() => {
     if (!session) {return;}
     return setupForegroundHandler((payload) => {
+      // Never interrupt the user while they are actively playing
+      if (authScreenRef.current === 'checkersBoard') {return;}
       if (payload.type === 'chat_mention') {
         showMessage({
           title: t('notifications.mentionTitle', {username: payload.data.senderUsername}),
