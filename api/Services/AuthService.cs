@@ -82,7 +82,7 @@ public class AuthService(
             p => p.Email == identifier || p.Username == identifier, ct);
 
         if (player is null)
-            return ServiceResult<SendLoginCodeResponse>.Fail("user_not_found");
+            return ServiceResult<SendLoginCodeResponse>.Fail("user_not_found_or_incorrect");
 
         var code = GenerateCode();
         player.LoginCode = code;

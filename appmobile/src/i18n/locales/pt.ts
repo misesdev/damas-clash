@@ -29,7 +29,7 @@ const pt = {
     googleError: 'Erro ao entrar com Google. Tente novamente.',
     errors: {
       emailNotConfirmed: 'Confirme seu e-mail antes de entrar.',
-      notFound: 'Usuário não encontrado.',
+      notFound: 'Usuário incorreto ou não existente',
       connectionError: 'Erro de conexão. Tente novamente.',
     },
   },

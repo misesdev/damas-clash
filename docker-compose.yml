@@ -3,9 +3,9 @@ services:
     image: postgres:16-alpine
     container_name: damas-postgres
     environment:
-      POSTGRES_DB: ${DB_DATABASE:-db_damas}
-      POSTGRES_USER: ${DB_USERNAME:-mises}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-mises}
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -14,7 +14,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-mises} -d ${DB_DATABASE:-db_damas}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -41,7 +41,7 @@ services:
       - "--bitcoin.active"
       - "--bitcoin.mainnet"        # troque por --bitcoin.testnet ou --bitcoin.signet se necessario
       - "--bitcoin.node=bitcoind"
-      - "--bitcoind.rpchost=${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT:-8332}"
+      - "--bitcoind.rpchost=${BITCOIN_RPC_HOST}:${BITCOIN_RPC_PORT}"
       - "--bitcoind.rpcuser=${BITCOIN_RPC_USER}"
       - "--bitcoind.rpcpass=${BITCOIN_RPC_PASSWORD}"
       - "--bitcoind.zmqpubrawblock=${BITCOIN_ZMQ_BLOCK}"
@@ -125,7 +125,7 @@ services:
       lnd-gateway:
         condition: service_healthy
     environment:
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${DB_DATABASE:-db_damas};Username=${DB_USERNAME:-mises};Password=${DB_PASSWORD:-mises}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${DB_DATABASE};Username=${DB_USERNAME};Password=${DB_PASSWORD}
       Redis__Configuration: redis:6379
       JWT_SECRET: ${JWT_SECRET}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY}
@@ -149,7 +149,7 @@ services:
       context: ./appweb
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     container_name: damas-appweb
     depends_on:

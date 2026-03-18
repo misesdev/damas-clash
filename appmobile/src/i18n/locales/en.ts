@@ -29,7 +29,7 @@ const en = {
     googleError: 'Error signing in with Google. Please try again.',
     errors: {
       emailNotConfirmed: 'Please confirm your email before signing in.',
-      notFound: 'User not found.',
+      notFound: 'User incorrect or not exists',
       connectionError: 'Connection error. Please try again.',
     },
   },

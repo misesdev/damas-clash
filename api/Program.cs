@@ -23,10 +23,13 @@ builder.UseDBSettings();
 
 builder.Services.AddCors(options =>
 {
+    var origins = new [] {
+      "htts://damas.clashapps.com",
+      "htts://clashapps.com",
+    };
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin();
-        policy.AllowAnyHeader().AllowAnyMethod();
+        policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
     });
 });
 
