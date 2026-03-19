@@ -86,3 +86,25 @@ export function nostrLogin(data: NostrLoginRequest): Promise<LoginResponse> {
     body: JSON.stringify(data),
   });
 }
+
+export interface NostrEventLoginRequest {
+  event: {
+    id: string;
+    pubkey: string;
+    created_at: number;
+    kind: number;
+    tags: string[][];
+    content: string;
+    sig: string;
+  };
+  username?: string;
+  avatarUrl?: string;
+  lightningAddress?: string;
+}
+
+export function nostrEventLogin(data: NostrEventLoginRequest): Promise<LoginResponse> {
+  return request('/api/auth/nostr/login-event', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}

@@ -154,6 +154,22 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok(result.Value);
     }
 
+    [HttpPost("nostr/login-event")]
+    public async Task<IActionResult> NostrLoginEvent([FromBody] NostrEventLoginRequest request, CancellationToken ct)
+    {
+        var result = await authService.NostrEventAuthAsync(request, ct);
+
+        if (!result.IsSuccess)
+            return result.Error switch
+            {
+                "invalid_signature" or "invalid_challenge" or "invalid_event_kind" or "missing_challenge_tag"
+                    => Unauthorized(new { error = result.Error }),
+                _ => BadRequest(new { error = result.Error })
+            };
+
+        return Ok(result.Value);
+    }
+
     [HttpPost("google")]
     public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthRequest request, CancellationToken ct)
     {

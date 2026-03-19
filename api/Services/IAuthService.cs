@@ -16,4 +16,5 @@ public interface IAuthService
     Task<ServiceResult<string>> DeleteAccountAsync(Guid playerId, CancellationToken ct = default);
     Task<ServiceResult<LoginResponse>> GoogleAuthAsync(string idToken, CancellationToken ct = default);
     Task<ServiceResult<LoginResponse>> NostrAuthAsync(NostrLoginRequest req, CancellationToken ct = default);
+    Task<ServiceResult<LoginResponse>> NostrEventAuthAsync(NostrEventLoginRequest req, CancellationToken ct = default);
 }

@@ -26,6 +26,20 @@ export function signChallenge(challenge: string, privkey: Uint8Array): string {
 }
 
 /**
+ * Converts an npub1... bech32 public key to a 64-char lowercase hex string.
+ * If the value is already hex (64 hex chars) it is returned as-is, so this
+ * function is safe to call regardless of which format the signer returns.
+ */
+export function npubToHex(pubkey: string): string {
+  if (/^[0-9a-fA-F]{64}$/.test(pubkey)) return pubkey.toLowerCase();
+  const {prefix, words} = bech32.decode(pubkey);
+  if (prefix !== 'npub') throw new Error('not_npub');
+  return Array.from(bech32.fromWords(words))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
  * Converts a 64-char hex pubkey to a shortened npub.
  * Example: "npub1ghsdh...sdjyguedf"
  */

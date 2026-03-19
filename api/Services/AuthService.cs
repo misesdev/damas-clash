@@ -1,5 +1,7 @@
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using api.Data;
 using api.DTOs.Auth;
@@ -326,7 +328,129 @@ public class AuthService(
                 player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString(), player.LightningAddress));
     }
 
-/// <summary>
+public async Task<ServiceResult<LoginResponse>> NostrEventAuthAsync(NostrEventLoginRequest req, CancellationToken ct = default)
+    {
+        var ev = req.Event;
+        logger.LogDebug("NostrEventAuth: pubkey={Pubkey} kind={Kind} id={Id}",
+            ev.Pubkey[..Math.Min(16, ev.Pubkey.Length)], ev.Kind, ev.Id[..Math.Min(16, ev.Id.Length)]);
+
+        // 1. Must be kind 22242 (auth event)
+        if (ev.Kind != 22242)
+            return ServiceResult<LoginResponse>.Fail("invalid_event_kind");
+
+        // 2. Extract challenge tag
+        var challengeTag = ev.Tags.FirstOrDefault(t => t.Length >= 2 && t[0] == "challenge");
+        if (challengeTag is null)
+            return ServiceResult<LoginResponse>.Fail("missing_challenge_tag");
+
+        var challenge = challengeTag[1];
+        if (!nostrChallengeStore.ValidateAndConsume(challenge))
+            return ServiceResult<LoginResponse>.Fail("invalid_challenge");
+
+        // 3. Verify event integrity and signature
+        if (!VerifyNostrEvent(ev, logger))
+            return ServiceResult<LoginResponse>.Fail("invalid_signature");
+
+        // 4. Find or create player
+        var player = await db.Players.FirstOrDefaultAsync(p => p.NostrPubKey == ev.Pubkey, ct);
+        if (player is null)
+        {
+            var username = await GenerateUniqueUsernameAsync(req.Username, ct);
+            player = new Player
+            {
+                Id = Guid.NewGuid(),
+                NostrPubKey = ev.Pubkey,
+                Username = username,
+                IsEmailConfirmed = true,
+                AvatarUrl = req.AvatarUrl,
+                LightningAddress = req.LightningAddress,
+                CreatedAt = DateTimeOffset.UtcNow,
+            };
+            db.Players.Add(player);
+        }
+        else
+        {
+            if (req.AvatarUrl is not null && player.AvatarUrl != req.AvatarUrl)
+                player.AvatarUrl = req.AvatarUrl;
+
+            if (req.LightningAddress is not null && player.LightningAddress != req.LightningAddress)
+                player.LightningAddress = req.LightningAddress;
+        }
+
+        var refreshToken = tokenService.GenerateRefreshToken();
+        player.RefreshToken = refreshToken;
+        player.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(30);
+        await db.SaveChangesAsync(ct);
+
+        var tokenResult = tokenService.Generate(player);
+        return ServiceResult<LoginResponse>.Ok(
+            new LoginResponse(tokenResult.Token, refreshToken, tokenResult.ExpiresAt,
+                player.Id, player.Username, player.Email, player.AvatarUrl, player.NostrPubKey, player.Role.ToString(), player.LightningAddress));
+    }
+
+    /// <summary>
+    /// Verifies a Nostr event: checks the event ID (sha256 of canonical JSON) and BIP-340 Schnorr signature.
+    /// </summary>
+    private static bool VerifyNostrEvent(NostrEventDto ev, ILogger? log = null)
+    {
+        try
+        {
+            // Canonical serialization: [0, pubkey, created_at, kind, tags, content]
+            using var ms = new MemoryStream();
+            // UnsafeRelaxedJsonEscaping prevents .NET from over-escaping characters like
+            // &, <, > with \uXXXX sequences — Nostr canonical serialization must match
+            // exactly what the signer (JavaScript) produces.
+            using var writer = new Utf8JsonWriter(ms, new JsonWriterOptions
+            {
+                Indented = false,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            });
+            writer.WriteStartArray();
+            writer.WriteNumberValue(0);
+            writer.WriteStringValue(ev.Pubkey);
+            writer.WriteNumberValue(ev.CreatedAt);
+            writer.WriteNumberValue(ev.Kind);
+            writer.WriteStartArray();
+            foreach (var tag in ev.Tags)
+            {
+                writer.WriteStartArray();
+                foreach (var t in tag) writer.WriteStringValue(t);
+                writer.WriteEndArray();
+            }
+            writer.WriteEndArray();
+            writer.WriteStringValue(ev.Content);
+            writer.WriteEndArray();
+            writer.Flush();
+
+            var idBytes = System.Security.Cryptography.SHA256.HashData(ms.ToArray());
+            var expectedId = Convert.ToHexString(idBytes).ToLowerInvariant();
+
+            if (!string.Equals(ev.Id, expectedId, StringComparison.OrdinalIgnoreCase))
+            {
+                log?.LogDebug("VerifyNostrEvent: ID mismatch expected={Expected} got={Got}",
+                    expectedId[..16], ev.Id[..Math.Min(16, ev.Id.Length)]);
+                return false;
+            }
+
+            var pubBytes = Convert.FromHexString(ev.Pubkey);
+            var sigBytes = Convert.FromHexString(ev.Sig);
+
+            if (!ECXOnlyPubKey.TryCreate(pubBytes, Context.Instance, out var xOnlyPub) || xOnlyPub is null)
+                return false;
+
+            if (!SecpSchnorrSignature.TryCreate(sigBytes, out var sig) || sig is null)
+                return false;
+
+            return xOnlyPub.SigVerifyBIP340(sig, idBytes);
+        }
+        catch (Exception ex)
+        {
+            log?.LogDebug("VerifyNostrEvent: exception={Msg}", ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Verifies a BIP-340 Schnorr signature where the message is SHA-256(UTF-8(challenge)).
     /// </summary>
     private static bool VerifySchnorr(string pubkeyHex, string challenge, string sigHex, ILogger? log = null)
