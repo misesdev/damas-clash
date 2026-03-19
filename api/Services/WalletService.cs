@@ -177,8 +177,10 @@ public class WalletService(DamasDbContext db) : IWalletService
     public async Task<IEnumerable<LedgerEntryResponse>> GetTransactionsAsync(Guid playerId, CancellationToken ct = default)
     {
         return await db.LedgerEntries
-            .Where(l => l.PlayerId == playerId)
-            .OrderByDescending(l => l.CreatedAt)
+            .Where(l => l.PlayerId == playerId && 
+                l.Type != LedgerEntryType.GameBetLock && 
+                l.Type != LedgerEntryType.GameBetUnlock
+            ).OrderByDescending(l => l.CreatedAt)
             .Select(l => new LedgerEntryResponse(
                 l.Id, l.Type.ToString(), l.AmountSats, l.GameId, l.PaymentId, l.CreatedAt))
             .ToListAsync(ct);

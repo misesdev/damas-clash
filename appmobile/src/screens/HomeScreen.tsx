@@ -44,7 +44,7 @@ interface Props {
 
 // ─── Transaction row ─────────────────────────────────────────────────────────
 
-const POSITIVE_TYPES = ['deposit', 'gamewin', 'refund'];
+const POSITIVE_TYPES = ['deposit', 'gamewin', 'refund', 'gamebetunlock'];
 
 function TxRow({entry}: {entry: LedgerEntryResponse}) {
   const {t} = useTranslation();
@@ -129,9 +129,15 @@ function WalletTab({user, wallet, walletLoading, onDeposit, onWithdraw}: WalletT
   const [transactions, setTransactions] = useState<LedgerEntryResponse[]>([]);
   const [txLoading, setTxLoading] = useState(true);
 
+  const setFilteredTransactions = (txs: LedgerEntryResponse[]) => {
+    const removeItems = ['GameBetLock', 'GameBetUnlock']
+    const filtered = txs.filter(t => !removeItems.includes(t.type))
+    setTransactions(filtered)
+  }
+
   useEffect(() => {
     getTransactions(user.token)
-      .then(setTransactions)
+      .then(setFilteredTransactions)
       .catch(() => {})
       .finally(() => setTxLoading(false));
   }, [user.token]);
