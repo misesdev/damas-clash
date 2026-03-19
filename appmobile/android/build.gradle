@@ -20,3 +20,17 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+// Gradle 9.0 enforces explicit task dependencies. react-native-google-signin has an
+// implicit dependency between releaseSourcesJar and generateCodegenArtifactsFromSchema
+// that Gradle 9 rejects. gradle.projectsEvaluated runs after all projects are fully
+// configured, avoiding the "already evaluated" error from afterEvaluate.
+gradle.projectsEvaluated {
+    subprojects { project ->
+        def releaseSourcesJar = project.tasks.findByName('releaseSourcesJar')
+        def generateCodegen = project.tasks.findByName('generateCodegenArtifactsFromSchema')
+        if (releaseSourcesJar != null && generateCodegen != null) {
+            releaseSourcesJar.dependsOn(generateCodegen)
+        }
+    }
+}

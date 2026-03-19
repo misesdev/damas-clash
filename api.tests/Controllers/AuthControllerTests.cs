@@ -311,7 +311,170 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    // ── Nostr Challenge ───────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task NostrChallenge_Returns200WithChallenge()
+    {
+        var response = await _client.GetAsync("/api/auth/nostr/challenge");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<api.DTOs.Auth.NostrChallengeResponse>(JsonOpts);
+        Assert.NotNull(body);
+        Assert.False(string.IsNullOrWhiteSpace(body.Challenge));
+    }
+
+    // ── Nostr Login Event ─────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task NostrLoginEvent_ValidSignedEvent_Returns200WithLoginResponse()
+    {
+        var (privBytes, pubkeyHex) = NostrTestHelper.GenerateKeyPair();
+
+        var challengeResp = await _client.GetAsync("/api/auth/nostr/challenge");
+        var challengeBody = (await challengeResp.Content.ReadFromJsonAsync<api.DTOs.Auth.NostrChallengeResponse>(JsonOpts))!;
+
+        var payload = NostrTestHelper.BuildSignedAuthEvent(privBytes, pubkeyHex, challengeBody.Challenge);
+        var response = await _client.PostAsJsonAsync("/api/auth/nostr/login-event", payload);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts);
+        Assert.NotNull(body);
+        Assert.False(string.IsNullOrEmpty(body.Token));
+        Assert.False(string.IsNullOrEmpty(body.RefreshToken));
+        Assert.NotEqual(Guid.Empty, body.PlayerId);
+        Assert.False(string.IsNullOrEmpty(body.Username));
+        Assert.Null(body.Email);                   // Nostr players have no email
+        Assert.Equal(pubkeyHex, body.NostrPubKey); // pubkey stored on player
+    }
+
+    [Fact]
+    public async Task NostrLoginEvent_SecondLogin_ReturnsSamePlayerId()
+    {
+        // Same key pair should map to the same player on every login
+        var (privBytes, pubkeyHex) = NostrTestHelper.GenerateKeyPair();
+
+        var (firstToken, firstPlayerId) = await NostrLoginWithKey(privBytes, pubkeyHex);
+        var (_, secondPlayerId) = await NostrLoginWithKey(privBytes, pubkeyHex);
+
+        Assert.Equal(firstPlayerId, secondPlayerId);
+        Assert.False(string.IsNullOrEmpty(firstToken));
+    }
+
+    [Fact]
+    public async Task NostrLoginEvent_TokenWorksForProtectedEndpoint()
+    {
+        // Verifies that the JWT returned by Nostr login is accepted by [Authorize] endpoints.
+        // This is the core regression test: Nostr sessions must behave like email sessions.
+        var (privBytes, pubkeyHex) = NostrTestHelper.GenerateKeyPair();
+        var (token, playerId) = await NostrLoginWithKey(privBytes, pubkeyHex);
+
+        _client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var response = await _client.GetAsync($"/api/players/{playerId}/games");
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task NostrLoginEvent_TokenWorksForStats()
+    {
+        var (privBytes, pubkeyHex) = NostrTestHelper.GenerateKeyPair();
+        var (token, playerId) = await NostrLoginWithKey(privBytes, pubkeyHex);
+
+        _client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        var response = await _client.GetAsync($"/api/players/{playerId}/stats");
+        _client.DefaultRequestHeaders.Authorization = null;
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task NostrLoginEvent_InvalidSignature_Returns401()
+    {
+        var (privBytes, pubkeyHex) = NostrTestHelper.GenerateKeyPair();
+        var (wrongPrivBytes, _) = NostrTestHelper.GenerateKeyPair(); // different key
+
+        var challengeResp = await _client.GetAsync("/api/auth/nostr/challenge");
+        var challengeBody = (await challengeResp.Content.ReadFromJsonAsync<api.DTOs.Auth.NostrChallengeResponse>(JsonOpts))!;
+
+        // Sign with wrong key — ID will be for pubkeyHex but sig is from wrongPrivBytes
+        var wrongPayload = NostrTestHelper.BuildSignedAuthEvent(wrongPrivBytes, pubkeyHex, challengeBody.Challenge);
+        var response = await _client.PostAsJsonAsync("/api/auth/nostr/login-event", wrongPayload);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task NostrLoginEvent_InvalidChallenge_Returns401()
+    {
+        var (privBytes, pubkeyHex) = NostrTestHelper.GenerateKeyPair();
+
+        var payload = NostrTestHelper.BuildSignedAuthEvent(privBytes, pubkeyHex, "invalid-challenge-xyz");
+        var response = await _client.PostAsJsonAsync("/api/auth/nostr/login-event", payload);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task NostrLoginEvent_ReusedChallenge_Returns401()
+    {
+        var (privBytes, pubkeyHex) = NostrTestHelper.GenerateKeyPair();
+
+        var challengeResp = await _client.GetAsync("/api/auth/nostr/challenge");
+        var challengeBody = (await challengeResp.Content.ReadFromJsonAsync<api.DTOs.Auth.NostrChallengeResponse>(JsonOpts))!;
+
+        // First use — succeeds
+        var payload = NostrTestHelper.BuildSignedAuthEvent(privBytes, pubkeyHex, challengeBody.Challenge);
+        var first = await _client.PostAsJsonAsync("/api/auth/nostr/login-event", payload);
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+
+        // Second use of the same challenge — must be rejected (challenge is consumed)
+        var (privBytes2, pubkeyHex2) = NostrTestHelper.GenerateKeyPair();
+        var payload2 = NostrTestHelper.BuildSignedAuthEvent(privBytes2, pubkeyHex2, challengeBody.Challenge);
+        var second = await _client.PostAsJsonAsync("/api/auth/nostr/login-event", payload2);
+        Assert.Equal(HttpStatusCode.Unauthorized, second.StatusCode);
+    }
+
+    [Fact]
+    public async Task NostrLoginEvent_RefreshToken_Works()
+    {
+        var (privBytes, pubkeyHex) = NostrTestHelper.GenerateKeyPair();
+        var (_, _, refreshToken) = await NostrLoginWithKeyFull(privBytes, pubkeyHex);
+
+        var refreshResp = await _client.PostAsJsonAsync("/api/auth/refresh",
+            new { refreshToken });
+
+        Assert.Equal(HttpStatusCode.OK, refreshResp.StatusCode);
+        var body = await refreshResp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts);
+        Assert.NotNull(body);
+        Assert.False(string.IsNullOrEmpty(body.Token));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private async Task<(string token, Guid playerId)> NostrLoginWithKey(byte[] privBytes, string pubkeyHex)
+    {
+        var (token, playerId, _) = await NostrLoginWithKeyFull(privBytes, pubkeyHex);
+        return (token, playerId);
+    }
+
+    private async Task<(string token, Guid playerId, string refreshToken)> NostrLoginWithKeyFull(
+        byte[] privBytes, string pubkeyHex)
+    {
+        var challengeResp = await _client.GetAsync("/api/auth/nostr/challenge");
+        var challengeBody = (await challengeResp.Content.ReadFromJsonAsync<api.DTOs.Auth.NostrChallengeResponse>(JsonOpts))!;
+
+        var payload = NostrTestHelper.BuildSignedAuthEvent(privBytes, pubkeyHex, challengeBody.Challenge);
+        var loginResp = await _client.PostAsJsonAsync("/api/auth/nostr/login-event", payload);
+        Assert.Equal(HttpStatusCode.OK, loginResp.StatusCode);
+
+        var body = (await loginResp.Content.ReadFromJsonAsync<LoginResponse>(JsonOpts))!;
+        return (body.Token, body.PlayerId, body.RefreshToken);
+    }
 
     private async Task<string> RegisterAndLogin(string suffix)
     {

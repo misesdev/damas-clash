@@ -28,7 +28,7 @@ export function GameHistoryScreen({user, onReplay, onBack}: Props) {
   useEffect(() => {
     getPlayerGames(user.token, user.playerId)
       .then(setGames)
-      .catch(() => {})
+      .catch((ex) => {console.log(ex)})
       .finally(() => setLoading(false));
   }, [user.token, user.playerId]);
 

@@ -4,6 +4,7 @@ import {
   HttpTransportType,
 } from '@microsoft/signalr';
 import type {HubConnection} from '@microsoft/signalr';
+import {AppState, type AppStateStatus} from 'react-native';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {showMessage} from '../components/MessageBox';
@@ -385,12 +386,30 @@ export function useApp() {
 
         hub.onreconnected(async () => {
           if (!active) {return;}
-          try {
-            await hub.invoke('JoinLobby');
-            if (pendingGameIdRef.current) {
-              await hub.invoke('WatchGame', pendingGameIdRef.current);
+          // Retry JoinLobby up to 3 times with backoff. A single silent-ignore
+          // left the client outside the lobby group with no further events.
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              await hub.invoke('JoinLobby');
+              if (pendingGameIdRef.current) {
+                await hub.invoke('WatchGame', pendingGameIdRef.current);
+              }
+              return; // success
+            } catch {
+              if (!active) {return;}
+              if (attempt < 2) {
+                await new Promise<void>(r => setTimeout(r, 1000 * (attempt + 1)));
+              }
             }
-          } catch { /* silently ignore */ }
+          }
+        });
+
+        // When the connection is permanently closed (all retries exhausted),
+        // clear stale data so the UI reflects the disconnected state.
+        hub.onclose(() => {
+          if (!active) {return;}
+          setLiveGames(null);
+          setOnlinePlayers([]);
         });
 
         await hub.start();
@@ -415,6 +434,58 @@ export function useApp() {
     // Depend on playerId (not token) so the hub is only recreated on login/
     // logout — not on every token refresh. The accessTokenFactory reads from
     // sessionRef so it always supplies the latest token on reconnect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.playerId]);
+
+  // ── AppState: recover from background ────────────────────────────────────
+  // When Android suspends the JS thread while in background, the proactive
+  // token-refresh setTimeout may not fire. When the app comes back to
+  // foreground we check:
+  //   1. If the token is expired / near expiry → refresh immediately so
+  //      SignalR's reconnect attempt uses a valid token.
+  //   2. If the hub is already Connected (WebSocket survived background) →
+  //      re-invoke JoinLobby to get a fresh OnlinePlayersUpdated event.
+
+  useEffect(() => {
+    if (!session) {return;}
+
+    let prevState: AppStateStatus = AppState.currentState;
+
+    const sub = AppState.addEventListener('change', async nextState => {
+      const returningToForeground =
+        (prevState === 'background' || prevState === 'inactive') &&
+        nextState === 'active';
+      prevState = nextState;
+
+      if (!returningToForeground || !sessionRef.current) {return;}
+
+      // 1. Proactive token refresh if near/past expiry
+      const {expiresAt, refreshToken} = sessionRef.current;
+      const msLeft = expiresAt
+        ? new Date(expiresAt).getTime() - Date.now()
+        : 0;
+      if (msLeft < REFRESH_BUFFER_MS) {
+        try {
+          const renewed = await refreshAccessToken(refreshToken);
+          const updated = {...sessionRef.current, ...renewed};
+          saveSession(updated);
+          setSession(updated);
+        } catch (err) {
+          if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+            handleLogout();
+            return;
+          }
+        }
+      }
+
+      // 2. Re-join lobby if hub is already connected (missed events while backgrounded)
+      const hub = hubRef.current;
+      if (hub?.state === HubConnectionState.Connected) {
+        hub.invoke('JoinLobby').catch(() => {});
+      }
+    });
+
+    return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.playerId]);
 

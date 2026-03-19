@@ -62,6 +62,7 @@ export function useNostrLogin(onLogin: (data: LoginResponse) => void) {
         lightningAddress: (profile as any).lud16,
       });
 
+      console.log("login response",data)
       onLogin(data);
     } catch (e: any) {
       const isAndroidOnly =

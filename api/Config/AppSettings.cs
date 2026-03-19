@@ -106,6 +106,8 @@ public static class AppSettings
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
+                    ValidIssuer = settings.Value.Issuer,
+                    ValidAudience = settings.Value.Audience,
                     IssuerSigningKey = new SymmetricSecurityKey(key)
                 };
                 options.Events = new JwtBearerEvents

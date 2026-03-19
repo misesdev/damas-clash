@@ -7,6 +7,8 @@ export const decodeNsec = jest.fn().mockImplementation((nsec: string) => {
 
 export const getPubkey = jest.fn().mockReturnValue('abc123pubkey');
 
+export const npubToHex = jest.fn().mockReturnValue('abc123pubkey');
+
 export const signChallenge = jest.fn().mockReturnValue('mock-sig-hex');
 
 export const fetchNostrProfile = jest

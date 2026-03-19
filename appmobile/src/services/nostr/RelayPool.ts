@@ -22,16 +22,23 @@ export class RelayPool {
   private connectOne(relay: string): Promise<WebSocket | null> {
     return new Promise(resolve => {
       const ws = new WebSocket(relay);
-      const timer = setTimeout(() => resolve(null), this.timeout);
 
-      ws.onopen = () => {
+      const cleanup = (result: WebSocket | null) => {
         clearTimeout(timer);
-        resolve(ws);
+        // Close the socket when we won't use it, preventing resource leaks.
+        // Without this, sockets that timeout while still CONNECTING remain
+        // open indefinitely and can exhaust the WebSocket connection pool,
+        // causing subsequent SignalR connections to fail.
+        if (result === null) {
+          try { ws.close(); } catch { /* ignore */ }
+        }
+        resolve(result);
       };
-      ws.onerror = () => {
-        clearTimeout(timer);
-        resolve(null);
-      };
+
+      const timer = setTimeout(() => cleanup(null), this.timeout);
+
+      ws.onopen = () => cleanup(ws);
+      ws.onerror = () => cleanup(null);
     });
   }
 

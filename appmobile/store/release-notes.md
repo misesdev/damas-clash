@@ -7,5 +7,4 @@ What's new in Damas Clash:
 - Google Sign-In: sign in instantly with your Google account
 - Online chat with temporary messages
 - Performance improvements and general bug fixes
-- Chat ao vivo  nas partidas and fora delas
-- UI improvements
+- Live Chat 
