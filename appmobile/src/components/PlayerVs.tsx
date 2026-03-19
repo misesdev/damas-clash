@@ -13,6 +13,8 @@ interface Props {
   /** Secondary line shown below the names (e.g. bet label) */
   detail?: string;
   avatarSize?: number;
+  /** Highlights the winner's name; 'draw' dims both equally */
+  winnerSide?: 'left' | 'right' | 'draw';
 }
 
 function Avatar({username, avatarUrl, size}: {username: string | null; avatarUrl: string | null; size: number}) {
@@ -29,14 +31,26 @@ function Avatar({username, avatarUrl, size}: {username: string | null; avatarUrl
   );
 }
 
-export function PlayerVs({left, right, detail, avatarSize = 26}: Props) {
+export function PlayerVs({left, right, detail, avatarSize = 26, winnerSide}: Props) {
+  const leftNameColor =
+    winnerSide === 'left' ? '#2ecc71' :
+    winnerSide === 'right' ? colors.textMuted :
+    winnerSide === 'draw' ? colors.textSecondary :
+    colors.text;
+
+  const rightNameColor =
+    winnerSide === 'right' ? '#2ecc71' :
+    winnerSide === 'left' ? colors.textMuted :
+    winnerSide === 'draw' ? colors.textSecondary :
+    colors.text;
+
   return (
     <View style={styles.container}>
       <View style={styles.names}>
         {/* Left player */}
         <View style={styles.playerSide}>
           <Avatar username={left.username} avatarUrl={left.avatarUrl} size={avatarSize} />
-          <Text style={styles.playerName} numberOfLines={1} ellipsizeMode="tail">
+          <Text style={[styles.playerName, {color: leftNameColor}]} numberOfLines={1} ellipsizeMode="tail">
             {left.username ?? '—'}
           </Text>
         </View>
@@ -46,7 +60,7 @@ export function PlayerVs({left, right, detail, avatarSize = 26}: Props) {
 
         {/* Right player */}
         <View style={[styles.playerSide, styles.playerSideRight]}>
-          <Text style={[styles.playerName, styles.playerNameRight]} numberOfLines={1} ellipsizeMode="tail">
+          <Text style={[styles.playerName, styles.playerNameRight, {color: rightNameColor}]} numberOfLines={1} ellipsizeMode="tail">
             {right.username ?? '—'}
           </Text>
           <Avatar username={right.username} avatarUrl={right.avatarUrl} size={avatarSize} />

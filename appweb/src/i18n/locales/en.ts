@@ -8,7 +8,7 @@ const en = {
   landing_signIn: 'Sign In',
   landing_tagline: 'Brazilian Checkers online. Play in the browser or download the app on your phone.',
   landing_playNow: 'Play Now',
-  landing_availableOn: 'Available on',
+  landing_downloadApp: 'Download App',
   landing_privacy: 'Privacy',
   landing_terms: 'Terms of Use',
 

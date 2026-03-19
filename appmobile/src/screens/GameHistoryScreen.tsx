@@ -115,6 +115,7 @@ export function GameHistoryScreen({user, onReplay, onBack}: Props) {
                   avatarUrl: isBlack ? game.playerWhiteAvatarUrl : game.playerBlackAvatarUrl,
                 }}
                 detail={betLabel}
+                winnerSide={drew ? 'draw' : won ? 'left' : 'right'}
               />
 
               {/* Result + Replay */}

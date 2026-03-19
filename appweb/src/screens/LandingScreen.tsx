@@ -116,40 +116,25 @@ export function LandingScreen({ onPlay }: Props) {
           </button>
 
           <a
-            href="https://play.google.com/store"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="https://github.com/misesdev/damas-clash/releases/latest/download/app-release.apk"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
-              padding: '12px 24px',
+              gap: 10,
+              padding: '14px 28px',
               background: 'var(--surface)',
               color: 'var(--text)',
               border: '1px solid var(--border)',
               borderRadius: 14,
-              fontSize: 14,
-              fontWeight: 600,
+              fontSize: 15,
+              fontWeight: 700,
               cursor: 'pointer',
               textDecoration: 'none',
+              letterSpacing: 0.2,
             }}
           >
-            <GooglePlayIcon />
-            <span>
-              <span
-                style={{
-                  display: 'block',
-                  fontSize: 10,
-                  color: 'var(--text-muted)',
-                  fontWeight: 400,
-                  marginBottom: 1,
-                  textAlign: 'left',
-                }}
-              >
-                {t('landing_availableOn')}
-              </span>
-              Google Play
-            </span>
+            <DownloadIcon />
+            {t('landing_downloadApp')}
           </a>
         </div>
       </main>
@@ -176,19 +161,12 @@ export function LandingScreen({ onPlay }: Props) {
   );
 }
 
-function GooglePlayIcon() {
+function DownloadIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M3.18 23.76c.34.19.74.2 1.1.03L19.1 12 4.28.21C3.92.04 3.52.05 3.18.24 2.78.47 2.5.9 2.5 1.4v21.2c0 .5.28.93.68 1.16z"
-        fill="#4CAF50"
-      />
-      <path
-        d="M22.16 10.63l-3.06-1.71L15.56 12l3.54 3.08 3.06-1.71c.87-.49.87-2.25 0-2.74z"
-        fill="#FFD600"
-      />
-      <path d="M4.28.21L15.56 12 19.1 8.46 4.28.21z" fill="#FF3D00" />
-      <path d="M4.28 23.79L19.1 15.54 15.56 12 4.28 23.79z" fill="#0097A7" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3v13" />
+      <path d="M7 13l5 5 5-5" />
+      <path d="M4 20h16" />
     </svg>
   );
 }

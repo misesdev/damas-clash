@@ -97,6 +97,7 @@ function GameRow({game, profilePlayerId}: {game: GameResponse; profilePlayerId: 
         left={{username: profileName, avatarUrl: profileAvatar}}
         right={{username: oppName, avatarUrl: oppAvatar}}
         detail={betLabel}
+        winnerSide={drew ? 'draw' : won ? 'left' : 'right'}
       />
 
       <Text style={[styles.resultLabel, {color: resultColor}]}>{resultLabel}</Text>

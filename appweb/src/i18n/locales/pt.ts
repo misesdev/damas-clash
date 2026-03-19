@@ -8,7 +8,7 @@ const pt = {
   landing_signIn: 'Entrar',
   landing_tagline: 'Damas Brasileiras online. Jogue no navegador ou baixe o aplicativo no seu celular.',
   landing_playNow: 'Jogar agora',
-  landing_availableOn: 'Disponível no',
+  landing_downloadApp: 'Baixar App',
   landing_privacy: 'Privacidade',
   landing_terms: 'Termos de Uso',
 
