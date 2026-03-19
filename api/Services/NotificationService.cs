@@ -13,6 +13,7 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
 
     public async Task SendMentionNotificationAsync(
         string mentionedUsername,
+        Guid senderPlayerId,
         string senderUsername,
         string messageText)
     {
@@ -21,8 +22,11 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
 
+        // Exclude tokens that belong to the sender — guards against the case where
+        // the sender has multiple accounts on the same device (e.g. email + Nostr)
+        // and mentions their own other account.
         var tokens = await db.PlayerFcmTokens
-            .Where(t => t.Player.Username == mentionedUsername)
+            .Where(t => t.Player.Username == mentionedUsername && t.PlayerId != senderPlayerId)
             .Select(t => t.Token)
             .ToListAsync();
 
@@ -128,8 +132,11 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
             return;
         }
 
+        // Exclude tokens belonging to the creator — guards against the case where
+        // the creator has multiple accounts on the same device (e.g. email + Nostr)
+        // and played games between those accounts, making themselves a "past opponent".
         var tokens = await db.PlayerFcmTokens
-            .Where(t => opponentIds.Contains(t.PlayerId))
+            .Where(t => opponentIds.Contains(t.PlayerId) && t.PlayerId != creatorPlayerId)
             .Select(t => t.Token)
             .ToListAsync();
 

@@ -10,6 +10,7 @@ public interface INotificationService
     /// </summary>
     Task SendMentionNotificationAsync(
         string mentionedUsername,
+        Guid senderPlayerId,
         string senderUsername,
         string messageText);
 

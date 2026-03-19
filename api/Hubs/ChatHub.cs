@@ -51,16 +51,16 @@ public class ChatHub(
 
         // Send FCM push notifications to each distinct mentioned player
         // (fire-and-forget — do not await so the hub response is not delayed)
-        _ = SendMentionNotificationsAsync(trimmed, CallerUsername);
+        _ = SendMentionNotificationsAsync(trimmed, callerId.Value, CallerUsername);
     }
 
-    private async Task SendMentionNotificationsAsync(string text, string senderUsername)
+    private async Task SendMentionNotificationsAsync(string text, Guid senderPlayerId, string senderUsername)
     {
         var mentioned = ExtractMentions(text);
         foreach (var username in mentioned)
         {
             if (!string.Equals(username, senderUsername, StringComparison.OrdinalIgnoreCase))
-                await notificationService.SendMentionNotificationAsync(username, senderUsername, text);
+                await notificationService.SendMentionNotificationAsync(username, senderPlayerId, senderUsername, text);
         }
     }
 
