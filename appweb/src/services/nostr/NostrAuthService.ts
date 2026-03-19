@@ -43,7 +43,7 @@ export class NostrAuthService {
 
     const [profile, { challenge }] = await Promise.all([
       NostrAuthService.fetchProfile(pubkey),
-      nostrChallenge(),
+      nostrChallenge(pubkey),
     ]);
 
     console.log(profile)

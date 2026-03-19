@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/players")]
 public class PlayersController(IPlayerService playerService, IGameService gameService, ILightningAddressValidator lightningValidator) : ControllerBase
@@ -24,7 +25,6 @@ public class PlayersController(IPlayerService playerService, IGameService gameSe
         return player is null ? NotFound() : Ok(player);
     }
 
-    [Authorize]
     [HttpPost("{id:guid}/avatar")]
     [RequestSizeLimit(10 * 1024 * 1024)] // 10 MB
     public async Task<IActionResult> UpdateAvatar(Guid id, IFormFile file, CancellationToken ct)
@@ -49,7 +49,6 @@ public class PlayersController(IPlayerService playerService, IGameService gameSe
         return Ok(stats);
     }
 
-    [Authorize]
     [HttpGet("{id:guid}/games")]
     public async Task<IActionResult> GetPlayerGames(Guid id, CancellationToken ct)
     {
@@ -72,7 +71,6 @@ public class PlayersController(IPlayerService playerService, IGameService gameSe
     }
 
     /// <summary>PUT /api/players/{id}/lightning-address — validate and save Lightning Address.</summary>
-    [Authorize]
     [HttpPut("{id:guid}/lightning-address")]
     public async Task<IActionResult> UpdateLightningAddress(Guid id, [FromBody] UpdateLightningAddressRequest request, CancellationToken ct)
     {
@@ -94,7 +92,6 @@ public class PlayersController(IPlayerService playerService, IGameService gameSe
         return Ok(result.Value);
     }
 
-    [Authorize]
     [HttpPatch("{id:guid}")]
     public async Task<IActionResult> UpdateUsername(Guid id, [FromBody] UpdateUsernameRequest request, CancellationToken ct)
     {

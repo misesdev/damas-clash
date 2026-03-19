@@ -1,7 +1,9 @@
+using api.Config;
 using api.DTOs.Auth;
 using api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace api.Controllers;
 
@@ -10,6 +12,7 @@ namespace api.Controllers;
 public class AuthController(IAuthService authService) : ControllerBase
 {
     [HttpPost("register")]
+    [EnableRateLimiting(RateLimitConfig.EmailVerification)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {
         var result = await authService.RegisterAsync(request, ct);
@@ -26,6 +29,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         return CreatedAtAction(nameof(Register), result.Value);
     }
 
+    [EnableRateLimiting(RateLimitConfig.EmailVerification)]
     [HttpPost("confirm-email")]
     public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request, CancellationToken ct)
     {
@@ -38,6 +42,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
 
     // Step 1: sends a login code to the player's email
+    [EnableRateLimiting(RateLimitConfig.EmailVerification)]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
@@ -50,6 +55,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
 
     [HttpPost("resend-confirmation")]
+    [EnableRateLimiting(RateLimitConfig.EmailVerification)]
     public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationRequest request, CancellationToken ct)
     {
         var result = await authService.ResendConfirmationAsync(request, ct);
@@ -61,6 +67,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
 
     // Step 2: verifies the login code and returns a JWT
+    [EnableRateLimiting(RateLimitConfig.EmailVerification)]
     [HttpPost("verify-login")]
     public async Task<IActionResult> VerifyLogin([FromBody] VerifyLoginRequest request, CancellationToken ct)
     {
@@ -135,10 +142,19 @@ public class AuthController(IAuthService authService) : ControllerBase
         return NoContent();
     }
 
+    [EnableRateLimiting(RateLimitConfig.NostrLogin)]
     [HttpGet("nostr/challenge")]
-    public IActionResult NostrChallenge([FromServices] INostrChallengeStore store)
-        => Ok(new NostrChallengeResponse(store.Generate()));
+    public IActionResult NostrChallenge([FromServices] INostrChallengeStore store, [FromQuery] string pubkey)
+    {
+        // pubkey must be a 64-char lowercase hex Nostr x-only public key.
+        if (string.IsNullOrEmpty(pubkey) || pubkey.Length != 64 ||
+            !pubkey.All(c => (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')))
+            return BadRequest(new { error = "invalid_pubkey" });
 
+        return Ok(new NostrChallengeResponse(store.Generate(pubkey)));
+    }
+
+    [EnableRateLimiting(RateLimitConfig.NostrLogin)]
     [HttpPost("nostr/login")]
     public async Task<IActionResult> NostrLogin([FromBody] NostrLoginRequest request, CancellationToken ct)
     {
@@ -154,6 +170,7 @@ public class AuthController(IAuthService authService) : ControllerBase
         return Ok(result.Value);
     }
 
+    [EnableRateLimiting(RateLimitConfig.NostrLogin)]
     [HttpPost("nostr/login-event")]
     public async Task<IActionResult> NostrLoginEvent([FromBody] NostrEventLoginRequest request, CancellationToken ct)
     {

@@ -35,8 +35,7 @@ export const styles = StyleSheet.create({
   legalLink: {color: colors.textMuted, fontSize: 12},
   legalSep: {color: colors.textMuted, fontSize: 12},
 
-  googleSection: {marginBottom: 8, gap: 12},
-  googleError: {color: colors.error, fontSize: 12, textAlign: 'center'},
+  nostrSection: {marginBottom: 8, gap: 12},
 
   nostrButton: {
     borderWidth: 1,

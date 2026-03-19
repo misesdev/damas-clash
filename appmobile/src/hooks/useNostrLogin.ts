@@ -35,8 +35,8 @@ export function useNostrLogin(onLogin: (data: LoginResponse) => void) {
       // so always normalize to the 64-char hex format required by Nostr events.
       const {npub, package: signerPackage} = await appSignerGetPublicKey();
       const pubkey =  npubToHex(npub);
-      // Step 2: get a one-time challenge from the API and build the auth event
-      const {challenge} = await nostrChallenge();
+      // Step 2: get a one-time challenge from the API, bound to this pubkey
+      const {challenge} = await nostrChallenge(pubkey);
       const unsignedEvent = {
         kind: 22242,
         created_at: Math.floor(Date.now() / 1000),
@@ -61,8 +61,6 @@ export function useNostrLogin(onLogin: (data: LoginResponse) => void) {
         avatarUrl: (profile as any).picture,
         lightningAddress: (profile as any).lud16,
       });
-
-      console.log("login response",data)
       onLogin(data);
     } catch (e: any) {
       const isAndroidOnly =

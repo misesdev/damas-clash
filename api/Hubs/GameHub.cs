@@ -102,18 +102,18 @@ public class GameHub(
 
     public async Task JoinLobby()
     {
+        var playerId = CallerId;
+        if (playerId is null)
+            throw new HubException("unauthorized");
+
         await Groups.AddToGroupAsync(Context.ConnectionId, "lobby");
 
-        var playerId = CallerId;
-        if (playerId.HasValue)
-        {
-            var avatarUrl = await db.Players
-                .Where(p => p.Id == playerId.Value)
-                .Select(p => p.AvatarUrl)
-                .FirstOrDefaultAsync();
+        var avatarUrl = await db.Players
+            .Where(p => p.Id == playerId.Value)
+            .Select(p => p.AvatarUrl)
+            .FirstOrDefaultAsync();
 
-            tracker.Add(Context.ConnectionId, playerId.Value, CallerUsername, avatarUrl);
-        }
+        tracker.Add(Context.ConnectionId, playerId.Value, CallerUsername, avatarUrl);
 
         await BroadcastOnlinePlayersAsync();
 

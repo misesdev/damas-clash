@@ -87,7 +87,6 @@ export function AuthNavigator() {
           setScreen('confirmEmail');
         }}
         onNavigateToLogin={() => setScreen('login')}
-        onGoogleLogin={handleLogin}
       />
     );
   }
@@ -100,7 +99,6 @@ export function AuthNavigator() {
           setScreen('verifyLogin');
         }}
         onNavigateToRegister={() => setScreen('register')}
-        onGoogleLogin={handleLogin}
         onNostrLogin={() => setScreen('nostrLogin')}
       />
     </View>

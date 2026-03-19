@@ -33,6 +33,4 @@ export const styles = StyleSheet.create({
   footerText: {color: colors.textMuted, fontSize: 14},
   footerLink: {color: colors.textSecondary, fontWeight: '600'},
 
-  googleSection: {marginBottom: 8, gap: 12},
-  googleError: {color: colors.error, fontSize: 12, textAlign: 'center'},
 });

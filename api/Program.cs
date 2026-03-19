@@ -20,12 +20,13 @@ builder.Services.AddSignalR()
 
 builder.UseAppSettings();
 builder.UseDBSettings();
+builder.UseRateLimiting();
 
 builder.Services.AddCors(options =>
 {
     var origins = new [] {
-      "htts://damas.clashapps.com",
-      "htts://clashapps.com",
+      "https://damas.clashapps.com",
+      "https://clashapps.com",
     };
     options.AddDefaultPolicy(policy =>
     {
@@ -85,6 +86,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+if (!app.Environment.IsEnvironment("Testing"))
+    app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

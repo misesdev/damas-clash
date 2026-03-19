@@ -316,12 +316,27 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task NostrChallenge_Returns200WithChallenge()
     {
-        var response = await _client.GetAsync("/api/auth/nostr/challenge");
+        var (_, pubkeyHex) = NostrTestHelper.GenerateKeyPair();
+        var response = await _client.GetAsync($"/api/auth/nostr/challenge?pubkey={pubkeyHex}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<api.DTOs.Auth.NostrChallengeResponse>(JsonOpts);
         Assert.NotNull(body);
         Assert.False(string.IsNullOrWhiteSpace(body.Challenge));
+    }
+
+    [Fact]
+    public async Task NostrChallenge_MissingPubkey_Returns400()
+    {
+        var response = await _client.GetAsync("/api/auth/nostr/challenge");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task NostrChallenge_InvalidPubkey_Returns400()
+    {
+        var response = await _client.GetAsync("/api/auth/nostr/challenge?pubkey=notahexkey");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     // ── Nostr Login Event ─────────────────────────────────────────────────────
@@ -331,7 +346,7 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
     {
         var (privBytes, pubkeyHex) = NostrTestHelper.GenerateKeyPair();
 
-        var challengeResp = await _client.GetAsync("/api/auth/nostr/challenge");
+        var challengeResp = await _client.GetAsync($"/api/auth/nostr/challenge?pubkey={pubkeyHex}");
         var challengeBody = (await challengeResp.Content.ReadFromJsonAsync<api.DTOs.Auth.NostrChallengeResponse>(JsonOpts))!;
 
         var payload = NostrTestHelper.BuildSignedAuthEvent(privBytes, pubkeyHex, challengeBody.Challenge);
@@ -398,7 +413,7 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
         var (privBytes, pubkeyHex) = NostrTestHelper.GenerateKeyPair();
         var (wrongPrivBytes, _) = NostrTestHelper.GenerateKeyPair(); // different key
 
-        var challengeResp = await _client.GetAsync("/api/auth/nostr/challenge");
+        var challengeResp = await _client.GetAsync($"/api/auth/nostr/challenge?pubkey={pubkeyHex}");
         var challengeBody = (await challengeResp.Content.ReadFromJsonAsync<api.DTOs.Auth.NostrChallengeResponse>(JsonOpts))!;
 
         // Sign with wrong key — ID will be for pubkeyHex but sig is from wrongPrivBytes
@@ -424,7 +439,7 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
     {
         var (privBytes, pubkeyHex) = NostrTestHelper.GenerateKeyPair();
 
-        var challengeResp = await _client.GetAsync("/api/auth/nostr/challenge");
+        var challengeResp = await _client.GetAsync($"/api/auth/nostr/challenge?pubkey={pubkeyHex}");
         var challengeBody = (await challengeResp.Content.ReadFromJsonAsync<api.DTOs.Auth.NostrChallengeResponse>(JsonOpts))!;
 
         // First use — succeeds
@@ -465,7 +480,7 @@ public class AuthControllerTests(CustomWebApplicationFactory factory)
     private async Task<(string token, Guid playerId, string refreshToken)> NostrLoginWithKeyFull(
         byte[] privBytes, string pubkeyHex)
     {
-        var challengeResp = await _client.GetAsync("/api/auth/nostr/challenge");
+        var challengeResp = await _client.GetAsync($"/api/auth/nostr/challenge?pubkey={pubkeyHex}");
         var challengeBody = (await challengeResp.Content.ReadFromJsonAsync<api.DTOs.Auth.NostrChallengeResponse>(JsonOpts))!;
 
         var payload = NostrTestHelper.BuildSignedAuthEvent(privBytes, pubkeyHex, challengeBody.Challenge);

@@ -278,8 +278,8 @@ public class AuthService(
         req.Sig.Length,
         req.Challenge);
 
-    // 1. Validate and consume challenge (single-use, 5-min window)
-    var challengeValid = nostrChallengeStore.ValidateAndConsume(req.Challenge);
+    // 1. Validate and consume challenge (single-use, 5-min window, bound to pubkey)
+    var challengeValid = nostrChallengeStore.ValidateAndConsume(req.Challenge, req.Pubkey);
     logger.LogDebug("NostrAuth: challenge valid={Valid}", challengeValid);
     if (!challengeValid)
       return ServiceResult<LoginResponse>.Fail("invalid_challenge");
@@ -344,7 +344,7 @@ public class AuthService(
       return ServiceResult<LoginResponse>.Fail("missing_challenge_tag");
 
     var challenge = challengeTag[1];
-    if (!nostrChallengeStore.ValidateAndConsume(challenge))
+    if (!nostrChallengeStore.ValidateAndConsume(challenge, ev.Pubkey))
       return ServiceResult<LoginResponse>.Fail("invalid_challenge");
 
     // 3. Verify event integrity and signature

@@ -65,8 +65,8 @@ export function googleAuth(idToken: string): Promise<LoginResponse> {
   });
 }
 
-export function nostrChallenge(): Promise<{ challenge: string }> {
-  return request('/api/auth/nostr/challenge');
+export function nostrChallenge(pubkey: string): Promise<{ challenge: string }> {
+  return request(`/api/auth/nostr/challenge?pubkey=${encodeURIComponent(pubkey)}`);
 }
 
 export interface NostrLoginRequest {

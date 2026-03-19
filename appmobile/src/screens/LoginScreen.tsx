@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {
   KeyboardAvoidingView,
   Linking,
@@ -9,54 +9,22 @@ import {
   View,
 } from 'react-native';
 import {useTranslation} from 'react-i18next';
-import {GoogleSignin, statusCodes} from '@react-native-google-signin/google-signin';
-import {WEB_URL, GOOGLE_WEB_CLIENT_ID} from '@env';
-import {googleAuth} from '../api/auth';
+import {WEB_URL} from '@env';
 import {BoardMark} from '../components/BoardMark';
 import {Button} from '../components/Button';
-import {GoogleButton} from '../components/GoogleButton';
 import {Input} from '../components/Input';
 import {useLogin} from '../hooks/useLogin';
 import {styles} from '../styles/loginStyles';
-import type {LoginResponse} from '../types/auth';
-
-GoogleSignin.configure({
-  webClientId: GOOGLE_WEB_CLIENT_ID,
-});
 
 interface LoginScreenProps {
   onCodeSent: (email: string) => void;
   onNavigateToRegister: () => void;
-  onGoogleLogin: (data: LoginResponse) => void;
   onNostrLogin: () => void;
 }
 
-export function LoginScreen({onCodeSent, onNavigateToRegister, onGoogleLogin, onNostrLogin}: LoginScreenProps) {
+export function LoginScreen({onCodeSent, onNavigateToRegister, onNostrLogin}: LoginScreenProps) {
   const {t} = useTranslation();
   const {identifier, setIdentifier, error, loading, handleLogin} = useLogin(onCodeSent);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleError, setGoogleError] = useState('');
-
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    setGoogleError('');
-    try {
-      await GoogleSignin.hasPlayServices();
-      const response = await GoogleSignin.signIn();
-      const idToken = response.data?.idToken;
-      if (!idToken) throw new Error('no_id_token');
-      const data = await googleAuth(idToken);
-      onGoogleLogin(data);
-    } catch (e: any) {
-      if (e.code === statusCodes.SIGN_IN_CANCELLED) {
-        // user cancelled — do nothing
-      } else {
-        setGoogleError(t('login.googleError'));
-      }
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
 
   return (
     <KeyboardAvoidingView
@@ -101,15 +69,8 @@ export function LoginScreen({onCodeSent, onNavigateToRegister, onGoogleLogin, on
           />
         </View>
 
-        <View style={styles.googleSection}>
+        <View style={styles.nostrSection}>
           <View style={styles.divider} />
-          <GoogleButton
-            onPress={handleGoogleSignIn}
-            loading={googleLoading}
-          />
-          {googleError ? (
-            <Text style={styles.googleError}>{googleError}</Text>
-          ) : null}
           <TouchableOpacity
             style={styles.nostrButton}
             onPress={onNostrLogin}

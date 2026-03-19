@@ -14,7 +14,7 @@ export class NostrAuthService {
 
     const [profile, {challenge}] = await Promise.all([
       fetchNostrProfile(pubkey),
-      nostrChallenge(),
+      nostrChallenge(pubkey),
     ]);
 
     // Prefer lud16 (Lightning Address format) over lud06 (LNURL bech32)
