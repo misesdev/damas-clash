@@ -26,8 +26,9 @@ jest.mock('../src/api/auth');
 jest.mock('../src/api/games');
 jest.mock('../src/api/appVersion', () => ({
   APP_VERSION: '2.7',
-  STORE_URL: 'market://details?id=com.damasclash',
-  STORE_URL_FALLBACK: 'https://play.google.com/store/apps/details?id=com.damasclash',
+  ZAPSTORE_URL: 'zapstore://install?app=com.damasclash',
+  ZAPSTORE_WEB_URL: 'https://zapstore.dev/apps/com.damasclash',
+  GITHUB_APK_URL: 'https://github.com/misesdev/damas-clash/releases/latest',
   fetchMinVersion: jest.fn().mockResolvedValue('2.7'),
   isVersionOutdated: jest.fn().mockReturnValue(false),
 }));

@@ -726,6 +726,7 @@ export function useApp() {
     session,
     loading,
     updateRequired,
+    dismissUpdate: () => setUpdateRequired(false),
     handleLogin,
     handleLogout,
     updateSession,

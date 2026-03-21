@@ -408,9 +408,11 @@ const pt = {
     play: 'Jogar',
   },
   updateApp: {
-    title: 'Atualização necessária',
-    message: 'Uma nova versão do app está disponível. Atualize para continuar.',
-    updateButton: 'Atualizar agora',
+    title: 'Atualização disponível',
+    message: 'Uma nova versão do Damas Clash está disponível. Atualize para ter as últimas melhorias.',
+    zapstoreButton: 'Obter na Zapstore',
+    githubButton: 'Baixar APK do GitHub',
+    dismiss: 'Continuar sem atualizar',
   },
   language: {
     label: 'Idioma',

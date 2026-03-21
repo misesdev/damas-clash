@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Linking,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -10,16 +9,21 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import {colors} from '../theme/colors';
-import {STORE_URL, STORE_URL_FALLBACK} from '../api/appVersion';
+import {ZAPSTORE_URL, ZAPSTORE_WEB_URL, GITHUB_APK_URL} from '../api/appVersion';
 
-export function UpdateAppScreen() {
+interface Props {
+  onDismiss: () => void;
+}
+
+export function UpdateAppScreen({onDismiss}: Props) {
   const {t} = useTranslation();
 
-  const handleUpdate = async () => {
-    const url = Platform.OS === 'android' ? STORE_URL : STORE_URL_FALLBACK;
-    const canOpen = await Linking.canOpenURL(url);
-    await Linking.openURL(canOpen ? url : STORE_URL_FALLBACK);
+  const openZapstore = async () => {
+    const canOpen = await Linking.canOpenURL(ZAPSTORE_URL);
+    await Linking.openURL(canOpen ? ZAPSTORE_URL : ZAPSTORE_WEB_URL);
   };
+
+  const openGithub = () => Linking.openURL(GITHUB_APK_URL);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -29,9 +33,19 @@ export function UpdateAppScreen() {
         <Text style={styles.message}>{t('updateApp.message')}</Text>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleUpdate}>
-        <Text style={styles.buttonText}>{t('updateApp.updateButton')}</Text>
-      </TouchableOpacity>
+      <View style={styles.actions}>
+        <TouchableOpacity style={styles.primaryButton} onPress={openZapstore}>
+          <Text style={styles.primaryButtonText}>{t('updateApp.zapstoreButton')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.secondaryButton} onPress={openGithub}>
+          <Text style={styles.secondaryButtonText}>{t('updateApp.githubButton')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.dismissButton} onPress={onDismiss}>
+          <Text style={styles.dismissText}>{t('updateApp.dismiss')}</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -69,15 +83,38 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  button: {
+  actions: {
+    gap: 12,
+  },
+  primaryButton: {
     backgroundColor: colors.primary,
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  buttonText: {
+  primaryButtonText: {
     color: colors.primaryText,
     fontSize: 16,
     fontWeight: '700',
+  },
+  secondaryButton: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  dismissButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  dismissText: {
+    color: colors.textSecondary,
+    fontSize: 14,
   },
 });

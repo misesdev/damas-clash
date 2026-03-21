@@ -408,9 +408,11 @@ const en = {
     play: 'Play',
   },
   updateApp: {
-    title: 'Update required',
-    message: 'A new version of the app is available. Please update to continue.',
-    updateButton: 'Update now',
+    title: 'Update available',
+    message: 'A new version of Damas Clash is available. Update to get the latest improvements.',
+    zapstoreButton: 'Get on Zapstore',
+    githubButton: 'Download APK from GitHub',
+    dismiss: 'Continue without updating',
   },
   language: {
     label: 'Language',

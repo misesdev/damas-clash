@@ -15,6 +15,7 @@ function AppContent() {
     session,
     loading,
     updateRequired,
+    dismissUpdate,
     showOnlinePlayers,
     setShowOnlinePlayers,
     onlinePlayers,
@@ -31,7 +32,7 @@ function AppContent() {
   }
 
   if (updateRequired) {
-    return <UpdateAppScreen />;
+    return <UpdateAppScreen onDismiss={dismissUpdate} />;
   }
 
   return (
