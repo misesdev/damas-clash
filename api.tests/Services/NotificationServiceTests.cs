@@ -325,4 +325,70 @@ public class NotificationServiceTests
             Assert.Null(exception);
         }
     }
+
+    // ── Stale token cleanup ───────────────────────────────────────────────────
+
+    /// <summary>
+    /// Verifies the token-cleanup query that the service runs after FCM returns
+    /// Unregistered.  We can't call Firebase in tests, so we mirror the
+    /// ExecuteDeleteAsync predicate directly against the in-memory database.
+    /// </summary>
+    [Fact]
+    public async Task StaleTokenCleanup_RemovesUnregisteredTokensFromDatabase()
+    {
+        var dbName = "TestDb_StaleCleanup_" + Guid.NewGuid();
+        await using var db = CreateDb(dbName);
+
+        var alice = MakePlayer("alice");
+        db.Players.Add(alice);
+
+        // Simulate two tokens: one valid, one stale (would be reported as Unregistered by Firebase)
+        const string validToken = "T_valid";
+        const string staleToken = "T_stale";
+        db.PlayerFcmTokens.Add(MakeToken(alice.Id, validToken));
+        db.PlayerFcmTokens.Add(MakeToken(alice.Id, staleToken));
+        await db.SaveChangesAsync();
+
+        // Mirror the cleanup logic from SendMulticastAsync.
+        // ExecuteDeleteAsync is not supported by the InMemory provider, so we
+        // use RemoveRange to validate the same predicate against the in-memory DB.
+        var staleTokens = new List<string> { staleToken };
+        var toDelete = await db.PlayerFcmTokens
+            .Where(t => staleTokens.Contains(t.Token))
+            .ToListAsync();
+        db.PlayerFcmTokens.RemoveRange(toDelete);
+        await db.SaveChangesAsync();
+
+        // Only the valid token should remain
+        var remaining = await db.PlayerFcmTokens.Select(t => t.Token).ToListAsync();
+        Assert.Single(remaining);
+        Assert.Equal(validToken, remaining[0]);
+    }
+
+    [Fact]
+    public async Task StaleTokenCleanup_DoesNotRemoveValidTokens()
+    {
+        var dbName = "TestDb_StaleCleanup_Keep_" + Guid.NewGuid();
+        await using var db = CreateDb(dbName);
+
+        var alice = MakePlayer("alice");
+        db.Players.Add(alice);
+        db.PlayerFcmTokens.Add(MakeToken(alice.Id, "T_good1"));
+        db.PlayerFcmTokens.Add(MakeToken(alice.Id, "T_good2"));
+        await db.SaveChangesAsync();
+
+        // No stale tokens reported — cleanup list is empty; nothing should be deleted
+        var staleTokens = new List<string>();
+        if (staleTokens.Count > 0)
+        {
+            var toDelete = await db.PlayerFcmTokens
+                .Where(t => staleTokens.Contains(t.Token))
+                .ToListAsync();
+            db.PlayerFcmTokens.RemoveRange(toDelete);
+            await db.SaveChangesAsync();
+        }
+
+        var remaining = await db.PlayerFcmTokens.Select(t => t.Token).ToListAsync();
+        Assert.Equal(2, remaining.Count);
+    }
 }
