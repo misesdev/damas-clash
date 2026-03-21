@@ -75,7 +75,7 @@ export function useApp() {
       if (!granted) {return;}
       const token = await getFCMToken();
       if (token) {
-        await registerFCMToken(token, authToken);
+        await registerFCMToken(token, authToken, i18n.language);
       }
     } catch { /* silently ignore — notifications are non-critical */ }
   }, []);
@@ -171,7 +171,7 @@ export function useApp() {
   useEffect(() => {
     if (!session) {return;}
     return setupTokenRefreshHandler(newToken => {
-      registerFCMToken(newToken, sessionRef.current?.token ?? '').catch(() => {});
+      registerFCMToken(newToken, sessionRef.current?.token ?? '', i18n.language).catch(() => {});
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.playerId]);

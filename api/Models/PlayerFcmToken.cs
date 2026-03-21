@@ -12,5 +12,8 @@ public class PlayerFcmToken
     /// <summary>"android" or "ios"</summary>
     public string Platform { get; set; } = string.Empty;
 
+    /// <summary>ISO 639-1 language code of the device ("pt" or "en"). Defaults to "en".</summary>
+    public string Language { get; set; } = "en";
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

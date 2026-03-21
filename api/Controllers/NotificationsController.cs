@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using api.Data;
 using api.Models;
+using api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,8 @@ public class NotificationsController(DamasDbContext db) : ControllerBase
         var existing = await db.PlayerFcmTokens
             .FirstOrDefaultAsync(t => t.Token == request.Token);
 
+        var language = NotificationL10n.Normalize(request.Language);
+
         if (existing is null)
         {
             db.PlayerFcmTokens.Add(new PlayerFcmToken
@@ -38,12 +41,14 @@ public class NotificationsController(DamasDbContext db) : ControllerBase
                 PlayerId = callerId.Value,
                 Token = request.Token,
                 Platform = request.Platform,
+                Language = language,
             });
         }
         else
         {
             existing.PlayerId = callerId.Value;
             existing.Platform = request.Platform;
+            existing.Language = language;
             existing.UpdatedAt = DateTime.UtcNow;
         }
 
@@ -72,4 +77,5 @@ public class NotificationsController(DamasDbContext db) : ControllerBase
 
 public record RegisterFcmTokenRequest(
     [Required] string Token,
-    [Required] string Platform);
+    [Required] string Platform,
+    string? Language);

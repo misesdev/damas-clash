@@ -5,11 +5,15 @@ import {request} from './client';
  * Registers (or upserts) the device FCM token for the authenticated player.
  * Called once after login and again whenever the FCM token is rotated.
  */
-export function registerFCMToken(fcmToken: string, authToken: string): Promise<void> {
+export function registerFCMToken(
+  fcmToken: string,
+  authToken: string,
+  language?: string,
+): Promise<void> {
   return request('/api/notifications/fcm-token', {
     method: 'POST',
     headers: {Authorization: `Bearer ${authToken}`},
-    body: JSON.stringify({token: fcmToken, platform: Platform.OS}),
+    body: JSON.stringify({token: fcmToken, platform: Platform.OS, language: language ?? 'en'}),
   });
 }
 

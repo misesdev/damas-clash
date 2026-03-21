@@ -24,44 +24,32 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
 
-        var tokens = await db.PlayerFcmTokens
+        var tokenInfos = await db.PlayerFcmTokens
             .Where(t => t.Player.Username == mentionedUsername && t.PlayerId != senderPlayerId)
-            .Select(t => t.Token)
+            .Select(t => new TokenInfo(t.Token, t.Language))
             .ToListAsync();
 
-        if (tokens.Count == 0)
+        if (tokenInfos.Count == 0)
         {
             logger.LogInformation("FCM: No tokens found for @{Mentioned} — skipping", mentionedUsername);
             return;
         }
 
         var body = Truncate(messageText);
+        var data = new Dictionary<string, string>
+        {
+            ["type"] = "chat_mention",
+            ["senderUsername"] = senderUsername,
+            ["messageText"] = body,
+        };
 
-        await SendMulticastAsync(
-            new MulticastMessage
-            {
-                Tokens = tokens,
-                Data = new Dictionary<string, string>
-                {
-                    ["type"] = "chat_mention",
-                    ["senderUsername"] = senderUsername,
-                    ["messageText"] = body,
-                },
-                Notification = new Notification
-                {
-                    Title = $"@{senderUsername} te mencionou",
-                    Body = body,
-                },
-                Android = new AndroidConfig
-                {
-                    Priority = Priority.High,
-                    Notification = new AndroidNotification { ChannelId = "chat_mentions", Sound = "default" },
-                },
-                Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
-            },
-            context: "chat-mention",
-            target: mentionedUsername,
-            db: db);
+        foreach (var group in GroupByLanguage(tokenInfos))
+        {
+            var (title, _) = NotificationL10n.Mention(group.Key, senderUsername, body);
+            await SendMulticastAsync(
+                BuildMessage(group.Tokens, data, title, body, "chat_mentions"),
+                context: "chat-mention", target: mentionedUsername, db: db);
+        }
     }
 
     public async Task SendReplyNotificationAsync(
@@ -75,44 +63,32 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
 
-        var tokens = await db.PlayerFcmTokens
+        var tokenInfos = await db.PlayerFcmTokens
             .Where(t => t.Player.Username == repliedToUsername && t.PlayerId != replierPlayerId)
-            .Select(t => t.Token)
+            .Select(t => new TokenInfo(t.Token, t.Language))
             .ToListAsync();
 
-        if (tokens.Count == 0)
+        if (tokenInfos.Count == 0)
         {
             logger.LogInformation("FCM: No tokens found for @{Mentioned} — skipping", repliedToUsername);
             return;
         }
 
         var body = Truncate(messageText);
+        var data = new Dictionary<string, string>
+        {
+            ["type"] = "chat_reply",
+            ["replierUsername"] = replierUsername,
+            ["messageText"] = body,
+        };
 
-        await SendMulticastAsync(
-            new MulticastMessage
-            {
-                Tokens = tokens,
-                Data = new Dictionary<string, string>
-                {
-                    ["type"] = "chat_reply",
-                    ["replierUsername"] = replierUsername,
-                    ["messageText"] = body,
-                },
-                Notification = new Notification
-                {
-                    Title = $"@{replierUsername} respondeu você",
-                    Body = body,
-                },
-                Android = new AndroidConfig
-                {
-                    Priority = Priority.High,
-                    Notification = new AndroidNotification { ChannelId = "chat_mentions", Sound = "default" },
-                },
-                Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
-            },
-            context: "chat-reply",
-            target: repliedToUsername,
-            db: db);
+        foreach (var group in GroupByLanguage(tokenInfos))
+        {
+            var (title, _) = NotificationL10n.Reply(group.Key, replierUsername, body);
+            await SendMulticastAsync(
+                BuildMessage(group.Tokens, data, title, body, "chat_mentions"),
+                context: "chat-reply", target: repliedToUsername, db: db);
+        }
     }
 
     public async Task SendGameCreatedNotificationAsync(
@@ -140,12 +116,12 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
             return;
         }
 
-        var tokens = await db.PlayerFcmTokens
+        var tokenInfos = await db.PlayerFcmTokens
             .Where(t => opponentIds.Contains(t.PlayerId) && t.PlayerId != creatorPlayerId)
-            .Select(t => t.Token)
+            .Select(t => new TokenInfo(t.Token, t.Language))
             .ToListAsync();
 
-        if (tokens.Count == 0)
+        if (tokenInfos.Count == 0)
         {
             logger.LogInformation(
                 "FCM: Found {Count} opponent(s) for @{Creator} but none have FCM tokens — skipping",
@@ -153,31 +129,20 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
             return;
         }
 
-        await SendMulticastAsync(
-            new MulticastMessage
-            {
-                Tokens = tokens,
-                Data = new Dictionary<string, string>
-                {
-                    ["type"] = "game_created",
-                    ["gameId"] = gameId.ToString(),
-                    ["creatorUsername"] = creatorUsername,
-                },
-                Notification = new Notification
-                {
-                    Title = $"{creatorUsername} está procurando adversário!",
-                    Body = "Toque para entrar na partida",
-                },
-                Android = new AndroidConfig
-                {
-                    Priority = Priority.High,
-                    Notification = new AndroidNotification { ChannelId = "game_invites", Sound = "default" },
-                },
-                Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
-            },
-            context: "game-created",
-            target: creatorUsername,
-            db: db);
+        var data = new Dictionary<string, string>
+        {
+            ["type"] = "game_created",
+            ["gameId"] = gameId.ToString(),
+            ["creatorUsername"] = creatorUsername,
+        };
+
+        foreach (var group in GroupByLanguage(tokenInfos))
+        {
+            var (title, body) = NotificationL10n.GameCreated(group.Key, creatorUsername);
+            await SendMulticastAsync(
+                BuildMessage(group.Tokens, data, title, body, "game_invites"),
+                context: "game-created", target: creatorUsername, db: db);
+        }
     }
 
     public async Task SendPlayerJoinedNotificationAsync(
@@ -192,42 +157,31 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
 
-        var tokens = await db.PlayerFcmTokens
+        var tokenInfos = await db.PlayerFcmTokens
             .Where(t => t.PlayerId == creatorPlayerId)
-            .Select(t => t.Token)
+            .Select(t => new TokenInfo(t.Token, t.Language))
             .ToListAsync();
 
-        if (tokens.Count == 0)
+        if (tokenInfos.Count == 0)
         {
             logger.LogInformation("FCM: Creator {CreatorId} has no FCM tokens — skipping", creatorPlayerId);
             return;
         }
 
-        await SendMulticastAsync(
-            new MulticastMessage
-            {
-                Tokens = tokens,
-                Data = new Dictionary<string, string>
-                {
-                    ["type"] = "player_joined",
-                    ["gameId"] = gameId.ToString(),
-                    ["joinerUsername"] = joinerUsername,
-                },
-                Notification = new Notification
-                {
-                    Title = $"{joinerUsername} entrou na sua partida!",
-                    Body = "Toque para jogar",
-                },
-                Android = new AndroidConfig
-                {
-                    Priority = Priority.High,
-                    Notification = new AndroidNotification { ChannelId = "game_invites", Sound = "default" },
-                },
-                Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
-            },
-            context: "player-joined",
-            target: creatorPlayerId.ToString(),
-            db: db);
+        var data = new Dictionary<string, string>
+        {
+            ["type"] = "player_joined",
+            ["gameId"] = gameId.ToString(),
+            ["joinerUsername"] = joinerUsername,
+        };
+
+        foreach (var group in GroupByLanguage(tokenInfos))
+        {
+            var (title, body) = NotificationL10n.PlayerJoined(group.Key, joinerUsername);
+            await SendMulticastAsync(
+                BuildMessage(group.Tokens, data, title, body, "game_invites"),
+                context: "player-joined", target: creatorPlayerId.ToString(), db: db);
+        }
     }
 
     public async Task SendNewUserNotificationAsync(string newUsername, bool isNostr)
@@ -237,44 +191,61 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
 
-        var tokens = await db.PlayerFcmTokens
+        var tokenInfos = await db.PlayerFcmTokens
             .Where(t => t.Player.Role == Models.PlayerRole.Admin)
-            .Select(t => t.Token)
+            .Select(t => new TokenInfo(t.Token, t.Language))
             .ToListAsync();
 
-        if (tokens.Count == 0)
+        if (tokenInfos.Count == 0)
         {
             logger.LogInformation("FCM: No admin FCM tokens found — skipping new-user notification");
             return;
         }
 
-        var via = isNostr ? "Nostr" : "e-mail";
-        await SendMulticastAsync(
-            new MulticastMessage
-            {
-                Tokens = tokens,
-                Data = new Dictionary<string, string>
-                {
-                    ["type"] = "new_user",
-                    ["username"] = newUsername,
-                    ["isNostr"] = isNostr ? "true" : "false",
-                },
-                Notification = new Notification
-                {
-                    Title = $"Novo jogador: {newUsername}",
-                    Body = $"Entrou pelo {via}. Venha jogar!",
-                },
-                Android = new AndroidConfig
-                {
-                    Priority = Priority.High,
-                    Notification = new AndroidNotification { ChannelId = "game_invites", Sound = "default" },
-                },
-                Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
-            },
-            context: "new-user",
-            target: newUsername,
-            db: db);
+        var data = new Dictionary<string, string>
+        {
+            ["type"] = "new_user",
+            ["username"] = newUsername,
+            ["isNostr"] = isNostr ? "true" : "false",
+        };
+
+        foreach (var group in GroupByLanguage(tokenInfos))
+        {
+            var (title, body) = NotificationL10n.NewUser(group.Key, newUsername, isNostr);
+            await SendMulticastAsync(
+                BuildMessage(group.Tokens, data, title, body, "game_invites"),
+                context: "new-user", target: newUsername, db: db);
+        }
     }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private sealed record TokenInfo(string Token, string Language);
+    private sealed record TokenGroup(string Key, List<string> Tokens);
+
+    /// <summary>Groups token infos by normalized language code.</summary>
+    private static IEnumerable<TokenGroup> GroupByLanguage(IEnumerable<TokenInfo> tokenInfos) =>
+        tokenInfos
+            .GroupBy(t => NotificationL10n.Normalize(t.Language))
+            .Select(g => new TokenGroup(g.Key, g.Select(t => t.Token).ToList()));
+
+    private static MulticastMessage BuildMessage(
+        List<string> tokens,
+        Dictionary<string, string> data,
+        string title,
+        string body,
+        string channelId) => new()
+    {
+        Tokens = tokens,
+        Data = data,
+        Notification = new Notification { Title = title, Body = body },
+        Android = new AndroidConfig
+        {
+            Priority = Priority.High,
+            Notification = new AndroidNotification { ChannelId = channelId, Sound = "default" },
+        },
+        Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
+    };
 
     // ── Shared FCM dispatch with stale-token cleanup ──────────────────────────
 
