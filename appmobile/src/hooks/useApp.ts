@@ -220,6 +220,10 @@ export function useApp() {
         if (saved) {
           setSession(saved);
 
+          // Re-register FCM token on every app startup so that a new token
+          // issued after reinstall / app update is always recorded in the API.
+          initPushNotifications(saved.token);
+
           // Check if the app was opened by tapping a notification (killed state)
           const initialNotif = await getInitialNotification();
 

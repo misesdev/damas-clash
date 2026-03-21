@@ -11,6 +11,8 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
 {
     private const int MaxBodyLength = 120;
 
+    // ── Public methods ────────────────────────────────────────────────────────
+
     public async Task SendMentionNotificationAsync(
         string mentionedUsername,
         Guid senderPlayerId,
@@ -22,9 +24,6 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
 
-        // Exclude tokens that belong to the sender — guards against the case where
-        // the sender has multiple accounts on the same device (e.g. email + Nostr)
-        // and mentions their own other account.
         var tokens = await db.PlayerFcmTokens
             .Where(t => t.Player.Username == mentionedUsername && t.PlayerId != senderPlayerId)
             .Select(t => t.Token)
@@ -36,75 +35,33 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
             return;
         }
 
-        logger.LogInformation("FCM: Sending mention to @{Mentioned} via {Count} token(s)", mentionedUsername, tokens.Count);
+        var body = Truncate(messageText);
 
-        var body = messageText.Length > MaxBodyLength
-            ? string.Concat(messageText.AsSpan(0, MaxBodyLength), "…")
-            : messageText;
-
-        var multicast = new MulticastMessage
-        {
-            Tokens = tokens,
-            Data = new Dictionary<string, string>
+        await SendMulticastAsync(
+            new MulticastMessage
             {
-                ["type"] = "chat_mention",
-                ["senderUsername"] = senderUsername,
-                ["messageText"] = body,
-            },
-            Notification = new Notification
-            {
-                Title = $"@{senderUsername} te mencionou",
-                Body = body,
-            },
-            Android = new AndroidConfig
-            {
-                Priority = Priority.High,
-                Notification = new AndroidNotification
+                Tokens = tokens,
+                Data = new Dictionary<string, string>
                 {
-                    ChannelId = "chat_mentions",
-                    Sound = "default",
+                    ["type"] = "chat_mention",
+                    ["senderUsername"] = senderUsername,
+                    ["messageText"] = body,
                 },
-            },
-            Apns = new ApnsConfig
-            {
-                Aps = new Aps
+                Notification = new Notification
                 {
-                    Sound = "default",
-                    Badge = 1,
+                    Title = $"@{senderUsername} te mencionou",
+                    Body = body,
                 },
-            },
-        };
-
-        var instance = FirebaseMessaging.DefaultInstance;
-        if (instance is null)
-        {
-            logger.LogWarning("FCM: FirebaseMessaging.DefaultInstance is null — Firebase not initialized");
-            return;
-        }
-
-        try
-        {
-            var result = await instance.SendEachForMulticastAsync(multicast);
-            logger.LogInformation(
-                "FCM: Mention sent — success={Success} failure={Failure}",
-                result.SuccessCount, result.FailureCount);
-
-            if (result.FailureCount > 0)
-            {
-                for (var i = 0; i < result.Responses.Count; i++)
+                Android = new AndroidConfig
                 {
-                    var r = result.Responses[i];
-                    if (!r.IsSuccess)
-                        logger.LogWarning(
-                            "FCM: Token[{Index}] failed — {Code}: {Message}",
-                            i, r.Exception?.MessagingErrorCode, r.Exception?.Message);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "FCM: Exception sending mention notification to @{Username}", mentionedUsername);
-        }
+                    Priority = Priority.High,
+                    Notification = new AndroidNotification { ChannelId = "chat_mentions", Sound = "default" },
+                },
+                Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
+            },
+            context: "chat-mention",
+            target: mentionedUsername,
+            db: db);
     }
 
     public async Task SendReplyNotificationAsync(
@@ -129,44 +86,33 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
             return;
         }
 
-        var body = messageText.Length > MaxBodyLength
-            ? string.Concat(messageText.AsSpan(0, MaxBodyLength), "…")
-            : messageText;
+        var body = Truncate(messageText);
 
-        var multicast = new MulticastMessage
-        {
-            Tokens = tokens,
-            Data = new Dictionary<string, string>
+        await SendMulticastAsync(
+            new MulticastMessage
             {
-                ["type"] = "chat_reply",
-                ["replierUsername"] = replierUsername,
-                ["messageText"] = body,
-            },
-            Notification = new Notification
-            {
-                Title = $"@{replierUsername} respondeu você",
-                Body = body,
-            },
-            Android = new AndroidConfig
-            {
-                Priority = Priority.High,
-                Notification = new AndroidNotification
+                Tokens = tokens,
+                Data = new Dictionary<string, string>
                 {
-                    ChannelId = "chat_mentions",
-                    Sound = "default",
+                    ["type"] = "chat_reply",
+                    ["replierUsername"] = replierUsername,
+                    ["messageText"] = body,
                 },
-            },
-            Apns = new ApnsConfig
-            {
-                Aps = new Aps
+                Notification = new Notification
                 {
-                    Sound = "default",
-                    Badge = 1,
+                    Title = $"@{replierUsername} respondeu você",
+                    Body = body,
                 },
+                Android = new AndroidConfig
+                {
+                    Priority = Priority.High,
+                    Notification = new AndroidNotification { ChannelId = "chat_mentions", Sound = "default" },
+                },
+                Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
             },
-        };
-
-        await SendMulticastAsync(multicast, "chat-reply", repliedToUsername);
+            context: "chat-reply",
+            target: repliedToUsername,
+            db: db);
     }
 
     public async Task SendGameCreatedNotificationAsync(
@@ -194,9 +140,6 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
             return;
         }
 
-        // Exclude tokens belonging to the creator — guards against the case where
-        // the creator has multiple accounts on the same device (e.g. email + Nostr)
-        // and played games between those accounts, making themselves a "past opponent".
         var tokens = await db.PlayerFcmTokens
             .Where(t => opponentIds.Contains(t.PlayerId) && t.PlayerId != creatorPlayerId)
             .Select(t => t.Token)
@@ -210,73 +153,31 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
             return;
         }
 
-        logger.LogInformation(
-            "FCM: Sending game-created to {TokenCount} device(s) for {OpponentCount} opponent(s) of @{Creator}",
-            tokens.Count, opponentIds.Count, creatorUsername);
-
-        var multicast = new MulticastMessage
-        {
-            Tokens = tokens,
-            Data = new Dictionary<string, string>
+        await SendMulticastAsync(
+            new MulticastMessage
             {
-                ["type"] = "game_created",
-                ["gameId"] = gameId.ToString(),
-                ["creatorUsername"] = creatorUsername,
-            },
-            Notification = new Notification
-            {
-                Title = $"{creatorUsername} está procurando adversário!",
-                Body = "Toque para entrar na partida",
-            },
-            Android = new AndroidConfig
-            {
-                Priority = Priority.High,
-                Notification = new AndroidNotification
+                Tokens = tokens,
+                Data = new Dictionary<string, string>
                 {
-                    ChannelId = "game_invites",
-                    Sound = "default",
+                    ["type"] = "game_created",
+                    ["gameId"] = gameId.ToString(),
+                    ["creatorUsername"] = creatorUsername,
                 },
-            },
-            Apns = new ApnsConfig
-            {
-                Aps = new Aps
+                Notification = new Notification
                 {
-                    Sound = "default",
-                    Badge = 1,
+                    Title = $"{creatorUsername} está procurando adversário!",
+                    Body = "Toque para entrar na partida",
                 },
-            },
-        };
-
-        var instance = FirebaseMessaging.DefaultInstance;
-        if (instance is null)
-        {
-            logger.LogWarning("FCM: FirebaseMessaging.DefaultInstance is null — Firebase not initialized");
-            return;
-        }
-
-        try
-        {
-            var result = await instance.SendEachForMulticastAsync(multicast);
-            logger.LogInformation(
-                "FCM: GameCreated sent by @{Creator} — success={Success} failure={Failure}",
-                creatorUsername, result.SuccessCount, result.FailureCount);
-
-            if (result.FailureCount > 0)
-            {
-                for (var i = 0; i < result.Responses.Count; i++)
+                Android = new AndroidConfig
                 {
-                    var r = result.Responses[i];
-                    if (!r.IsSuccess)
-                        logger.LogWarning(
-                            "FCM: Token[{Index}] failed — {Code}: {Message}",
-                            i, r.Exception?.MessagingErrorCode, r.Exception?.Message);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "FCM: Exception sending game-created notification for @{Username}", creatorUsername);
-        }
+                    Priority = Priority.High,
+                    Notification = new AndroidNotification { ChannelId = "game_invites", Sound = "default" },
+                },
+                Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
+            },
+            context: "game-created",
+            target: creatorUsername,
+            db: db);
     }
 
     public async Task SendPlayerJoinedNotificationAsync(
@@ -302,29 +203,31 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
             return;
         }
 
-        var multicast = new MulticastMessage
-        {
-            Tokens = tokens,
-            Data = new Dictionary<string, string>
+        await SendMulticastAsync(
+            new MulticastMessage
             {
-                ["type"] = "player_joined",
-                ["gameId"] = gameId.ToString(),
-                ["joinerUsername"] = joinerUsername,
+                Tokens = tokens,
+                Data = new Dictionary<string, string>
+                {
+                    ["type"] = "player_joined",
+                    ["gameId"] = gameId.ToString(),
+                    ["joinerUsername"] = joinerUsername,
+                },
+                Notification = new Notification
+                {
+                    Title = $"{joinerUsername} entrou na sua partida!",
+                    Body = "Toque para jogar",
+                },
+                Android = new AndroidConfig
+                {
+                    Priority = Priority.High,
+                    Notification = new AndroidNotification { ChannelId = "game_invites", Sound = "default" },
+                },
+                Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
             },
-            Notification = new Notification
-            {
-                Title = $"{joinerUsername} entrou na sua partida!",
-                Body = "Toque para jogar",
-            },
-            Android = new AndroidConfig
-            {
-                Priority = Priority.High,
-                Notification = new AndroidNotification { ChannelId = "game_invites", Sound = "default" },
-            },
-            Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
-        };
-
-        await SendMulticastAsync(multicast, "player-joined", creatorPlayerId.ToString());
+            context: "player-joined",
+            target: creatorPlayerId.ToString(),
+            db: db);
     }
 
     public async Task SendNewUserNotificationAsync(string newUsername, bool isNostr)
@@ -346,34 +249,44 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
         }
 
         var via = isNostr ? "Nostr" : "e-mail";
-        var multicast = new MulticastMessage
-        {
-            Tokens = tokens,
-            Data = new Dictionary<string, string>
+        await SendMulticastAsync(
+            new MulticastMessage
             {
-                ["type"] = "new_user",
-                ["username"] = newUsername,
-                ["isNostr"] = isNostr ? "true" : "false",
+                Tokens = tokens,
+                Data = new Dictionary<string, string>
+                {
+                    ["type"] = "new_user",
+                    ["username"] = newUsername,
+                    ["isNostr"] = isNostr ? "true" : "false",
+                },
+                Notification = new Notification
+                {
+                    Title = $"Novo jogador: {newUsername}",
+                    Body = $"Entrou pelo {via}. Venha jogar!",
+                },
+                Android = new AndroidConfig
+                {
+                    Priority = Priority.High,
+                    Notification = new AndroidNotification { ChannelId = "game_invites", Sound = "default" },
+                },
+                Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
             },
-            Notification = new Notification
-            {
-                Title = $"Novo jogador: {newUsername}",
-                Body = $"Entrou pelo {via}. Venha jogar!",
-            },
-            Android = new AndroidConfig
-            {
-                Priority = Priority.High,
-                Notification = new AndroidNotification { ChannelId = "game_invites", Sound = "default" },
-            },
-            Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
-        };
-
-        await SendMulticastAsync(multicast, "new-user", newUsername);
+            context: "new-user",
+            target: newUsername,
+            db: db);
     }
 
-    // ── Shared FCM dispatch ───────────────────────────────────────────────────
+    // ── Shared FCM dispatch with stale-token cleanup ──────────────────────────
 
-    private async Task SendMulticastAsync(MulticastMessage multicast, string context, string target)
+    /// <summary>
+    /// Sends a multicast FCM message and removes any tokens that Firebase
+    /// reports as unregistered (expired / app uninstalled / reinstalled).
+    /// </summary>
+    private async Task SendMulticastAsync(
+        MulticastMessage multicast,
+        string context,
+        string target,
+        DamasDbContext db)
     {
         var instance = FirebaseMessaging.DefaultInstance;
         if (instance is null)
@@ -391,13 +304,37 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
 
             if (result.FailureCount > 0)
             {
+                var staleTokens = new List<string>();
+
                 for (var i = 0; i < result.Responses.Count; i++)
                 {
                     var r = result.Responses[i];
-                    if (!r.IsSuccess)
-                        logger.LogWarning(
-                            "FCM: [{Context}] Token[{Index}] failed — {Code}: {Message}",
-                            context, i, r.Exception?.MessagingErrorCode, r.Exception?.Message);
+                    if (r.IsSuccess) continue;
+
+                    logger.LogWarning(
+                        "FCM: [{Context}] Token[{Index}] failed — {Code}: {Message}",
+                        context, i, r.Exception?.MessagingErrorCode, r.Exception?.Message);
+
+                    // Unregistered = app was uninstalled, reinstalled, or token expired.
+                    // SenderIdMismatch = token belongs to a different Firebase project.
+                    // Both cases mean the token is permanently invalid and must be removed.
+                    if (r.Exception?.MessagingErrorCode is
+                        MessagingErrorCode.Unregistered or
+                        MessagingErrorCode.SenderIdMismatch)
+                    {
+                        staleTokens.Add(multicast.Tokens[i]);
+                    }
+                }
+
+                if (staleTokens.Count > 0)
+                {
+                    await db.PlayerFcmTokens
+                        .Where(t => staleTokens.Contains(t.Token))
+                        .ExecuteDeleteAsync();
+
+                    logger.LogInformation(
+                        "FCM: [{Context}] Purged {Count} stale token(s) from database",
+                        context, staleTokens.Count);
                 }
             }
         }
@@ -406,4 +343,9 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
             logger.LogError(ex, "FCM: Exception in [{Context}] for {Target}", context, target);
         }
     }
+
+    private static string Truncate(string text) =>
+        text.Length > MaxBodyLength
+            ? string.Concat(text.AsSpan(0, MaxBodyLength), "…")
+            : text;
 }
