@@ -41,6 +41,19 @@ jest.mock('../src/api/wallet', () => ({
 }));
 jest.mock('../src/storage/auth');
 jest.mock('../src/storage/game');
+jest.mock('../src/storage/notifications', () => ({
+  hasSeenNotificationPrompt: jest.fn().mockResolvedValue(true),
+  markNotificationPromptSeen: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock('../src/services/pushNotifications', () => ({
+  hasNotificationPermission: jest.fn().mockResolvedValue(true),
+  requestNotificationPermission: jest.fn().mockResolvedValue(true),
+  getFCMToken: jest.fn().mockResolvedValue('fake-token'),
+  setupForegroundHandler: jest.fn().mockReturnValue(() => {}),
+  setupNotificationOpenedHandler: jest.fn().mockReturnValue(() => {}),
+  getInitialNotification: jest.fn().mockResolvedValue(null),
+  setupTokenRefreshHandler: jest.fn().mockReturnValue(() => {}),
+}));
 jest.mock('../src/api/players', () => ({
   getPlayer: jest.fn().mockResolvedValue({
     id: 'player-1',

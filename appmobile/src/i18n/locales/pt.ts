@@ -407,6 +407,12 @@ const pt = {
     later: 'Depois',
     play: 'Jogar',
   },
+  notificationPermission: {
+    title: 'Ativar notificações',
+    message: 'Receba notificações quando alguém te mencionar, responder ou criar uma partida.',
+    allowButton: 'Ativar notificações',
+    declineButton: 'Agora não',
+  },
   updateApp: {
     title: 'Atualização disponível',
     message: 'Uma nova versão do Damas Clash está disponível. Atualize para ter as últimas melhorias.',

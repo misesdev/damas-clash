@@ -24,6 +24,7 @@ import type {GameResponse} from '../types/game';
 import type {WalletResponse} from '../types/wallet';
 import type {OnlinePlayerInfo} from '../types/player';
 import {
+  hasNotificationPermission,
   requestNotificationPermission,
   getFCMToken,
   setupForegroundHandler,
@@ -32,6 +33,7 @@ import {
   setupTokenRefreshHandler,
   type NotificationPayload,
 } from '../services/pushNotifications';
+import {hasSeenNotificationPrompt, markNotificationPromptSeen} from '../storage/notifications';
 import {registerFCMToken, unregisterFCMToken} from '../api/notifications';
 import {APP_VERSION, fetchMinVersion, isVersionOutdated} from '../api/appVersion';
 
@@ -52,6 +54,7 @@ export function useApp() {
   const [pendingGameId, setPendingGameId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updateRequired, setUpdateRequired] = useState(false);
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const [creatingGame, setCreatingGame] = useState(false);
   const [liveGames, setLiveGames] = useState<GameResponse[] | null>(null);
   const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayerInfo[]>([]);
@@ -65,12 +68,6 @@ export function useApp() {
 
   // ── Push Notifications ───────────────────────────────────────────────────
 
-  // Request permission on every app open. On Android the system dialog only
-  // appears once; subsequent calls return the current status silently.
-  useEffect(() => {
-    requestNotificationPermission().catch(() => {});
-  }, []);
-
   const initPushNotifications = useCallback(async (authToken: string) => {
     try {
       const granted = await requestNotificationPermission();
@@ -80,6 +77,26 @@ export function useApp() {
         await registerFCMToken(token, authToken, i18n.language);
       }
     } catch { /* silently ignore — notifications are non-critical */ }
+  }, []);
+
+  /** Called when the user taps "Allow" on the notification permission screen. */
+  const handleAllowNotifications = useCallback(async () => {
+    await markNotificationPromptSeen();
+    // Request OS permission BEFORE hiding the screen so the system dialog
+    // opens while our activity is fully in the foreground.
+    await requestNotificationPermission().catch(() => {});
+    setShowNotificationPrompt(false);
+    // Register the FCM token immediately if the user is already logged in.
+    // If not logged in yet, initPushNotifications is called after login.
+    if (sessionRef.current?.token) {
+      initPushNotifications(sessionRef.current.token).catch(() => {});
+    }
+  }, [initPushNotifications]);
+
+  /** Called when the user taps "Not now" on the notification permission screen. */
+  const handleDismissNotificationPrompt = useCallback(async () => {
+    await markNotificationPromptSeen();
+    setShowNotificationPrompt(false);
   }, []);
 
   // Navigate based on notification type (tap from background or killed state)
@@ -264,6 +281,18 @@ export function useApp() {
             const profile = await getPlayer(saved.token, saved.playerId);
             if (!cancelled) {setLightningAddress(profile.lightningAddress);}
           } catch { /* silently ignore */ }
+        }
+
+        // After all startup is done, show notification permission prompt if needed.
+        // Shown once: only when permission hasn't been granted AND the user hasn't seen it yet.
+        if (!cancelled) {
+          const [alreadyGranted, alreadySeen] = await Promise.all([
+            hasNotificationPermission(),
+            hasSeenNotificationPrompt(),
+          ]);
+          if (!alreadyGranted && !alreadySeen) {
+            setShowNotificationPrompt(true);
+          }
         }
       } finally {
         if (!cancelled) {setLoading(false);}
@@ -727,6 +756,9 @@ export function useApp() {
     loading,
     updateRequired,
     dismissUpdate: () => setUpdateRequired(false),
+    showNotificationPrompt,
+    handleAllowNotifications,
+    handleDismissNotificationPrompt,
     handleLogin,
     handleLogout,
     updateSession,

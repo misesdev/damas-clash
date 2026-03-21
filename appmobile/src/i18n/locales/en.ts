@@ -407,6 +407,12 @@ const en = {
     later: 'Later',
     play: 'Play',
   },
+  notificationPermission: {
+    title: 'Enable notifications',
+    message: 'Get notified when someone mentions you, replies, or creates a match.',
+    allowButton: 'Enable notifications',
+    declineButton: 'Not now',
+  },
   updateApp: {
     title: 'Update available',
     message: 'A new version of Damas Clash is available. Update to get the latest improvements.',

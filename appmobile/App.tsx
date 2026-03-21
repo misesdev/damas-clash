@@ -5,6 +5,7 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import MessageBox from './src/components/MessageBox';
 import {OnlinePlayersScreen} from './src/screens/OnlinePlayersScreen';
 import {UpdateAppScreen} from './src/screens/UpdateAppScreen';
+import {NotificationPermissionScreen} from './src/screens/NotificationPermissionScreen';
 import {AppProvider, useAppContext} from './src/context/AppContext';
 import {AuthNavigator} from './src/navigation/AuthNavigator';
 import {MainNavigator} from './src/navigation/MainNavigator';
@@ -16,6 +17,9 @@ function AppContent() {
     loading,
     updateRequired,
     dismissUpdate,
+    showNotificationPrompt,
+    handleAllowNotifications,
+    handleDismissNotificationPrompt,
     showOnlinePlayers,
     setShowOnlinePlayers,
     onlinePlayers,
@@ -33,6 +37,15 @@ function AppContent() {
 
   if (updateRequired) {
     return <UpdateAppScreen onDismiss={dismissUpdate} />;
+  }
+
+  if (showNotificationPrompt) {
+    return (
+      <NotificationPermissionScreen
+        onAllow={handleAllowNotifications}
+        onDecline={handleDismissNotificationPrompt}
+      />
+    );
   }
 
   return (

@@ -5,6 +5,7 @@ import {
   getInitialNotification as fcmGetInitialNotification,
   onTokenRefresh as fcmOnTokenRefresh,
   requestPermission as fcmRequestPermission,
+  hasPermission as fcmHasPermission,
   getToken as fcmGetToken,
   isDeviceRegisteredForRemoteMessages,
   registerDeviceForRemoteMessages,
@@ -38,6 +39,22 @@ export type NotificationPayload =
   | {type: 'game_created'; data: GameCreatedNotificationData}
   | {type: 'player_joined'; data: PlayerJoinedNotificationData}
   | {type: 'new_user'; data: {username: string}};
+
+/**
+ * Returns true if push notification permission is already granted.
+ * Does NOT show any system dialog.
+ */
+export async function hasNotificationPermission(): Promise<boolean> {
+  try {
+    const status = await fcmHasPermission(getMessaging());
+    return (
+      status === AuthorizationStatus.AUTHORIZED ||
+      status === AuthorizationStatus.PROVISIONAL
+    );
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Requests push notification permission from the user.
