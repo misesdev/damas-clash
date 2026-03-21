@@ -22,9 +22,22 @@ export interface GameCreatedNotificationData {
   creatorUsername: string;
 }
 
+export interface PlayerJoinedNotificationData {
+  gameId: string;
+  joinerUsername: string;
+}
+
+export interface ReplyNotificationData {
+  replierUsername: string;
+  messageText: string;
+}
+
 export type NotificationPayload =
   | {type: 'chat_mention'; data: MentionNotificationData}
-  | {type: 'game_created'; data: GameCreatedNotificationData};
+  | {type: 'chat_reply'; data: ReplyNotificationData}
+  | {type: 'game_created'; data: GameCreatedNotificationData}
+  | {type: 'player_joined'; data: PlayerJoinedNotificationData}
+  | {type: 'new_user'; data: {username: string}};
 
 /**
  * Requests push notification permission from the user.
@@ -83,6 +96,32 @@ function parsePayload(data?: Record<string, string>): NotificationPayload | null
       type: 'game_created',
       data: {gameId: data.gameId, creatorUsername: data.creatorUsername},
     };
+  }
+
+  if (
+    data.type === 'chat_reply' &&
+    typeof data.replierUsername === 'string' &&
+    typeof data.messageText === 'string'
+  ) {
+    return {
+      type: 'chat_reply',
+      data: {replierUsername: data.replierUsername, messageText: data.messageText},
+    };
+  }
+
+  if (
+    data.type === 'player_joined' &&
+    typeof data.gameId === 'string' &&
+    typeof data.joinerUsername === 'string'
+  ) {
+    return {
+      type: 'player_joined',
+      data: {gameId: data.gameId, joinerUsername: data.joinerUsername},
+    };
+  }
+
+  if (data.type === 'new_user' && typeof data.username === 'string') {
+    return {type: 'new_user', data: {username: data.username}};
   }
 
   return null;

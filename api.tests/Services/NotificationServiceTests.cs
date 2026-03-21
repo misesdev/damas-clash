@@ -162,6 +162,59 @@ public class NotificationServiceTests
         Assert.Null(exception);
     }
 
+    // ── SendReplyNotificationAsync ────────────────────────────────────────────
+
+    [Fact]
+    public async Task SendReplyNotification_TokenQuery_ExcludesReplierTokens()
+    {
+        // Alice replies to Bob's message. Bob should receive the notification;
+        // Alice's own devices must be excluded.
+
+        var dbName = "TestDb_Reply_" + Guid.NewGuid();
+        await using var db = CreateDb(dbName);
+
+        var alice = MakePlayer("alice");
+        var bob = MakePlayer("bob");
+        db.Players.AddRange(alice, bob);
+
+        db.PlayerFcmTokens.Add(MakeToken(alice.Id, "T1_alice"));
+        db.PlayerFcmTokens.Add(MakeToken(bob.Id, "T2_bob"));
+        await db.SaveChangesAsync();
+
+        // Mirror the service query: Bob's tokens, excluding Alice's ID
+        var tokens = await db.PlayerFcmTokens
+            .Where(t => t.Player.Username == "bob" && t.PlayerId != alice.Id)
+            .Select(t => t.Token)
+            .ToListAsync();
+
+        Assert.Single(tokens);
+        Assert.Equal("T2_bob", tokens[0]);
+    }
+
+    [Fact]
+    public async Task SendReplyNotification_CompletesWithoutException_WhenFirebaseNotInitialised()
+    {
+        var dbName = "TestDb_Reply_Firebase_" + Guid.NewGuid();
+        var scopeFactory = BuildScopeFactory(dbName);
+
+        await using (var scope = scopeFactory.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
+            var alice = MakePlayer("alice");
+            var bob = MakePlayer("bob");
+            db.Players.AddRange(alice, bob);
+            db.PlayerFcmTokens.Add(MakeToken(bob.Id, "T_bob"));
+            await db.SaveChangesAsync();
+        }
+
+        var service = new NotificationService(scopeFactory, NullLogger<NotificationService>.Instance);
+
+        var exception = await Record.ExceptionAsync(() =>
+            service.SendReplyNotificationAsync("bob", Guid.NewGuid(), "alice", "nice move!"));
+
+        Assert.Null(exception);
+    }
+
     // ── SendGameCreatedNotificationAsync ─────────────────────────────────────
 
     [Fact]

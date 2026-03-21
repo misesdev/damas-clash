@@ -20,6 +20,7 @@ public class AuthService(
     ITokenService tokenService,
     IConfiguration configuration,
     INostrChallengeStore nostrChallengeStore,
+    INotificationService notifications,
     ILogger<AuthService> logger) : IAuthService
 {
   public async Task<ServiceResult<RegisterResponse>> RegisterAsync(RegisterRequest req, CancellationToken ct = default)
@@ -70,6 +71,9 @@ public class AuthService(
     player.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(30);
 
     await db.SaveChangesAsync(ct);
+
+    // Notify admins that a new user just activated their account (fire-and-forget)
+    _ = notifications.SendNewUserNotificationAsync(player.Username, isNostr: false);
 
     var tokenResult = tokenService.Generate(player);
     return ServiceResult<LoginResponse>.Ok(
@@ -292,6 +296,7 @@ public class AuthService(
 
     // 3. Find or create player
     var player = await db.Players.FirstOrDefaultAsync(p => p.NostrPubKey == req.Pubkey, ct);
+    var isNewPlayer = player is null;
     if (player is null)
     {
       var username = await GenerateUniqueUsernameAsync(req.Username, ct);
@@ -321,6 +326,10 @@ public class AuthService(
     player.RefreshToken = refreshToken;
     player.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(30);
     await db.SaveChangesAsync(ct);
+
+    // Notify admins when a brand-new Nostr player activates (fire-and-forget)
+    if (isNewPlayer)
+        _ = notifications.SendNewUserNotificationAsync(player.Username, isNostr: true);
 
     var tokenResult = tokenService.Generate(player);
     return ServiceResult<LoginResponse>.Ok(
@@ -353,6 +362,7 @@ public class AuthService(
 
     // 4. Find or create player
     var player = await db.Players.FirstOrDefaultAsync(p => p.NostrPubKey == ev.Pubkey, ct);
+    var isNewPlayer = player is null;
     if (player is null)
     {
       var username = await GenerateUniqueUsernameAsync(req.Username, ct);
@@ -381,6 +391,10 @@ public class AuthService(
     player.RefreshToken = refreshToken;
     player.RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(30);
     await db.SaveChangesAsync(ct);
+
+    // Notify admins when a brand-new Nostr player activates (fire-and-forget)
+    if (isNewPlayer)
+        _ = notifications.SendNewUserNotificationAsync(player.Username, isNostr: true);
 
     var tokenResult = tokenService.Generate(player);
     return ServiceResult<LoginResponse>.Ok(

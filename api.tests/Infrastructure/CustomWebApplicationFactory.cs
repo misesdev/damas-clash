@@ -16,6 +16,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     public FakeEmailService EmailService { get; } = new();
     public FakeLightningGatewayService LightningGateway { get; } = new();
     public FakeLightningAddressValidator LightningAddressValidator { get; } = new();
+    public FakeNotificationService NotificationService { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -59,6 +60,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<ILightningAddressValidator>();
             services.AddSingleton<ILightningAddressValidator>(LightningAddressValidator);
+
+            services.RemoveAll<INotificationService>();
+            services.AddSingleton<INotificationService>(NotificationService);
         });
     }
 }

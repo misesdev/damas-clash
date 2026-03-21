@@ -84,10 +84,10 @@ export function useApp() {
   const handleNotificationOpen = useCallback((payload: NotificationPayload) => {
     // Never navigate away while the user is actively playing
     if (authScreenRef.current === 'checkersBoard') {return;}
-    if (payload.type === 'game_created') {
+    if (payload.type === 'game_created' || payload.type === 'player_joined') {
       setAuthScreen('tabs');
       setTab('home');
-    } else if (payload.type === 'chat_mention') {
+    } else if (payload.type === 'chat_mention' || payload.type === 'chat_reply') {
       setAuthScreen('chat');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -120,6 +120,20 @@ export function useApp() {
             },
           ],
         });
+      } else if (payload.type === 'chat_reply') {
+        showMessage({
+          title: t('notifications.replyTitle', {username: payload.data.replierUsername}),
+          message: payload.data.messageText,
+          type: 'info',
+          actions: [
+            {label: t('common.ok')},
+            {
+              label: t('notifications.openChat'),
+              primary: true,
+              onPress: () => setAuthScreen('chat'),
+            },
+          ],
+        });
       } else if (payload.type === 'game_created') {
         showMessage({
           title: t('notifications.gameCreatedTitle', {username: payload.data.creatorUsername}),
@@ -129,6 +143,20 @@ export function useApp() {
             {label: t('common.ok')},
             {
               label: t('notifications.openGames'),
+              primary: true,
+              onPress: () => { setAuthScreen('tabs'); setTab('home'); },
+            },
+          ],
+        });
+      } else if (payload.type === 'player_joined') {
+        showMessage({
+          title: t('notifications.playerJoinedTitle', {username: payload.data.joinerUsername}),
+          message: t('notifications.playerJoinedBody'),
+          type: 'info',
+          actions: [
+            {label: t('common.ok')},
+            {
+              label: t('notifications.openGame'),
               primary: true,
               onPress: () => { setAuthScreen('tabs'); setTab('home'); },
             },

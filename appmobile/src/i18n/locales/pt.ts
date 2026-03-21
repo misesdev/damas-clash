@@ -434,10 +434,14 @@ const pt = {
   },
   notifications: {
     mentionTitle: '@{{username}} te mencionou',
+    replyTitle: '@{{username}} respondeu você',
     openChat: 'Abrir chat',
     gameCreatedTitle: '{{username}} está procurando adversário!',
     gameCreatedBody: 'Toque para entrar na partida',
     openGames: 'Ver partidas',
+    playerJoinedTitle: '{{username}} entrou na sua partida!',
+    playerJoinedBody: 'Toque para jogar',
+    openGame: 'Jogar',
   },
   nostrLogin: {
     title: 'Entrar com Nostr',

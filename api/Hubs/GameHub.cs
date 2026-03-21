@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using api.Data;
 using api.Services;
 using Microsoft.AspNetCore.SignalR;
@@ -13,6 +14,7 @@ public class GameHub(
     IOnlinePlayerTracker tracker,
     IChallengeService challenges,
     IGameChatService gameChat,
+    INotificationService notifications,
     DamasDbContext db) : Hub
 {
     // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -51,6 +53,15 @@ public class GameHub(
 
     // ── Game Chat ─────────────────────────────────────────────────────────────────
 
+    // Matches @[username with spaces] (group 1) or @word (group 2)
+    private static readonly Regex MentionRegex =
+        new(@"@\[([^\]]+)\]|@(\w+)", RegexOptions.Compiled);
+
+    private static IEnumerable<string> ExtractMentions(string text) =>
+        MentionRegex.Matches(text)
+            .Select(m => m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Broadcast a chat message to everyone in the game room.</summary>
     public async Task SendGameMessage(string text)
     {
@@ -72,6 +83,18 @@ public class GameHub(
             gameId, callerId.Value, CallerUsername, avatarUrl, trimmed);
 
         await Clients.Group(gameId).SendAsync("GameMessage", message);
+
+        // Notify mentioned players (fire-and-forget)
+        var callerUsername = CallerUsername;
+        var callerIdValue = callerId.Value;
+        _ = Task.Run(async () =>
+        {
+            foreach (var username in ExtractMentions(trimmed))
+            {
+                if (!string.Equals(username, callerUsername, StringComparison.OrdinalIgnoreCase))
+                    await notifications.SendMentionNotificationAsync(username, callerIdValue, callerUsername, trimmed);
+            }
+        });
     }
 
     /// <summary>Called by spectators — joins the game room and increments the watcher count.</summary>

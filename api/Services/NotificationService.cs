@@ -107,6 +107,68 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
         }
     }
 
+    public async Task SendReplyNotificationAsync(
+        string repliedToUsername,
+        Guid replierPlayerId,
+        string replierUsername,
+        string messageText)
+    {
+        logger.LogInformation("FCM: SendReply → looking up tokens for @{Mentioned}", repliedToUsername);
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
+
+        var tokens = await db.PlayerFcmTokens
+            .Where(t => t.Player.Username == repliedToUsername && t.PlayerId != replierPlayerId)
+            .Select(t => t.Token)
+            .ToListAsync();
+
+        if (tokens.Count == 0)
+        {
+            logger.LogInformation("FCM: No tokens found for @{Mentioned} — skipping", repliedToUsername);
+            return;
+        }
+
+        var body = messageText.Length > MaxBodyLength
+            ? string.Concat(messageText.AsSpan(0, MaxBodyLength), "…")
+            : messageText;
+
+        var multicast = new MulticastMessage
+        {
+            Tokens = tokens,
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "chat_reply",
+                ["replierUsername"] = replierUsername,
+                ["messageText"] = body,
+            },
+            Notification = new Notification
+            {
+                Title = $"@{replierUsername} respondeu você",
+                Body = body,
+            },
+            Android = new AndroidConfig
+            {
+                Priority = Priority.High,
+                Notification = new AndroidNotification
+                {
+                    ChannelId = "chat_mentions",
+                    Sound = "default",
+                },
+            },
+            Apns = new ApnsConfig
+            {
+                Aps = new Aps
+                {
+                    Sound = "default",
+                    Badge = 1,
+                },
+            },
+        };
+
+        await SendMulticastAsync(multicast, "chat-reply", repliedToUsername);
+    }
+
     public async Task SendGameCreatedNotificationAsync(
         Guid creatorPlayerId,
         string creatorUsername,
@@ -214,6 +276,134 @@ public class NotificationService(IServiceScopeFactory scopeFactory, ILogger<Noti
         catch (Exception ex)
         {
             logger.LogError(ex, "FCM: Exception sending game-created notification for @{Username}", creatorUsername);
+        }
+    }
+
+    public async Task SendPlayerJoinedNotificationAsync(
+        Guid creatorPlayerId,
+        string joinerUsername,
+        Guid gameId)
+    {
+        logger.LogInformation(
+            "FCM: SendPlayerJoined → notifying creator {CreatorId} that @{Joiner} joined game {GameId}",
+            creatorPlayerId, joinerUsername, gameId);
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
+
+        var tokens = await db.PlayerFcmTokens
+            .Where(t => t.PlayerId == creatorPlayerId)
+            .Select(t => t.Token)
+            .ToListAsync();
+
+        if (tokens.Count == 0)
+        {
+            logger.LogInformation("FCM: Creator {CreatorId} has no FCM tokens — skipping", creatorPlayerId);
+            return;
+        }
+
+        var multicast = new MulticastMessage
+        {
+            Tokens = tokens,
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "player_joined",
+                ["gameId"] = gameId.ToString(),
+                ["joinerUsername"] = joinerUsername,
+            },
+            Notification = new Notification
+            {
+                Title = $"{joinerUsername} entrou na sua partida!",
+                Body = "Toque para jogar",
+            },
+            Android = new AndroidConfig
+            {
+                Priority = Priority.High,
+                Notification = new AndroidNotification { ChannelId = "game_invites", Sound = "default" },
+            },
+            Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
+        };
+
+        await SendMulticastAsync(multicast, "player-joined", creatorPlayerId.ToString());
+    }
+
+    public async Task SendNewUserNotificationAsync(string newUsername, bool isNostr)
+    {
+        logger.LogInformation("FCM: SendNewUser → notifying admins about new user @{Username}", newUsername);
+
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<DamasDbContext>();
+
+        var tokens = await db.PlayerFcmTokens
+            .Where(t => t.Player.Role == Models.PlayerRole.Admin)
+            .Select(t => t.Token)
+            .ToListAsync();
+
+        if (tokens.Count == 0)
+        {
+            logger.LogInformation("FCM: No admin FCM tokens found — skipping new-user notification");
+            return;
+        }
+
+        var via = isNostr ? "Nostr" : "e-mail";
+        var multicast = new MulticastMessage
+        {
+            Tokens = tokens,
+            Data = new Dictionary<string, string>
+            {
+                ["type"] = "new_user",
+                ["username"] = newUsername,
+                ["isNostr"] = isNostr ? "true" : "false",
+            },
+            Notification = new Notification
+            {
+                Title = $"Novo jogador: {newUsername}",
+                Body = $"Entrou pelo {via}. Venha jogar!",
+            },
+            Android = new AndroidConfig
+            {
+                Priority = Priority.High,
+                Notification = new AndroidNotification { ChannelId = "game_invites", Sound = "default" },
+            },
+            Apns = new ApnsConfig { Aps = new Aps { Sound = "default", Badge = 1 } },
+        };
+
+        await SendMulticastAsync(multicast, "new-user", newUsername);
+    }
+
+    // ── Shared FCM dispatch ───────────────────────────────────────────────────
+
+    private async Task SendMulticastAsync(MulticastMessage multicast, string context, string target)
+    {
+        var instance = FirebaseMessaging.DefaultInstance;
+        if (instance is null)
+        {
+            logger.LogWarning("FCM: FirebaseMessaging.DefaultInstance is null — Firebase not initialized");
+            return;
+        }
+
+        try
+        {
+            var result = await instance.SendEachForMulticastAsync(multicast);
+            logger.LogInformation(
+                "FCM: [{Context}] → {Target} — success={Success} failure={Failure}",
+                context, target, result.SuccessCount, result.FailureCount);
+
+            if (result.FailureCount > 0)
+            {
+                for (var i = 0; i < result.Responses.Count; i++)
+                {
+                    var r = result.Responses[i];
+                    if (!r.IsSuccess)
+                        logger.LogWarning(
+                            "FCM: [{Context}] Token[{Index}] failed — {Code}: {Message}",
+                            context, i, r.Exception?.MessagingErrorCode, r.Exception?.Message);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "FCM: Exception in [{Context}] for {Target}", context, target);
         }
     }
 }

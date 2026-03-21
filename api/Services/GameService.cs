@@ -106,6 +106,12 @@ public class GameService(DamasDbContext db, IHubContext<GameHub> hub, IGameCache
         tracker.SetInGame(playerId, gameId);
         await BroadcastOnlinePlayersAsync(ct);
 
+        // Notify the creator that someone joined (fire-and-forget — must not block the response)
+        _ = notifications.SendPlayerJoinedNotificationAsync(
+            game.PlayerBlackId!.Value,
+            game.PlayerWhite!.Username,
+            gameId);
+
         return ServiceResult<GameResponse>.Ok(response);
     }
 

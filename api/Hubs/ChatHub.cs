@@ -49,9 +49,16 @@ public class ChatHub(
 
         await Clients.Group("chat").SendAsync("NewMessage", message);
 
-        // Send FCM push notifications to each distinct mentioned player
-        // (fire-and-forget — do not await so the hub response is not delayed)
+        // Send FCM push notifications (fire-and-forget — must not delay the hub response)
         _ = SendMentionNotificationsAsync(trimmed, callerId.Value, CallerUsername);
+
+        // Notify the author of the replied-to message (if this is a reply)
+        if (message.ReplyTo is { } reply &&
+            !string.Equals(reply.Username, CallerUsername, StringComparison.OrdinalIgnoreCase))
+        {
+            _ = notificationService.SendReplyNotificationAsync(
+                reply.Username, callerId.Value, CallerUsername, trimmed);
+        }
     }
 
     private async Task SendMentionNotificationsAsync(string text, Guid senderPlayerId, string senderUsername)

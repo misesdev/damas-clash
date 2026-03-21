@@ -434,10 +434,14 @@ const en = {
   },
   notifications: {
     mentionTitle: '@{{username}} mentioned you',
+    replyTitle: '@{{username}} replied to you',
     openChat: 'Open chat',
     gameCreatedTitle: '{{username}} is looking for an opponent!',
     gameCreatedBody: 'Tap to join the game',
     openGames: 'View games',
+    playerJoinedTitle: '{{username}} joined your game!',
+    playerJoinedBody: 'Tap to play',
+    openGame: 'Play',
   },
   nostrLogin: {
     title: 'Sign in with Nostr',
