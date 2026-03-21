@@ -11,7 +11,7 @@ import {
   registerDeviceForRemoteMessages,
   AuthorizationStatus,
 } from '@react-native-firebase/messaging';
-import {Platform} from 'react-native';
+import {Linking, PermissionsAndroid, Platform} from 'react-native';
 
 export interface MentionNotificationData {
   senderUsername: string;
@@ -58,10 +58,37 @@ export async function hasNotificationPermission(): Promise<boolean> {
 
 /**
  * Requests push notification permission from the user.
- * On Android 13+ (API 33) this shows the system permission dialog.
- * Returns true if permission was granted (AUTHORIZED or PROVISIONAL).
+ *
+ * On Android: Firebase's requestPermission always resolves immediately with
+ * AUTHORIZED without showing any OS dialog. The real runtime permission
+ * (POST_NOTIFICATIONS, added in API 33) must be requested via PermissionsAndroid.
+ * On devices running Android < 13, notifications are always enabled at the OS
+ * level, so we open the app settings page if they appear disabled.
+ *
+ * On iOS: delegates to Firebase which shows the native permission sheet.
+ *
+ * Returns true if permission is now granted.
  */
 export async function requestNotificationPermission(): Promise<boolean> {
+  if (Platform.OS === 'android') {
+    // Android 13+ (API 33): request the POST_NOTIFICATIONS runtime permission
+    if ((Platform.Version as number) >= 33) {
+      const result = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+      return result === PermissionsAndroid.RESULTS.GRANTED;
+    }
+    // Android < 13: notifications are auto-granted at OS level.
+    // If hasPermission returns false it means the user disabled them in settings.
+    // Open settings so they can re-enable manually.
+    const already = await hasNotificationPermission();
+    if (!already) {
+      await Linking.openSettings();
+    }
+    return already;
+  }
+
+  // iOS: Firebase handles the native permission sheet
   const authStatus = await fcmRequestPermission(getMessaging());
   return (
     authStatus === AuthorizationStatus.AUTHORIZED ||
