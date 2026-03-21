@@ -24,6 +24,13 @@ const INITIAL_BOARD_STATE = JSON.stringify({
 
 jest.mock('../src/api/auth');
 jest.mock('../src/api/games');
+jest.mock('../src/api/appVersion', () => ({
+  APP_VERSION: '2.7',
+  STORE_URL: 'market://details?id=com.damasclash',
+  STORE_URL_FALLBACK: 'https://play.google.com/store/apps/details?id=com.damasclash',
+  fetchMinVersion: jest.fn().mockResolvedValue('2.7'),
+  isVersionOutdated: jest.fn().mockReturnValue(false),
+}));
 jest.mock('../src/api/wallet', () => ({
   getWallet: jest.fn().mockResolvedValue({balanceSats: 0, lockedBalanceSats: 0, availableBalanceSats: 0}),
   initiateDeposit: jest.fn(),

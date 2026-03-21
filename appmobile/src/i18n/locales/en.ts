@@ -407,6 +407,11 @@ const en = {
     later: 'Later',
     play: 'Play',
   },
+  updateApp: {
+    title: 'Update required',
+    message: 'A new version of the app is available. Please update to continue.',
+    updateButton: 'Update now',
+  },
   language: {
     label: 'Language',
     portuguese: 'Português',

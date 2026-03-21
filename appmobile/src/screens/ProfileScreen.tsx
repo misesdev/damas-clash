@@ -14,6 +14,7 @@ import {useProfileScreen} from '../hooks/useProfileScreen';
 import {useLanguage} from '../hooks/useLanguage';
 import {pubkeyToShortNpub} from '../utils/nostr';
 import {styles} from '../styles/profileStyles';
+import {APP_VERSION} from '../api/appVersion';
 import type {LoginResponse} from '../types/auth';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -242,7 +243,7 @@ export function ProfileScreen({
           </View>
         </View>
 
-        <Text style={styles.version}>{t('profile.version', {version: '2.7'})}</Text>
+        <Text style={styles.version}>{t('profile.version', {version: APP_VERSION})}</Text>
       </ScrollView>
     </SafeAreaView>
   );

@@ -407,6 +407,11 @@ const pt = {
     later: 'Depois',
     play: 'Jogar',
   },
+  updateApp: {
+    title: 'Atualização necessária',
+    message: 'Uma nova versão do app está disponível. Atualize para continuar.',
+    updateButton: 'Atualizar agora',
+  },
   language: {
     label: 'Idioma',
     portuguese: 'Português',

@@ -33,6 +33,7 @@ import {
   type NotificationPayload,
 } from '../services/pushNotifications';
 import {registerFCMToken, unregisterFCMToken} from '../api/notifications';
+import {APP_VERSION, fetchMinVersion, isVersionOutdated} from '../api/appVersion';
 
 export type Screen = 'login' | 'register' | 'confirmEmail' | 'verifyLogin' | 'nostrLogin';
 export type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'deposit' | 'withdraw' | 'editLightningAddress' | 'walletHistory' | 'playerProfile' | 'dashboard' | 'chat';
@@ -50,6 +51,7 @@ export function useApp() {
   const [replayGame, setReplayGame] = useState<GameResponse | null>(null);
   const [pendingGameId, setPendingGameId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updateRequired, setUpdateRequired] = useState(false);
   const [creatingGame, setCreatingGame] = useState(false);
   const [liveGames, setLiveGames] = useState<GameResponse[] | null>(null);
   const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayerInfo[]>([]);
@@ -213,6 +215,14 @@ export function useApp() {
         const savedLang = await loadLanguage();
         if (savedLang && !cancelled) {
           i18n.changeLanguage(savedLang);
+        }
+
+        // Check minimum required app version before doing anything else.
+        // If the server is unreachable, we let the user in (fail open).
+        const minVersion = await fetchMinVersion();
+        if (!cancelled && minVersion && isVersionOutdated(APP_VERSION, minVersion)) {
+          setUpdateRequired(true);
+          return;
         }
 
         const saved = await loadSession();
@@ -715,6 +725,7 @@ export function useApp() {
     setPendingEmail,
     session,
     loading,
+    updateRequired,
     handleLogin,
     handleLogout,
     updateSession,

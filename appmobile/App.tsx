@@ -4,6 +4,7 @@ import {ActivityIndicator, StatusBar, StyleSheet, View} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import MessageBox from './src/components/MessageBox';
 import {OnlinePlayersScreen} from './src/screens/OnlinePlayersScreen';
+import {UpdateAppScreen} from './src/screens/UpdateAppScreen';
 import {AppProvider, useAppContext} from './src/context/AppContext';
 import {AuthNavigator} from './src/navigation/AuthNavigator';
 import {MainNavigator} from './src/navigation/MainNavigator';
@@ -13,6 +14,7 @@ function AppContent() {
   const {
     session,
     loading,
+    updateRequired,
     showOnlinePlayers,
     setShowOnlinePlayers,
     onlinePlayers,
@@ -26,6 +28,10 @@ function AppContent() {
         <ActivityIndicator color={colors.text} />
       </View>
     );
+  }
+
+  if (updateRequired) {
+    return <UpdateAppScreen />;
   }
 
   return (
