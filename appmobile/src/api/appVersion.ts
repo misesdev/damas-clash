@@ -1,10 +1,10 @@
 import {BASE_URL} from './client';
 
-export const APP_VERSION = '2.9';
+export const APP_VERSION = '3.0';
 
-/** Zapstore deep link for the app */
-export const ZAPSTORE_URL = 'zapstore://install?app=com.damasclash';
-/** Zapstore web page fallback if the deep link fails */
+/** Android market intent — Zapstore handles this if installed */
+export const ZAPSTORE_URL = 'market://details?id=com.damasclash';
+/** Zapstore web page fallback if the app is not installed */
 export const ZAPSTORE_WEB_URL = 'https://zapstore.dev/apps/com.damasclash';
 /** Direct APK download from the latest GitHub Release */
 export const GITHUB_APK_URL = 'https://github.com/misesdev/damas-clash/releases/latest';
