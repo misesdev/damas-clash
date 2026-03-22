@@ -25,6 +25,14 @@ O Damas Clash segue as regras oficiais das **Damas Brasileiras** (tabuleiro 8×8
 
 As partidas acontecem ao vivo. Você vê cada movimento do adversário no instante em que ele joga, sem precisar atualizar a tela.
 
+### Chat ao vivo
+
+Converse com outros jogadores em tempo real diretamente no app. Mencione alguém com @usuário, responda mensagens e receba notificações quando alguém falar com você.
+
+### Notificações
+
+Receba alertas quando uma partida começa, quando um oponente entrar na sua sala e quando alguém te mencionar no chat — sem precisar deixar o app aberto.
+
 ### Carteira Lightning
 
 Deposite e saque Bitcoin em satoshis diretamente no aplicativo via Lightning Network. Sem intermediários, sem bancos — apenas você e sua carteira.
@@ -33,14 +41,11 @@ Deposite e saque Bitcoin em satoshis diretamente no aplicativo via Lightning Net
 
 Crie partidas com aposta em satoshis. O vencedor leva o dobro do valor apostado. As partidas amigáveis (sem aposta) continuam disponíveis para quem prefere jogar sem risco.
 
-### Sala de espera
-
-Crie uma partida e aguarde na sala de espera. Quando um oponente entrar, o jogo começa automaticamente — sem precisar ficar checando.
-
 ### Perfil e histórico
 
 - Acompanhe suas vitórias, derrotas e empates
 - Reveja qualquer partida jogada, movimento por movimento
+- Veja o perfil e o histórico de outros jogadores, incluindo replays das partidas
 - Personalize seu perfil com foto e nome de usuário únicos
 
 ### Login sem senha

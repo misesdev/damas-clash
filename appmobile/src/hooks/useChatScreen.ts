@@ -8,6 +8,8 @@ import type {HubConnection} from '@microsoft/signalr';
 import {useTranslation} from 'react-i18next';
 import {BASE_URL} from '../api/client';
 import {listPlayers} from '../api/players';
+import {loadCachedMessages, saveCachedMessages} from '../storage/chatCache';
+import {useAppContext} from '../context/AppContext';
 import type {LoginResponse} from '../types/auth';
 
 export interface MentionCandidate {
@@ -35,6 +37,7 @@ export interface ChatMessage {
 
 export function useChatScreen(session: LoginResponse) {
   const {t} = useTranslation();
+  const {handleNewChatMessage} = useAppContext();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState('');
   const [connected, setConnected] = useState(false);
@@ -53,6 +56,23 @@ export function useChatScreen(session: LoginResponse) {
   // reconnect without recreating the connection.
   const sessionTokenRef = useRef(session.token);
   sessionTokenRef.current = session.token;
+
+  // Load cached messages immediately so the UI is populated before the hub connects
+  useEffect(() => {
+    loadCachedMessages()
+      .then(cached => {
+        if (cached.length > 0) {setMessages(cached);}
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist messages to cache whenever they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      saveCachedMessages(messages);
+    }
+  }, [messages]);
 
   // Fetch all players once for the mention autocomplete
   useEffect(() => {
@@ -87,11 +107,13 @@ export function useChatScreen(session: LoginResponse) {
         hub.on('ChatHistory', (history: ChatMessage[]) => {
           if (!active) {return;}
           setMessages(history);
+          saveCachedMessages(history);
         });
 
         hub.on('NewMessage', (msg: ChatMessage) => {
           if (!active) {return;}
           setMessages(prev => [...prev, msg]);
+          handleNewChatMessage();
         });
 
         hub.on('MessageEdited', (updated: ChatMessage) => {

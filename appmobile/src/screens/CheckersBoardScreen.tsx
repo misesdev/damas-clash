@@ -13,24 +13,16 @@ import {useTranslation} from 'react-i18next';
 import {showMessage} from '../components/MessageBox';
 import {Button} from '../components/Button';
 import {ChatInputBar} from '../components/ChatInputBar';
-import {Avatar} from '../components/chat/Avatar';
-import {MentionText} from '../components/chat/MentionText';
+import {PlayerMatchup} from '../components/PlayerMatchup';
 import {BOARD_SIZE, findAt, isDarkSquare} from '../game/checkers';
 import {useGameBoard} from '../hooks/useGameBoard';
 import {useGameChat} from '../hooks/useGameChat';
 import {useAndroidBack} from '../navigation/useAndroidBack';
 import {styles} from '../styles/checkersBoardStyles';
-import {colors} from '../theme/colors';
 import type {ChatMessage} from '../hooks/useGameChat';
 import type {LoginResponse} from '../types/auth';
 import type {GameResponse} from '../types/game';
 import { ChatMessageItem } from '../components/chat/ChatMessageItem';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -105,6 +97,12 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
     isFlipped ? (gameColor === 'dark' ? 'light' : 'dark') : gameColor;
 
   const isDarkTurn = liveGame.currentTurn === 'Black';
+
+  // Left chip: black player in spectator mode, or "me" in participant mode.
+  // Right chip: white player in spectator mode, or opponent in participant mode.
+  const leftPieceColor: 'dark' | 'light' = spectator ? 'dark' : myColor ?? 'dark';
+  const rightPieceColor: 'dark' | 'light' = leftPieceColor === 'dark' ? 'light' : 'dark';
+
   const leftUsername = spectator ? liveGame.playerBlackUsername : myUsername;
   const rightUsername = spectator ? liveGame.playerWhiteUsername : opponentUsername;
   const leftAvatarUrl = spectator ? liveGame.playerBlackAvatarUrl : myAvatarUrl;
@@ -203,32 +201,32 @@ export function CheckersBoardScreen({game, session, onBack}: CheckersBoardScreen
 
       {/* Player chips */}
       <View style={styles.topSection}>
-        <View style={styles.scoreRow}>
-          <View style={[styles.playerChip, leftActive && styles.activeChip]}>
-            <Avatar username={leftUsername ?? '?'} avatarUrl={leftAvatarUrl} size={28} />
-            <View style={styles.chipInfo}>
-              <Text style={styles.chipLabel}>{leftLabel}</Text>
-              <Text style={styles.chipName} numberOfLines={1}>{leftUsername}</Text>
+        <PlayerMatchup
+          left={{
+            username: leftUsername,
+            avatarUrl: leftAvatarUrl,
+            label: leftLabel,
+            count: leftCount,
+            isActive: leftActive,
+            pieceColor: leftPieceColor,
+          }}
+          right={{
+            username: rightUsername,
+            avatarUrl: rightAvatarUrl,
+            label: rightLabel,
+            count: rightCount,
+            isActive: rightActive,
+            pieceColor: rightPieceColor,
+          }}
+          center={
+            <View style={styles.onlinePill}>
+              <View style={styles.onlineDot} />
+              <Text style={styles.vsText} testID="watchers-count">
+                {watchersCount}
+              </Text>
             </View>
-            <Text style={styles.chipCount}>{leftCount}</Text>
-          </View>
-
-          <View style={styles.onlinePill}>
-            <View style={styles.onlineDot} />
-            <Text style={styles.vsText} testID="watchers-count">
-              {watchersCount}
-            </Text>
-          </View>
-
-          <View style={[styles.playerChip, rightActive && styles.activeChip]}>
-            <Avatar username={rightUsername ?? '?'} avatarUrl={rightAvatarUrl} size={28} />
-            <View style={styles.chipInfo}>
-              <Text style={styles.chipLabel}>{rightLabel}</Text>
-              <Text style={styles.chipName} numberOfLines={1}>{rightUsername}</Text>
-            </View>
-            <Text style={styles.chipCount}>{rightCount}</Text>
-          </View>
-        </View>
+          }
+        />
       </View>
 
       {/* Board section */}

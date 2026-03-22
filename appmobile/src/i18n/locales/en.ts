@@ -350,6 +350,9 @@ const en = {
     loading: 'Loading...',
     moveCounter: 'Move {{step}} of {{total}}',
     winner: '🏆 {{name}} won!',
+    resigned: '🏳 {{name}} resigned',
+    playerBlack: 'BLACK',
+    playerWhite: 'WHITE',
   },
   onlinePlayers: {
     title: 'Online Players',
@@ -378,6 +381,7 @@ const en = {
     win: 'Win',
     loss: 'Loss',
     draw: 'Draw',
+    replayButton: '▶ Replay',
   },
   bottomTab: {
     games: 'Home',

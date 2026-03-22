@@ -65,6 +65,7 @@ function TabsView() {
     handleOpenChat,
     handleOpenEditLightningAddress,
     onlinePlayers,
+    hasChatUnread,
   } = useAppContext();
 
   if (!session) {return null;}
@@ -89,6 +90,7 @@ function TabsView() {
             onWithdraw={handleOpenWithdraw}
             onOpenDashboard={handleOpenDashboard}
             onOpenChat={handleOpenChat}
+            hasChatUnread={hasChatUnread}
           />
         ) : (
           <ProfileScreen
@@ -149,6 +151,8 @@ export function MainNavigator() {
     handleBackFromDashboard,
     handleCloseChat,
     handleOpenEditLightningAddress,
+    handleViewPlayerProfile,
+    handleWatchOnlineGame,
     onlinePlayers,
   } = useAppContext();
 
@@ -312,6 +316,8 @@ export function MainNavigator() {
             session={session}
             onlinePlayers={onlinePlayers}
             onBack={handleCloseChat}
+            onViewProfile={handleViewPlayerProfile}
+            onWatch={handleWatchOnlineGame}
           />
         ) : null,
       onBack: handleCloseChat,

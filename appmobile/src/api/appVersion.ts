@@ -1,6 +1,6 @@
 import {BASE_URL} from './client';
 
-export const APP_VERSION = '2.8';
+export const APP_VERSION = '2.9';
 
 /** Zapstore deep link for the app */
 export const ZAPSTORE_URL = 'zapstore://install?app=com.damasclash';

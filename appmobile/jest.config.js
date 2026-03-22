@@ -11,6 +11,7 @@ module.exports = {
     '^react-native-qrcode-svg$': '<rootDir>/__mocks__/react-native-qrcode-svg.ts',
     '^react-native-get-random-values$': '<rootDir>/__mocks__/react-native-get-random-values.ts',
     '^react-native-vision-camera$': '<rootDir>/__mocks__/react-native-vision-camera.ts',
+    '^react-native-sqlite-storage$': '<rootDir>/__mocks__/react-native-sqlite-storage.ts',
     '^@react-native-firebase/app$': '<rootDir>/__mocks__/@react-native-firebase/app.ts',
     '^@react-native-firebase/messaging$': '<rootDir>/__mocks__/@react-native-firebase/messaging.ts',
     // Intercept before any ESM-only library (nostr-fetch, @noble/*) is loaded

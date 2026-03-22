@@ -1,7 +1,6 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   ActivityIndicator,
-  Animated,
   FlatList,
   RefreshControl,
   ScrollView,
@@ -12,6 +11,7 @@ import {
 } from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import {BoardMark} from '../components/BoardMark';
 import {GameCard} from '../components/GameCard';
 import {useHomeScreen} from '../hooks/useHomeScreen';
@@ -40,6 +40,7 @@ interface Props {
   onWithdraw: () => void;
   onOpenDashboard?: () => void;
   onOpenChat?: () => void;
+  hasChatUnread?: boolean;
 }
 
 // ─── Transaction row ─────────────────────────────────────────────────────────
@@ -308,29 +309,16 @@ function GamesTab({user, pendingGame, liveGames, onGameSelect, onGameCancelled}:
 
 // ─── Live Chat FAB ───────────────────────────────────────────────────────────
 
-function LiveChatFab({onPress}: {onPress: () => void}) {
-  const pulse = useRef(new Animated.Value(1)).current;
+interface LiveChatFabProps {
+  onPress: () => void;
+  hasUnread?: boolean;
+}
 
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {toValue: 1.9, duration: 900, useNativeDriver: true}),
-        Animated.timing(pulse, {toValue: 1, duration: 900, useNativeDriver: true}),
-      ]),
-    ).start();
-  }, [pulse]);
-
+function LiveChatFab({onPress, hasUnread}: LiveChatFabProps) {
   return (
-    <TouchableOpacity style={styles.fab} onPress={onPress} testID="chat-btn" activeOpacity={0.85}>
-      <View style={styles.fabLiveSection}>
-        <View style={styles.fabLiveDotWrapper}>
-          <Animated.View style={[styles.fabLiveDotRing, {transform: [{scale: pulse}]}]} />
-          <View style={styles.fabLiveDot} />
-        </View>
-        <Text style={styles.fabLiveLabel}>LIVE</Text>
-      </View>
-      <View style={styles.fabDivider} />
-      <Text style={styles.fabChatText}>Chat</Text>
+    <TouchableOpacity style={styles.fab} onPress={onPress} testID="chat-btn" activeOpacity={0.8}>
+      <Ionicons name="chatbubbles" size={28} color={colors.text} />
+      {hasUnread && <View style={styles.fabUnreadDot} testID="chat-unread-dot" />}
     </TouchableOpacity>
   );
 }
@@ -351,6 +339,7 @@ export function HomeScreen({
   onWithdraw,
   onOpenDashboard,
   onOpenChat,
+  hasChatUnread,
 }: Props) {
   const [homeTab, setHomeTab] = useState<HomeTab>('wallet');
   const hasWaiting = (liveGames ?? []).some(g => g.status === 'WaitingForPlayers');
@@ -407,7 +396,7 @@ export function HomeScreen({
       )}
 
       {/* Live Chat FAB */}
-      {onOpenChat && <LiveChatFab onPress={onOpenChat} />}
+      {onOpenChat && <LiveChatFab onPress={onOpenChat} hasUnread={hasChatUnread} />}
     </SafeAreaView>
   );
 }

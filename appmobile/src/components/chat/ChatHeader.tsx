@@ -14,6 +14,7 @@ interface Props {
   onClearSelection: () => void;
   onEditSelected: () => void;
   onDeleteSelected: () => void;
+  onShowOnlinePlayers?: () => void;
 }
 
 export function ChatHeader({
@@ -23,6 +24,7 @@ export function ChatHeader({
   onClearSelection,
   onEditSelected,
   onDeleteSelected,
+  onShowOnlinePlayers,
 }: Props) {
   const {t} = useTranslation();
 
@@ -43,7 +45,7 @@ export function ChatHeader({
           onPress={onEditSelected}
           testID="action-bar-edit">
           <Ionicons name='create' size={24} color={colors.text}/>
-        </Pressable> 
+        </Pressable>
 
         <Pressable
           style={styles.actionHeaderBtn}
@@ -67,10 +69,13 @@ export function ChatHeader({
         </View>
       </View>
       {onlinePlayers.length > 0 && (
-        <View style={styles.onlineBadge}>
+        <Pressable
+          style={styles.onlineBadge}
+          onPress={onShowOnlinePlayers}
+          testID="online-badge">
           <View style={styles.onlineDot} />
-          <Text style={styles.onlineCount}>{onlinePlayers.length}</Text>
-        </View>
+          <Text style={styles.onlineCount}>{'online'} {onlinePlayers.length}</Text>
+        </Pressable>
       )}
     </View>
   );

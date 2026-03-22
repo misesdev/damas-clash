@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTranslation} from 'react-i18next';
 import {useChatScreen} from '../hooks/useChatScreen';
@@ -16,6 +17,7 @@ import {ChatMessageItem} from '../components/chat/ChatMessageItem';
 import {EditBanner} from '../components/chat/EditBanner';
 import {ReplyBanner} from '../components/chat/ReplyBanner';
 import {ChatInputBar} from '../components/ChatInputBar';
+import {OnlinePlayersScreen} from './OnlinePlayersScreen';
 import {showMessage} from '../components/MessageBox';
 import type {ChatMessage} from '../hooks/useChatScreen';
 import type {LoginResponse} from '../types/auth';
@@ -25,11 +27,14 @@ interface Props {
   session: LoginResponse;
   onlinePlayers: OnlinePlayerInfo[];
   onBack: () => void;
+  onViewProfile?: (playerId: string, username: string, avatarUrl?: string | null) => void;
+  onWatch?: (gameId: string) => void;
 }
 
-export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
+export function ChatScreen({session, onlinePlayers, onBack: _onBack, onViewProfile, onWatch}: Props) {
   const {t} = useTranslation();
   const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
+  const [showOnlinePlayers, setShowOnlinePlayers] = useState(false);
 
   const {
     reversedMessages,
@@ -99,6 +104,7 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
         onClearSelection={() => setSelectedMessage(null)}
         onEditSelected={handleEditSelected}
         onDeleteSelected={handleDeleteSelected}
+        onShowOnlinePlayers={() => setShowOnlinePlayers(true)}
       />
 
       {!!error && (
@@ -112,7 +118,7 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         {reversedMessages.length === 0 ? (
           <View style={styles.emptyContainer} testID="chat-empty">
-            <Text style={styles.emptyIcon}>💬</Text>
+            <Ionicons name="chatbubbles-outline" size={48} color={styles.emptyText.color} />
             <Text style={styles.emptyText}>{t('chat.empty')}</Text>
           </View>
         ) : (
@@ -133,6 +139,8 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
             contentContainerStyle={styles.list}
             inverted
             showsVerticalScrollIndicator={false}
+            // Persist taps so swipe-to-reply works when the keyboard is open
+            keyboardShouldPersistTaps="handled"
             testID="chat-message-list"
           />
         )}
@@ -157,6 +165,21 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack}: Props) {
           onInsertMention={insertMention}
         />
       </KeyboardAvoidingView>
+
+      <OnlinePlayersScreen
+        visible={showOnlinePlayers}
+        onClose={() => setShowOnlinePlayers(false)}
+        players={onlinePlayers}
+        currentPlayerId={session.playerId}
+        onViewProfile={(playerId, username, avatarUrl) => {
+          setShowOnlinePlayers(false);
+          onViewProfile?.(playerId, username, avatarUrl);
+        }}
+        onWatch={(gameId) => {
+          setShowOnlinePlayers(false);
+          onWatch?.(gameId);
+        }}
+      />
     </SafeAreaView>
   );
 }

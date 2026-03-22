@@ -110,7 +110,6 @@ export const chatStyles = StyleSheet.create({
     gap: 10,
     paddingBottom: 40,
   },
-  emptyIcon: {fontSize: 36},
   emptyText: {color: colors.textMuted, fontSize: 14},
 
   // ─── Message list ────────────────────────────────────────────────────────────

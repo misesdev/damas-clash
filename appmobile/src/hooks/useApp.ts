@@ -14,6 +14,7 @@ import {getWallet} from '../api/wallet';
 import {getPlayer} from '../api/players';
 import {ApiError, BASE_URL} from '../api/client';
 import {clearSession, loadSession, saveSession} from '../storage/auth';
+import {hasUnreadChatMessages, markChatViewed} from '../storage/chatCache';
 import {clearActiveGameId, loadActiveGameId, saveActiveGameId} from '../storage/game';
 import {saveLightningAddress} from '../storage/lightning';
 import {loadLanguage} from '../storage/language';
@@ -65,6 +66,7 @@ export function useApp() {
   const [walletLoading, setWalletLoading] = useState(false);
   const [lightningAddress, setLightningAddress] = useState<string | null>(null);
   const [selectedPlayerProfile, setSelectedPlayerProfile] = useState<{playerId: string; username: string; avatarUrl?: string | null} | null>(null);
+  const [hasChatUnread, setHasChatUnread] = useState(false);
 
   // ── Push Notifications ───────────────────────────────────────────────────
 
@@ -126,6 +128,7 @@ export function useApp() {
       // Never interrupt the user while they are actively playing
       if (authScreenRef.current === 'checkersBoard') {return;}
       if (payload.type === 'chat_mention') {
+        if (authScreenRef.current !== 'chat') {setHasChatUnread(true);}
         showMessage({
           title: t('notifications.mentionTitle', {username: payload.data.senderUsername}),
           message: payload.data.messageText,
@@ -140,6 +143,7 @@ export function useApp() {
           ],
         });
       } else if (payload.type === 'chat_reply') {
+        if (authScreenRef.current !== 'chat') {setHasChatUnread(true);}
         showMessage({
           title: t('notifications.replyTitle', {username: payload.data.replierUsername}),
           message: payload.data.messageText,
@@ -286,13 +290,15 @@ export function useApp() {
         // After all startup is done, show notification permission prompt if needed.
         // Shown once: only when permission hasn't been granted AND the user hasn't seen it yet.
         if (!cancelled) {
-          const [alreadyGranted, alreadySeen] = await Promise.all([
+          const [alreadyGranted, alreadySeen, chatUnread] = await Promise.all([
             hasNotificationPermission(),
             hasSeenNotificationPrompt(),
+            hasUnreadChatMessages(),
           ]);
           if (!alreadyGranted && !alreadySeen) {
             setShowNotificationPrompt(true);
           }
+          setHasChatUnread(chatUnread);
         }
       } finally {
         if (!cancelled) {setLoading(false);}
@@ -330,6 +336,51 @@ export function useApp() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.token]);
+
+  // ── Persistent chat hub — tracks unread messages even when ChatScreen is closed ──
+
+  useEffect(() => {
+    if (!session) {return;}
+
+    let hub: HubConnection;
+    let active = true;
+
+    (async () => {
+      try {
+        hub = new HubConnectionBuilder()
+          .withUrl(`${BASE_URL}/hubs/chat`, {
+            transport: HttpTransportType.WebSockets,
+            skipNegotiation: true,
+            accessTokenFactory: () => sessionRef.current?.token ?? '',
+          })
+          .withAutomaticReconnect({
+            nextRetryDelayInMilliseconds: ctx => {
+              const delays = [0, 2000, 5000, 10000, 30000];
+              return delays[Math.min(ctx.previousRetryCount, delays.length - 1)];
+            },
+          })
+          .build();
+
+        hub.on('NewMessage', () => {
+          if (!active) {return;}
+          if (authScreenRef.current !== 'chat') {
+            setHasChatUnread(true);
+          }
+        });
+
+        await hub.start();
+        if (!active) {hub.stop();}
+      } catch {
+        // silently ignore — unread tracking is non-critical
+      }
+    })();
+
+    return () => {
+      active = false;
+      hub?.stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.playerId]);
 
   // ── Persistent SignalR connection (lobby + game events) ───────────────────
 
@@ -722,8 +773,19 @@ export function useApp() {
   const handleOpenDashboard = () => setAuthScreen('dashboard');
   const handleBackFromDashboard = () => { setAuthScreen('tabs'); };
 
-  const handleOpenChat = () => setAuthScreen('chat');
+  const handleOpenChat = () => {
+    setAuthScreen('chat');
+    setHasChatUnread(false);
+    markChatViewed();
+  };
   const handleCloseChat = () => setAuthScreen('tabs');
+
+  /** Called by useChatScreen when a new SignalR message arrives outside the chat screen. */
+  const handleNewChatMessage = () => {
+    if (authScreenRef.current !== 'chat') {
+      setHasChatUnread(true);
+    }
+  };
 
   const handleOpenHistory = () => setAuthScreen('gameHistory');
   const handleBackFromHistory = () => {setAuthScreen('tabs'); setTab('profile');};
@@ -808,7 +870,9 @@ export function useApp() {
     lightningAddress,
     handleOpenDashboard,
     handleBackFromDashboard,
+    hasChatUnread,
     handleOpenChat,
     handleCloseChat,
+    handleNewChatMessage,
   };
 }

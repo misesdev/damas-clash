@@ -26,7 +26,7 @@
  */
 
 import React from 'react';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react-native';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react-native';
 import {ChatScreen} from '../src/screens/ChatScreen';
 import type {LoginResponse} from '../src/types/auth';
 import type {OnlinePlayerInfo} from '../src/types/player';
@@ -37,6 +37,12 @@ import type {ChatMessage} from '../src/hooks/useChatScreen';
 jest.mock('@microsoft/signalr', () => ({
   HubConnectionBuilder: jest.fn(),
   HttpTransportType: {WebSockets: 4},
+}));
+
+// ─── AppContext mock ───────────────────────────────────────────────────────────
+
+jest.mock('../src/context/AppContext', () => ({
+  useAppContext: () => ({handleNewChatMessage: jest.fn()}),
 }));
 
 // ─── Players API mock (for mention autocomplete) ──────────────────────────────
@@ -394,12 +400,14 @@ describe('ChatScreen — @mention suggestions', () => {
 describe('ChatScreen — online players badge', () => {
   it('shows online player count badge when players present', async () => {
     await renderConnected([ALICE, BOB]);
-    expect(screen.getByText('2')).toBeTruthy();
+    const badge = screen.getByTestId('online-badge');
+    expect(badge).toBeTruthy();
+    expect(within(badge).getByText(/2/)).toBeTruthy();
   });
 
   it('hides badge when no online players', async () => {
     await renderConnected([]);
-    expect(screen.queryByText(/^\d+$/)).toBeNull();
+    expect(screen.queryByTestId('online-badge')).toBeNull();
   });
 });
 

@@ -350,6 +350,9 @@ const pt = {
     loading: 'Carregando...',
     moveCounter: 'Jogada {{step}} de {{total}}',
     winner: '🏆 {{name}} venceu!',
+    resigned: '🏳 {{name}} desistiu',
+    playerBlack: 'PRETO',
+    playerWhite: 'BRANCO',
   },
   onlinePlayers: {
     title: 'Jogadores Online',
@@ -378,6 +381,7 @@ const pt = {
     win: 'Vitória',
     loss: 'Derrota',
     draw: 'Empate',
+    replayButton: '▶ Rever',
   },
   bottomTab: {
     games: 'Início',

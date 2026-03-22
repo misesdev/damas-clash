@@ -22,6 +22,14 @@ MULTIPLAYER EM TEMPO REAL
 
 As jogadas aparecem na tela do adversário no instante em que são feitas. Sem travamentos, sem delay — como se vocês estivessem na mesma mesa.
 
+CHAT AO VIVO
+
+Converse com outros jogadores em tempo real. Mencione alguém com @usuário, responda mensagens e receba notificações quando alguém interagir com você — mesmo com o app em segundo plano.
+
+NOTIFICAÇÕES
+
+Seja avisado quando uma partida começar, quando um oponente entrar na sua sala de espera ou quando alguém te mencionar no chat.
+
 CARTEIRA LIGHTNING
 
 Deposite e saque Bitcoin em satoshis via Lightning Network. Sem bancos, sem burocracia. Partidas amigáveis são gratuitas; partidas valendo sats permitem apostar e ganhar o dobro.
@@ -30,10 +38,11 @@ SALA DE ESPERA
 
 Crie uma partida e aguarde na sala de espera até um oponente entrar. O jogo começa automaticamente — você recebe uma notificação na hora.
 
-PERFIL E ESTATÍSTICAS
+PERFIL E HISTÓRICO
 
 - Veja seu total de partidas, vitórias e derrotas
 - Reveja qualquer partida jogada, movimento por movimento
+- Acesse o perfil de outros jogadores e assista os replays das partidas deles
 - Personalize seu perfil com foto e nome de usuário únicos
 
 ENTRAR É FÁCIL
@@ -69,6 +78,14 @@ REAL-TIME MULTIPLAYER
 
 Moves appear on your opponent's screen the instant they're made. No lag, no delays — like sitting across the same table.
 
+LIVE CHAT
+
+Talk to other players in real time. Mention someone with @username, reply to messages, and get notified whenever someone interacts with you — even when the app is in the background.
+
+PUSH NOTIFICATIONS
+
+Get notified when a match starts, when an opponent joins your waiting room, or when someone mentions you in chat.
+
 LIGHTNING WALLET
 
 Deposit and withdraw Bitcoin satoshis via Lightning Network. No banks, no middlemen. Friendly matches are free; bet matches let you wager sats and win double.
@@ -81,6 +98,7 @@ PROFILE AND STATS
 
 - Track your total games, wins and losses
 - Review any match move by move with full replay
+- Browse other players' profiles and watch replays of their games
 - Customize your profile with a photo and unique username
 
 EASY SIGN IN
@@ -103,6 +121,6 @@ The wallet and betting features are available to users 18 years of age or older 
 
 | Idioma | Caracteres |
 |--------|-----------|
-| pt-BR  | ~1.700     |
-| en-US  | ~1.600     |
+| pt-BR  | ~1.900     |
+| en-US  | ~1.800     |
 | Limite | 4.000      |
