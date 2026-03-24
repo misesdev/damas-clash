@@ -32,6 +32,8 @@ export interface LoginResponse {
   email: string | null;
   avatarUrl?: string | null;
   nostrPubKey?: string | null;
+  /** nsec1... bech32 private key — only set for newly generated keys, never for imported ones. */
+  nostrNsec?: string | null;
   role?: string;
   lightningAddress?: string | null;
 }

@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {
   BackHandler,
   FlatList,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Text,
   View,
@@ -35,6 +35,21 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack, onViewProfi
   const {t} = useTranslation();
   const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
   const [showOnlinePlayers, setShowOnlinePlayers] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // AndroidManifest uses adjustNothing, so KeyboardAvoidingView has no effect.
+  // Track keyboard height manually — same pattern as CheckersBoardScreen.
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      e => setKeyboardHeight(e.endCoordinates.height),
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0),
+    );
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   const {
     reversedMessages,
@@ -113,9 +128,9 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack, onViewProfi
         </View>
       )}
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      {/* paddingBottom shifts the entire content area above the keyboard.
+          Works with adjustNothing (AndroidManifest) where KeyboardAvoidingView has no effect. */}
+      <View style={[styles.flex, {paddingBottom: keyboardHeight}]}>
         {reversedMessages.length === 0 ? (
           <View style={styles.emptyContainer} testID="chat-empty">
             <Ionicons name="chatbubbles-outline" size={48} color={styles.emptyText.color} />
@@ -134,6 +149,7 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack, onViewProfi
                 isSelected={selectedMessage?.id === item.id}
                 onLongPress={setSelectedMessage}
                 onReply={handleStartReply}
+                onAvatarPress={onViewProfile}
               />
             )}
             contentContainerStyle={styles.list}
@@ -164,7 +180,7 @@ export function ChatScreen({session, onlinePlayers, onBack: _onBack, onViewProfi
           onSend={handleSend}
           onInsertMention={insertMention}
         />
-      </KeyboardAvoidingView>
+      </View>
 
       <OnlinePlayersScreen
         visible={showOnlinePlayers}

@@ -44,6 +44,20 @@ describe('LoginScreen', () => {
     expect(onNavigateToRegister).toHaveBeenCalledTimes(1);
   });
 
+  it('renders nostr login button', () => {
+    const {getByTestId} = render(<LoginScreen {...defaultProps} />);
+    expect(getByTestId('nostr-login-button')).toBeTruthy();
+  });
+
+  it('calls onNostrLogin when nostr button is pressed', () => {
+    const onNostrLogin = jest.fn();
+    const {getByTestId} = render(
+      <LoginScreen {...defaultProps} onNostrLogin={onNostrLogin} />,
+    );
+    fireEvent.press(getByTestId('nostr-login-button'));
+    expect(onNostrLogin).toHaveBeenCalledTimes(1);
+  });
+
   it('calls login API with identifier and triggers onCodeSent', async () => {
     mockLogin.mockResolvedValueOnce({email: 'user@test.com'});
     const onCodeSent = jest.fn();

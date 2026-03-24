@@ -293,7 +293,7 @@ export const chatStyles = StyleSheet.create({
   swipeReplyIconWrap: {
     position: 'absolute',
     left: -34,
-    top: 0,
+    top: -20,
     bottom: 0,
     width: 26,
     alignItems: 'center',

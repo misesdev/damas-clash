@@ -4,7 +4,9 @@ import {useTranslation} from 'react-i18next';
 import {login, resendConfirmation, verifyLogin} from '../api/auth';
 import {ConfirmEmailScreen} from '../screens/ConfirmEmailScreen';
 import {LoginScreen} from '../screens/LoginScreen';
+import {NostrAuthScreen} from '../screens/NostrAuthScreen';
 import {NostrLoginScreen} from '../screens/NostrLoginScreen';
+import {NostrRegisterScreen} from '../screens/NostrRegisterScreen';
 import {RegisterScreen} from '../screens/RegisterScreen';
 import {colors} from '../theme/colors';
 import {useAppContext} from '../context/AppContext';
@@ -17,7 +19,9 @@ const AUTH_BACK: Partial<Record<Screen, Screen>> = {
   register: 'login',
   confirmEmail: 'login',
   verifyLogin: 'login',
-  nostrLogin: 'login',
+  nostrAuth: 'login',
+  nostrLogin: 'nostrAuth',
+  nostrRegister: 'nostrAuth',
 };
 
 export function AuthNavigator() {
@@ -70,11 +74,30 @@ export function AuthNavigator() {
     );
   }
 
+  if (screen === 'nostrAuth') {
+    return (
+      <NostrAuthScreen
+        onLogin={() => setScreen('nostrLogin')}
+        onRegister={() => setScreen('nostrRegister')}
+        onBack={() => setScreen('login')}
+      />
+    );
+  }
+
   if (screen === 'nostrLogin') {
     return (
       <NostrLoginScreen
         onLogin={handleLogin}
-        onBack={() => setScreen('login')}
+        onBack={() => setScreen('nostrAuth')}
+      />
+    );
+  }
+
+  if (screen === 'nostrRegister') {
+    return (
+      <NostrRegisterScreen
+        onLogin={handleLogin}
+        onBack={() => setScreen('nostrAuth')}
       />
     );
   }
@@ -99,7 +122,7 @@ export function AuthNavigator() {
           setScreen('verifyLogin');
         }}
         onNavigateToRegister={() => setScreen('register')}
-        onNostrLogin={() => setScreen('nostrLogin')}
+        onNostrLogin={() => setScreen('nostrAuth')}
       />
     </View>
   );

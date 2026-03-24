@@ -1,3 +1,4 @@
+import 'react-native-get-random-values';
 import {schnorr, secp256k1} from '@noble/curves/secp256k1';
 import {sha256} from '@noble/hashes/sha2';
 import {bytesToHex} from '../../utils/utils';
@@ -50,5 +51,26 @@ export class NostrPairKey {
   signChallenge(challenge: string): string {
     const msgHash = sha256(new TextEncoder().encode(challenge));
     return bytesToHex(schnorr.sign(msgHash, this.privkey));
+  }
+
+  /** Generates a cryptographically secure random Nostr key pair. */
+  static generateNew(): NostrPairKey {
+    const privkey = new Uint8Array(32);
+    crypto.getRandomValues(privkey);
+    return new NostrPairKey(privkey);
+  }
+
+  /** Encodes the private key as an nsec1... bech32 string. */
+  toNsec(): string {
+    return bech32.encode('nsec', bech32.toWords(this.privkey));
+  }
+
+  /**
+   * Signs a Nostr event ID (already a 32-byte SHA-256 hash as hex).
+   * Does NOT apply sha256 again — the id is already the hash.
+   */
+  signEventId(idHex: string): string {
+    const idBytes = new Uint8Array(idHex.match(/.{2}/g)!.map(b => parseInt(b, 16)));
+    return bytesToHex(schnorr.sign(idBytes, this.privkey));
   }
 }

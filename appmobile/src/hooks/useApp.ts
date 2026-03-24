@@ -8,7 +8,7 @@ import {AppState, type AppStateStatus} from 'react-native';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {showMessage} from '../components/MessageBox';
-import {cancelGame, createGame, getGame} from '../api/games';
+import {cancelGame, createGame, getGame, listGames} from '../api/games';
 import {refreshAccessToken} from '../api/auth';
 import {getWallet} from '../api/wallet';
 import {getPlayer} from '../api/players';
@@ -37,8 +37,9 @@ import {
 import {hasSeenNotificationPrompt, markNotificationPromptSeen} from '../storage/notifications';
 import {registerFCMToken, unregisterFCMToken} from '../api/notifications';
 import {APP_VERSION, fetchMinVersion, isVersionOutdated} from '../api/appVersion';
+import {connectAuthRelays, disconnectAuthRelays} from '../services/nostr/sharedAuthRelays';
 
-export type Screen = 'login' | 'register' | 'confirmEmail' | 'verifyLogin' | 'nostrLogin';
+export type Screen = 'login' | 'register' | 'confirmEmail' | 'verifyLogin' | 'nostrLogin' | 'nostrRegister' | 'nostrAuth';
 export type AuthScreen = 'tabs' | 'waitingRoom' | 'checkersBoard' | 'editUsername' | 'editEmail' | 'gameHistory' | 'replay' | 'deposit' | 'withdraw' | 'editLightningAddress' | 'walletHistory' | 'playerProfile' | 'dashboard' | 'chat';
 
 const REFRESH_BUFFER_MS = 2 * 60 * 1000; // refresh 2 min before expiry
@@ -66,6 +67,7 @@ export function useApp() {
   const [walletLoading, setWalletLoading] = useState(false);
   const [lightningAddress, setLightningAddress] = useState<string | null>(null);
   const [selectedPlayerProfile, setSelectedPlayerProfile] = useState<{playerId: string; username: string; avatarUrl?: string | null} | null>(null);
+  const [screenBeforePlayerProfile, setScreenBeforePlayerProfile] = useState<AuthScreen>('tabs');
   const [hasChatUnread, setHasChatUnread] = useState(false);
 
   // ── Push Notifications ───────────────────────────────────────────────────
@@ -101,23 +103,47 @@ export function useApp() {
     setShowNotificationPrompt(false);
   }, []);
 
-  // Navigate based on notification type (tap from background or killed state)
+  // Navigate based on notification type (tap from background or killed state).
+  // Also triggers a game-list refresh so the user sees the new game immediately.
   const handleNotificationOpen = useCallback((payload: NotificationPayload) => {
     // Never navigate away while the user is actively playing
     if (authScreenRef.current === 'checkersBoard') {return;}
     if (payload.type === 'game_created' || payload.type === 'player_joined') {
       setAuthScreen('tabs');
       setTab('home');
+      // Refresh the game list so the newly created game appears right away,
+      // even if the SignalR GameListUpdated event hasn't arrived yet.
+      const token = sessionRef.current?.token;
+      if (token) {
+        listGames(token).then(games => setLiveGames(games)).catch(() => {});
+      }
     } else if (payload.type === 'chat_mention' || payload.type === 'chat_reply') {
       setAuthScreen('chat');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Background tap handler: app was suspended, user tapped the notification
+  // Background tap handler: registered immediately (empty deps) so it fires
+  // even when the JS thread was killed by the OS and restarts on notification tap.
+  // If the session hasn't loaded yet, the payload is stored and applied once ready.
   useEffect(() => {
-    if (!session) {return;}
-    return setupNotificationOpenedHandler(handleNotificationOpen);
+    return setupNotificationOpenedHandler(payload => {
+      if (sessionRef.current) {
+        handleNotificationOpen(payload);
+      } else {
+        // Session still loading from Keychain — defer navigation
+        pendingNotificationRef.current = payload;
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Apply a deferred notification tap once the session finishes loading.
+  useEffect(() => {
+    if (!session || !pendingNotificationRef.current) {return;}
+    const pending = pendingNotificationRef.current;
+    pendingNotificationRef.current = null;
+    handleNotificationOpen(pending);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.playerId]);
 
@@ -167,7 +193,15 @@ export function useApp() {
             {
               label: t('notifications.openGames'),
               primary: true,
-              onPress: () => { setAuthScreen('tabs'); setTab('home'); },
+              onPress: () => {
+                setAuthScreen('tabs');
+                setTab('home');
+                // Refresh game list immediately so the new game is visible right away
+                const token = sessionRef.current?.token;
+                if (token) {
+                  listGames(token).then(games => setLiveGames(games)).catch(() => {});
+                }
+              },
             },
           ],
         });
@@ -181,7 +215,14 @@ export function useApp() {
             {
               label: t('notifications.openGame'),
               primary: true,
-              onPress: () => { setAuthScreen('tabs'); setTab('home'); },
+              onPress: () => {
+                setAuthScreen('tabs');
+                setTab('home');
+                const token = sessionRef.current?.token;
+                if (token) {
+                  listGames(token).then(games => setLiveGames(games)).catch(() => {});
+                }
+              },
             },
           ],
         });
@@ -219,6 +260,44 @@ export function useApp() {
   const sessionRef = useRef(session);
   sessionRef.current = session;
 
+  // Guards concurrent refresh calls — e.g. proactive timer + AppState foreground
+  // firing at the same time. Both callers await the same in-flight promise.
+  const refreshPromiseRef = useRef<Promise<boolean> | null>(null);
+
+  /**
+   * Attempts a token refresh. Returns true if the session should be kept
+   * (success or transient network error) and false if the session is invalid
+   * (401/403) and the caller should trigger logout.
+   * Concurrent calls share the same in-flight promise to avoid rotating the
+   * refresh token twice, which would cause the second caller to receive 401.
+   */
+  const doTokenRefresh = useCallback(async (): Promise<boolean> => {
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current;
+    }
+    const promise = (async () => {
+      const current = sessionRef.current;
+      if (!current?.refreshToken) {return false;}
+      try {
+        const renewed = await refreshAccessToken(current.refreshToken);
+        const updated = {...current, ...renewed};
+        saveSession(updated);
+        setSession(updated);
+        return true;
+      } catch (err) {
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+          return false; // token revoked — caller should logout
+        }
+        return true; // transient network error — keep session
+      } finally {
+        refreshPromiseRef.current = null;
+      }
+    })();
+    refreshPromiseRef.current = promise;
+    return promise;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Refs to avoid stale closures in async callbacks
   const authScreenRef = useRef<AuthScreen>('tabs');
   useEffect(() => {
@@ -227,6 +306,9 @@ export function useApp() {
 
   const pendingGameIdRef = useRef<string | null>(null);
   const hubRef = useRef<HubConnection | null>(null);
+  // Stores a notification tap that arrived before the session was loaded.
+  // Applied as soon as the session becomes available.
+  const pendingNotificationRef = useRef<NotificationPayload | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -250,6 +332,8 @@ export function useApp() {
         if (cancelled) {return;}
         if (saved) {
           setSession(saved);
+          // Show cached lightning address immediately — avoids blank until API responds
+          setLightningAddress(saved.lightningAddress ?? null);
 
           // Re-register FCM token on every app startup so that a new token
           // issued after reinstall / app update is always recorded in the API.
@@ -283,7 +367,16 @@ export function useApp() {
         if (saved && !cancelled) {
           try {
             const profile = await getPlayer(saved.token, saved.playerId);
-            if (!cancelled) {setLightningAddress(profile.lightningAddress);}
+            if (!cancelled) {
+              const addr = profile.lightningAddress ?? null;
+              setLightningAddress(addr);
+              // Keep session in Keychain in sync so next cold start shows correct value
+              if (addr !== (saved.lightningAddress ?? null)) {
+                const updated = {...saved, lightningAddress: addr};
+                saveSession(updated);
+                setSession(updated);
+              }
+            }
           } catch { /* silently ignore */ }
         }
 
@@ -309,6 +402,20 @@ export function useApp() {
     };
   }, []);
 
+  // ── Auth relay pre-warming ────────────────────────────────────────────────
+  // Connect to Nostr relays while the user is logged out so that NostrLogin
+  // and NostrRegister screens can publish events without waiting for a fresh
+  // connection. Disconnect once the user is authenticated.
+
+  useEffect(() => {
+    if (!session) {
+      connectAuthRelays().catch(() => {});
+    } else {
+      disconnectAuthRelays();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.playerId]);
+
   // ── Proactive token refresh ────────────────────────────────────────────────
 
   useEffect(() => {
@@ -318,19 +425,8 @@ export function useApp() {
     const delay = Math.max(0, expiryMs - Date.now() - REFRESH_BUFFER_MS);
 
     const timer = setTimeout(async () => {
-      try {
-        const renewed = await refreshAccessToken(session.refreshToken);
-        const updated = {...session, ...renewed};
-        saveSession(updated);
-        setSession(updated);
-      } catch (err) {
-        // Only force logout on explicit auth errors (token revoked / expired).
-        // Network failures are transient — keep the session alive so the user
-        // remains logged in and the next app launch will retry.
-        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
-          handleLogout();
-        }
-      }
+      const ok = await doTokenRefresh();
+      if (!ok) {handleLogout();}
     }, delay);
 
     return () => clearTimeout(timer);
@@ -368,7 +464,19 @@ export function useApp() {
           }
         });
 
-        await hub.start();
+        // Retry initial connection — withAutomaticReconnect doesn't cover first start()
+        const chatStartDelays = [0, 2000, 5000, 10000, 30000];
+        for (let attempt = 0; ; attempt++) {
+          try {
+            await hub.start();
+            break;
+          } catch {
+            if (!active) {return;}
+            const delay = chatStartDelays[Math.min(attempt, chatStartDelays.length - 1)];
+            await new Promise<void>(resolve => setTimeout(resolve, delay));
+            if (!active) {return;}
+          }
+        }
         if (!active) {hub.stop();}
       } catch {
         // silently ignore — unread tracking is non-critical
@@ -534,7 +642,22 @@ export function useApp() {
           setOnlinePlayers([]);
         });
 
-        await hub.start();
+        // Retry initial connection with backoff.
+        // withAutomaticReconnect only fires AFTER a successful connect — a
+        // failed hub.start() leaves the hub in Disconnected forever without this.
+        const startDelays = [0, 2000, 5000, 10000, 30000, 60000];
+        for (let attempt = 0; ; attempt++) {
+          try {
+            await hub.start();
+            break;
+          } catch {
+            if (!active) {return;}
+            const delay = startDelays[Math.min(attempt, startDelays.length - 1)];
+            await new Promise<void>(resolve => setTimeout(resolve, delay));
+            if (!active) {return;}
+          }
+        }
+
         if (!active) {hub.stop(); return;}
 
         hubRef.current = hub;
@@ -582,22 +705,14 @@ export function useApp() {
       if (!returningToForeground || !sessionRef.current) {return;}
 
       // 1. Proactive token refresh if near/past expiry
-      const {expiresAt, refreshToken} = sessionRef.current;
+      const {expiresAt} = sessionRef.current;
       const msLeft = expiresAt
         ? new Date(expiresAt).getTime() - Date.now()
         : 0;
       if (msLeft < REFRESH_BUFFER_MS) {
-        try {
-          const renewed = await refreshAccessToken(refreshToken);
-          const updated = {...sessionRef.current, ...renewed};
-          saveSession(updated);
-          setSession(updated);
-        } catch (err) {
-          if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
-            handleLogout();
-            return;
-          }
-        }
+        // doTokenRefresh deduplicates concurrent calls with the proactive timer
+        const ok = await doTokenRefresh();
+        if (!ok) {handleLogout(); return;}
       }
 
       // 2. Re-join lobby if hub is already connected (missed events while backgrounded)
@@ -752,18 +867,21 @@ export function useApp() {
   const handleOpenWithdraw = () => setAuthScreen('withdraw');
   const handleOpenWalletHistory = () => setAuthScreen('walletHistory');
   const handleViewPlayerProfile = (playerId: string, username: string, avatarUrl?: string | null) => {
+    setScreenBeforePlayerProfile(authScreen);
     setSelectedPlayerProfile({playerId, username, avatarUrl});
     setShowOnlinePlayers(false);
     setAuthScreen('playerProfile');
   };
   const handleBackFromPlayerProfile = () => {
     setSelectedPlayerProfile(null);
-    setAuthScreen('tabs');
+    setAuthScreen(screenBeforePlayerProfile);
   };
   const handleOpenEditLightningAddress = () => setAuthScreen('editLightningAddress');
   const handleBackFromWallet = () => {setAuthScreen('tabs'); fetchWallet();};
   const handleLightningAddressSaved = (addr: string | null) => {
     setLightningAddress(addr);
+    // Persist to session so cold-start shows the correct value without an API call
+    updateSession({lightningAddress: addr});
     setAuthScreen('tabs');
     setTab('profile');
   };

@@ -591,3 +591,67 @@ describe('ChatScreen — delete message', () => {
     );
   });
 });
+
+describe('ChatScreen — avatar press → view profile', () => {
+  it('calls onViewProfile when tapping another player avatar', async () => {
+    const onViewProfile = jest.fn();
+    render(
+      <ChatScreen
+        session={fakeSession}
+        onlinePlayers={[ALICE]}
+        onBack={jest.fn()}
+        onViewProfile={onViewProfile}
+      />,
+    );
+    await act(async () => {
+      resolveHubStart();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    act(() => { capturedHandlers['ChatHistory']([MSG_FROM_ALICE]); });
+    await waitFor(() => expect(screen.getByTestId('avatar-press-msg-1')).toBeTruthy());
+
+    fireEvent.press(screen.getByTestId('avatar-press-msg-1'));
+    expect(onViewProfile).toHaveBeenCalledWith('player-alice', 'alice', null);
+  });
+
+  it('does not render pressable avatar when onViewProfile is not provided', async () => {
+    render(
+      <ChatScreen
+        session={fakeSession}
+        onlinePlayers={[ALICE]}
+        onBack={jest.fn()}
+      />,
+    );
+    await act(async () => {
+      resolveHubStart();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    act(() => { capturedHandlers['ChatHistory']([MSG_FROM_ALICE]); });
+    await waitFor(() => expect(screen.getByTestId('chat-message-msg-1')).toBeTruthy());
+
+    expect(screen.queryByTestId('avatar-press-msg-1')).toBeNull();
+  });
+
+  it('does not render pressable avatar for own messages even with onViewProfile', async () => {
+    const onViewProfile = jest.fn();
+    render(
+      <ChatScreen
+        session={fakeSession}
+        onlinePlayers={[]}
+        onBack={jest.fn()}
+        onViewProfile={onViewProfile}
+      />,
+    );
+    await act(async () => {
+      resolveHubStart();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    act(() => { capturedHandlers['ChatHistory']([MSG_FROM_SELF]); });
+    await waitFor(() => expect(screen.getByTestId('chat-message-msg-2')).toBeTruthy());
+
+    expect(screen.queryByTestId('avatar-press-msg-2')).toBeNull();
+  });
+});

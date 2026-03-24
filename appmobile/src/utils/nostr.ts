@@ -1,6 +1,8 @@
 import {bech32} from 'bech32';
+import {sha256} from '@noble/hashes/sha2';
 import {NostrPairKey} from '../services/nostr/NostrPairKey';
 import {RelayPool} from '../services/nostr/RelayPool';
+import {bytesToHex} from './utils';
 
 export interface NostrProfile {
   name?: string;
@@ -40,14 +42,21 @@ export function npubToHex(pubkey: string): string {
 }
 
 /**
+ * Converts a 64-char hex pubkey to a full npub1... bech32 string.
+ */
+export function pubkeyToNpub(pubkeyHex: string): string {
+  const pubBytes = new Uint8Array(
+    pubkeyHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)),
+  );
+  return bech32.encode('npub', bech32.toWords(pubBytes));
+}
+
+/**
  * Converts a 64-char hex pubkey to a shortened npub.
  * Example: "npub1ghsdh...sdjyguedf"
  */
 export function pubkeyToShortNpub(pubkeyHex: string): string {
-  const pubBytes = new Uint8Array(
-    pubkeyHex.match(/.{2}/g)!.map(byte => parseInt(byte, 16)),
-  );
-  const npub = bech32.encode('npub', bech32.toWords(pubBytes));
+  const npub = pubkeyToNpub(pubkeyHex);
   return `${npub.slice(0, 12)}...${npub.slice(-8)}`;
 }
 
@@ -69,6 +78,43 @@ const PROFILE_RELAYS = [
   'wss://nostr.bitcoiner.social',
   'wss://relay.0xchat.com'
 ];
+
+// ---------------------------------------------------------------------------
+// Key generation
+// ---------------------------------------------------------------------------
+
+export function generateNewKey(): { pairKey: NostrPairKey; nsec: string } {
+  const pairKey = NostrPairKey.generateNew();
+  return { pairKey, nsec: pairKey.toNsec() };
+}
+
+// ---------------------------------------------------------------------------
+// Profile publishing
+// ---------------------------------------------------------------------------
+
+export async function publishNostrProfile(
+  pairKey: NostrPairKey,
+  name: string,
+  picture?: string | null,
+  pool?: RelayPool | null,
+): Promise<void> {
+  if (!pool) return;
+  const pubkey = pairKey.getPublicKeyHex();
+  const created_at = Math.floor(Date.now() / 1000);
+  const kind = 0;
+  const tags: string[][] = [];
+  const contentObj: Record<string, string> = { name };
+  if (picture) contentObj.picture = picture;
+  const content = JSON.stringify(contentObj);
+
+  // NIP-01: id = sha256 of serialized event
+  const serialized = JSON.stringify([0, pubkey, created_at, kind, tags, content]);
+  const idBytes = sha256(new TextEncoder().encode(serialized));
+  const id = bytesToHex(idBytes);
+  const sig = pairKey.signEventId(id);
+
+  pool.publishEvent({ id, pubkey, created_at, kind, tags, content, sig });
+}
 
 export async function fetchNostrProfile(
   pubkey: string,

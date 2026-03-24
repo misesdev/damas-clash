@@ -96,4 +96,12 @@ export class RelayPool {
     const events = await this.fetchEvents({authors: [pubkey], kinds: [0], limit: 1});
     return events[0] ?? null;
   }
+
+  /** Broadcasts a signed Nostr event to all connected relays. */
+  publishEvent(event: NostrEvent): void {
+    const msg = JSON.stringify(['EVENT', event]);
+    for (const ws of this.sockets) {
+      try { ws.send(msg); } catch { /* ignore */ }
+    }
+  }
 }

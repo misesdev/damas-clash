@@ -45,4 +45,5 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   nostrButtonText: {color: colors.text, fontSize: 15, fontWeight: '600'},
+
 });

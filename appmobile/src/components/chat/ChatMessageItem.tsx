@@ -59,6 +59,7 @@ interface Props {
   isSelected?: boolean;
   onLongPress?: (msg: ChatMessage) => void;
   onReply?: (msg: ChatMessage) => void;
+  onAvatarPress?: (playerId: string, username: string, avatarUrl?: string | null) => void;
 }
 
 export function ChatMessageItem({
@@ -68,6 +69,7 @@ export function ChatMessageItem({
   isSelected,
   onLongPress,
   onReply,
+  onAvatarPress,
 }: Props) {
   const {t} = useTranslation();
   const isMe = item.playerId === myPlayerId;
@@ -125,7 +127,14 @@ export function ChatMessageItem({
         isSelected && styles.msgSelectedOverlay,
       ]}
       {...panResponder.panHandlers}>
-      {!isMe && <Avatar username={item.username} avatarUrl={item.avatarUrl} />}
+      {!isMe && (
+        <Avatar
+          username={item.username}
+          avatarUrl={item.avatarUrl}
+          onPress={onAvatarPress ? () => onAvatarPress(item.playerId, item.username, item.avatarUrl) : undefined}
+          testID={onAvatarPress ? `avatar-press-${item.id}` : undefined}
+        />
+      )}
 
       {/* Wrapper to position the reply arrow relative to the bubble */}
       <View style={styles.swipeContainer}>

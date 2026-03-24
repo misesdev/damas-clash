@@ -1,10 +1,13 @@
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
+import {Clipboard} from 'react-native';
 import {useTranslation} from 'react-i18next';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {showMessage} from '../components/MessageBox';
 import {deleteAccount} from '../api/auth';
 import {updateAvatar} from '../api/players';
 import {getPlayerStats} from '../api/games';
+import {hasBiometry, getProtectedNsec} from '../storage/nostrKeys';
+import {pubkeyToNpub} from '../utils/nostr';
 import type {LoginResponse} from '../types/auth';
 import type {PlayerStats} from '../types/game';
 
@@ -93,5 +96,55 @@ export function useProfileScreen(
     );
   };
 
-  return {uploading, stats, handleLogout, handleDeleteAccount, handleAvatarPress};
+  const handleCopyNpub = useCallback(() => {
+    if (!user.nostrPubKey) return;
+    const npub = pubkeyToNpub(user.nostrPubKey);
+    Clipboard.setString(npub);
+    showMessage({
+      title: t('profile.nostr.npubCopiedTitle'),
+      message: t('profile.nostr.npubCopiedMessage'),
+      type: 'info',
+      actions: [{label: t('common.ok')}],
+    });
+  }, [user.nostrPubKey, t]);
+
+  const handleCopyNsec = useCallback(async () => {
+    const nsec = user.nostrNsec;
+    if (!nsec) return;
+
+    try {
+      const biometricAvailable = await hasBiometry();
+
+      if (biometricAvailable) {
+        const protectedNsec = await getProtectedNsec(
+          t('profile.nostr.biometricPrompt'),
+          t('common.cancel'),
+        );
+        if (!protectedNsec) return; // User cancelled biometrics — do nothing
+        Clipboard.setString(protectedNsec);
+      } else {
+        // No biometry — copy directly from session
+        Clipboard.setString(nsec);
+      }
+
+      showMessage({
+        title: t('profile.nostr.nsecCopiedTitle'),
+        message: t('profile.nostr.nsecCopiedMessage'),
+        type: 'info',
+        actions: [{label: t('common.ok')}],
+      });
+    } catch {
+      // Biometric prompt dismissed or hardware error — silently ignore
+    }
+  }, [user.nostrNsec, t]);
+
+  return {
+    uploading,
+    stats,
+    handleLogout,
+    handleDeleteAccount,
+    handleAvatarPress,
+    handleCopyNpub,
+    handleCopyNsec,
+  };
 }

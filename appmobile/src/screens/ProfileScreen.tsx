@@ -114,11 +114,17 @@ export function ProfileScreen({
 }: Props) {
   const {t} = useTranslation();
   const {currentLanguage, setLanguage, options: langOptions} = useLanguage();
-  const {uploading, stats, handleLogout, handleDeleteAccount, handleAvatarPress} = useProfileScreen(
-    user,
-    onLogout,
-    onAvatarChanged,
-  );
+  const {
+    uploading,
+    stats,
+    handleLogout,
+    handleDeleteAccount,
+    handleAvatarPress,
+    handleCopyNpub,
+    handleCopyNsec,
+  } = useProfileScreen(user, onLogout, onAvatarChanged);
+
+  const isNostrUser = !!user.nostrPubKey;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -165,12 +171,37 @@ export function ProfileScreen({
           <Text style={styles.sectionTitle}>{t('profile.sections.account')}</Text>
           <View style={styles.card}>
             <MenuItem label={t('profile.items.username')} value={user.username} onPress={onEditUsername} />
-            <View style={styles.separator} />
-            <MenuItem
-              label={t('profile.items.email')}
-              value={user.email ?? undefined}
-              onPress={user.nostrPubKey ? undefined : onEditEmail}
-            />
+            {!isNostrUser && (
+              <>
+                <View style={styles.separator} />
+                <MenuItem
+                  label={t('profile.items.email')}
+                  value={user.email ?? undefined}
+                  onPress={onEditEmail}
+                  testID="email-item"
+                />
+              </>
+            )}
+            {isNostrUser && (
+              <>
+                <View style={styles.separator} />
+                <MenuItem
+                  label={t('profile.nostr.copyPublicKey')}
+                  onPress={handleCopyNpub}
+                  testID="copy-npub-button"
+                />
+                {!!user.nostrNsec && (
+                  <>
+                    <View style={styles.separator} />
+                    <MenuItem
+                      label={t('profile.nostr.copyPrivateKey')}
+                      onPress={handleCopyNsec}
+                      testID="copy-nsec-button"
+                    />
+                  </>
+                )}
+              </>
+            )}
           </View>
         </View>
 
