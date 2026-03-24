@@ -1,6 +1,6 @@
 import {BASE_URL} from './client';
 
-export const APP_VERSION = '3.0';
+export const APP_VERSION = '3.1';
 
 /** Android market intent — Zapstore handles this if installed */
 export const ZAPSTORE_URL = 'market://details?id=com.damasclash';
